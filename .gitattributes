@@ -1,0 +1,6 @@
+* text=auto
+*.cs text eol=lf
+*.json text eol=lf
+*.asmdef text eol=lf
+*.asset text eol=lf
+*.unity text eol=lf
