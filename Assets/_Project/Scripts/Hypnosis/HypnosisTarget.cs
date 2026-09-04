@@ -17,35 +17,40 @@ namespace ProjectTheta.Hypnosis
         public float HypnosisNormalized =>
             Mathf.Clamp01(
                 CurrentHypnosis /
-                Mathf.Max(1f, _maximumHypnosis));
-
-        public bool IsComplete =>
-            CurrentHypnosis >= _maximumHypnosis;
+                Mathf.Max(
+                    1f,
+                    _maximumHypnosis));
 
         public bool IsHypnotized { get; private set; }
+
+        public bool IsFollowing { get; private set; }
 
         public bool IsTargeted { get; private set; }
 
         private void Awake()
         {
             _animator =
-                GetComponent<RuntimeCharacterSpriteAnimator>();
+                GetComponent<
+                    RuntimeCharacterSpriteAnimator>();
         }
 
-        public void SetTargeted(bool targeted)
+        public void SetTargeted(
+            bool targeted)
         {
             IsTargeted =
-                targeted && !IsHypnotized;
+                targeted &&
+                !IsHypnotized;
 
             _animator?.SetHighlighted(
                 IsTargeted);
         }
 
-        public void ApplyFocus(float deltaTime)
+        public bool ApplyFocus(
+            float deltaTime)
         {
             if (IsHypnotized)
             {
-                return;
+                return false;
             }
 
             CurrentHypnosis =
@@ -55,12 +60,48 @@ namespace ProjectTheta.Hypnosis
                     _buildPerSecond,
                     deltaTime);
 
-            if (CurrentHypnosis >= _maximumHypnosis)
+            if (CurrentHypnosis <
+                _maximumHypnosis)
             {
-                CurrentHypnosis = _maximumHypnosis;
-                IsHypnotized = true;
-                SetTargeted(false);
+                return false;
             }
+
+            CurrentHypnosis =
+                _maximumHypnosis;
+
+            IsHypnotized = true;
+
+            SetTargeted(false);
+
+            return true;
+        }
+
+        public void BeginFollowing()
+        {
+            if (!IsHypnotized)
+            {
+                return;
+            }
+
+            IsFollowing = true;
+        }
+
+        public void ReleaseFromFollowing()
+        {
+            IsFollowing = false;
+            IsHypnotized = false;
+            CurrentHypnosis = 0f;
+
+            SetTargeted(false);
+        }
+
+        public void ResetHypnosis()
+        {
+            IsFollowing = false;
+            IsHypnotized = false;
+            CurrentHypnosis = 0f;
+
+            SetTargeted(false);
         }
     }
 }

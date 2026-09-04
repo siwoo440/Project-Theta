@@ -4,6 +4,7 @@ namespace ProjectTheta.NPC
     {
         Idle,
         Move,
-        Alert
+        Alert,
+        Following
     }
 }
