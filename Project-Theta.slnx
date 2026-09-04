@@ -1,5 +1,5 @@
 ﻿<Solution>
-  <Project Path="ProjectTheta.Tests.EditMode.csproj" />
   <Project Path="ProjectTheta.Runtime.csproj" />
+  <Project Path="ProjectTheta.Tests.EditMode.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
 </Solution>
