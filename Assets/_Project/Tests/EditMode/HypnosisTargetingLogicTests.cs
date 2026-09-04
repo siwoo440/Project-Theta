@@ -6,25 +6,23 @@ namespace ProjectTheta.Tests.EditMode
     public sealed class HypnosisTargetingLogicTests
     {
         [Test]
-        public void IsCandidate_ValidTargetInFront_ReturnsTrue()
+        public void IsCandidate_TargetOnRightWithinRange_ReturnsTrue()
         {
             Assert.IsTrue(
                 HypnosisTargetingLogic.IsCandidate(
                     3f,
                     0.5f,
-                    1,
                     4.5f,
                     2.4f));
         }
 
         [Test]
-        public void IsCandidate_TargetBehind_ReturnsFalse()
+        public void IsCandidate_TargetOnLeftWithinRange_ReturnsTrue()
         {
-            Assert.IsFalse(
+            Assert.IsTrue(
                 HypnosisTargetingLogic.IsCandidate(
                     -2f,
                     0f,
-                    1,
                     4.5f,
                     2.4f));
         }
@@ -36,7 +34,17 @@ namespace ProjectTheta.Tests.EditMode
                 HypnosisTargetingLogic.IsCandidate(
                     2f,
                     3f,
-                    1,
+                    4.5f,
+                    2.4f));
+        }
+
+        [Test]
+        public void IsCandidate_OutsideMaximumRange_ReturnsFalse()
+        {
+            Assert.IsFalse(
+                HypnosisTargetingLogic.IsCandidate(
+                    5f,
+                    0f,
                     4.5f,
                     2.4f));
         }

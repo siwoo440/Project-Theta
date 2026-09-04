@@ -2,26 +2,35 @@ using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
+using ProjectTheta.Companion;
 using ProjectTheta.Player;
 
 namespace ProjectTheta.Hypnosis
 {
     [RequireComponent(typeof(PlayerSideViewController))]
+    [RequireComponent(typeof(FollowerManager))]
     public sealed class HypnosisCaster : MonoBehaviour
     {
         [SerializeField] private float _scanRange = 4.5f;
         [SerializeField] private float _verticalTolerance = 2.4f;
 
         private PlayerSideViewController _playerController;
+        private FollowerManager _followerManager;
         private HypnosisTarget _currentTarget;
 
         public HypnosisTarget CurrentTarget =>
             _currentTarget;
 
+        public FollowerManager FollowerManager =>
+            _followerManager;
+
         private void Awake()
         {
             _playerController =
                 GetComponent<PlayerSideViewController>();
+
+            _followerManager =
+                GetComponent<FollowerManager>();
         }
 
         private void Update()
@@ -35,6 +44,12 @@ namespace ProjectTheta.Hypnosis
             HypnosisTarget candidate =
                 FindBestTarget();
 
+            if (candidate != null)
+            {
+                _playerController.FaceToward(
+                    candidate.transform.position.x);
+            }
+
             ChangeTarget(candidate);
 
             if (_currentTarget == null)
@@ -42,12 +57,25 @@ namespace ProjectTheta.Hypnosis
                 return;
             }
 
-            _currentTarget.ApplyFocus(
-                Time.deltaTime);
+            bool completed =
+                _currentTarget.ApplyFocus(
+                    Time.deltaTime);
 
-            if (_currentTarget.IsHypnotized)
+            if (!completed)
             {
-                ChangeTarget(null);
+                return;
+            }
+
+            HypnosisTarget completedTarget =
+                _currentTarget;
+
+            ChangeTarget(null);
+
+            if (_followerManager == null ||
+                !_followerManager.TryAdd(
+                    completedTarget))
+            {
+                completedTarget.ResetHypnosis();
             }
         }
 
@@ -58,16 +86,20 @@ namespace ProjectTheta.Hypnosis
                     FindObjectsSortMode.None);
 
             HypnosisTarget best = null;
+
             float bestDistanceSquared =
                 float.MaxValue;
 
-            for (int i = 0; i < targets.Length; i++)
+            for (int i = 0;
+                 i < targets.Length;
+                 i++)
             {
                 HypnosisTarget target =
                     targets[i];
 
                 if (target == null ||
-                    target.IsHypnotized)
+                    target.IsHypnotized ||
+                    target.IsFollowing)
                 {
                     continue;
                 }
@@ -79,7 +111,6 @@ namespace ProjectTheta.Hypnosis
                 if (!HypnosisTargetingLogic.IsCandidate(
                         delta.x,
                         delta.y,
-                        _playerController.FacingDirection,
                         _scanRange,
                         _verticalTolerance))
                 {
@@ -96,6 +127,7 @@ namespace ProjectTheta.Hypnosis
                 }
 
                 best = target;
+
                 bestDistanceSquared =
                     distanceSquared;
             }
@@ -106,21 +138,25 @@ namespace ProjectTheta.Hypnosis
         private void ChangeTarget(
             HypnosisTarget nextTarget)
         {
-            if (_currentTarget == nextTarget)
+            if (_currentTarget ==
+                nextTarget)
             {
                 return;
             }
 
             if (_currentTarget != null)
             {
-                _currentTarget.SetTargeted(false);
+                _currentTarget.SetTargeted(
+                    false);
             }
 
-            _currentTarget = nextTarget;
+            _currentTarget =
+                nextTarget;
 
             if (_currentTarget != null)
             {
-                _currentTarget.SetTargeted(true);
+                _currentTarget.SetTargeted(
+                    true);
             }
         }
 

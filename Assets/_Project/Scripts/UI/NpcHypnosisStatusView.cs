@@ -8,6 +8,7 @@ namespace ProjectTheta.UI
     {
         [SerializeField] private float _gaugeWidth = 0.92f;
         [SerializeField] private float _gaugeHeight = 0.075f;
+
         [SerializeField] private Vector2 _gaugeOffset =
             new Vector2(0f, -0.18f);
 
@@ -15,6 +16,8 @@ namespace ProjectTheta.UI
             new Vector2(0.43f, 1.67f);
 
         private HypnosisTarget _target;
+
+        private GameObject _gaugeRoot;
         private Transform _fillTransform;
         private SpriteRenderer _heartRenderer;
 
@@ -23,7 +26,9 @@ namespace ProjectTheta.UI
 
         private void Awake()
         {
-            _target = GetComponent<HypnosisTarget>();
+            _target =
+                GetComponent<HypnosisTarget>();
+
             CreateGauge();
             CreateHeart();
             UpdateVisuals();
@@ -36,21 +41,22 @@ namespace ProjectTheta.UI
 
         private void CreateGauge()
         {
-            GameObject root =
-                new GameObject("HypnosisGauge");
+            _gaugeRoot =
+                new GameObject(
+                    "HypnosisGauge");
 
-            root.transform.SetParent(
+            _gaugeRoot.transform.SetParent(
                 transform,
                 false);
 
-            root.transform.localPosition =
+            _gaugeRoot.transform.localPosition =
                 new Vector3(
                     _gaugeOffset.x,
                     _gaugeOffset.y,
                     0f);
 
             CreateBar(
-                root.transform,
+                _gaugeRoot.transform,
                 "Outline",
                 Vector2.zero,
                 new Vector2(
@@ -64,7 +70,7 @@ namespace ProjectTheta.UI
                 8);
 
             CreateBar(
-                root.transform,
+                _gaugeRoot.transform,
                 "Track",
                 Vector2.zero,
                 new Vector2(
@@ -79,7 +85,7 @@ namespace ProjectTheta.UI
 
             GameObject fill =
                 CreateBar(
-                    root.transform,
+                    _gaugeRoot.transform,
                     "PurpleFill",
                     new Vector2(
                         -_gaugeWidth * 0.5f,
@@ -101,7 +107,8 @@ namespace ProjectTheta.UI
         private void CreateHeart()
         {
             GameObject heart =
-                new GameObject("HypnosisHeart");
+                new GameObject(
+                    "HypnosisHeart");
 
             heart.transform.SetParent(
                 transform,
@@ -130,7 +137,9 @@ namespace ProjectTheta.UI
                             0f,
                             texture.width,
                             texture.height),
-                        new Vector2(0.5f, 0.5f),
+                        new Vector2(
+                            0.5f,
+                            0.5f),
                         320f);
 
                 _heartSprite.name =
@@ -140,8 +149,11 @@ namespace ProjectTheta.UI
                     _heartSprite;
             }
 
-            _heartRenderer.sortingOrder = 12;
-            _heartRenderer.enabled = false;
+            _heartRenderer.sortingOrder =
+                12;
+
+            _heartRenderer.enabled =
+                false;
         }
 
         private void UpdateVisuals()
@@ -152,30 +164,43 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            float progress =
-                Mathf.Clamp01(
-                    _target.HypnosisNormalized);
+            bool completed =
+                _target.IsHypnotized;
 
-            float width =
-                _gaugeWidth * progress;
+            if (_gaugeRoot != null)
+            {
+                _gaugeRoot.SetActive(
+                    !completed);
+            }
 
-            _fillTransform.localScale =
-                new Vector3(
-                    width,
-                    _gaugeHeight,
-                    1f);
+            if (!completed)
+            {
+                float progress =
+                    Mathf.Clamp01(
+                        _target.HypnosisNormalized);
 
-            _fillTransform.localPosition =
-                new Vector3(
-                    (-_gaugeWidth * 0.5f) +
-                    (width * 0.5f),
-                    0f,
-                    0f);
+                float width =
+                    _gaugeWidth *
+                    progress;
+
+                _fillTransform.localScale =
+                    new Vector3(
+                        width,
+                        _gaugeHeight,
+                        1f);
+
+                _fillTransform.localPosition =
+                    new Vector3(
+                        (-_gaugeWidth * 0.5f) +
+                        (width * 0.5f),
+                        0f,
+                        0f);
+            }
 
             if (_heartRenderer != null)
             {
                 _heartRenderer.enabled =
-                    _target.IsHypnotized;
+                    completed;
             }
         }
 
@@ -212,7 +237,9 @@ namespace ProjectTheta.UI
             renderer.sprite =
                 GetSquareSprite();
 
-            renderer.color = color;
+            renderer.color =
+                color;
+
             renderer.sortingOrder =
                 sortingOrder;
 
@@ -264,7 +291,8 @@ namespace ProjectTheta.UI
         {
             if (_heartSprite != null)
             {
-                Destroy(_heartSprite);
+                Destroy(
+                    _heartSprite);
             }
         }
     }

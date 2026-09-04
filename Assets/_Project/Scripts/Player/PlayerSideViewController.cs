@@ -29,45 +29,97 @@ namespace ProjectTheta.Player
             _rigidbody = GetComponent<Rigidbody2D>();
             _rigidbody.gravityScale = 0f;
             _rigidbody.freezeRotation = true;
-            _rigidbody.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-            _rigidbody.interpolation = RigidbodyInterpolation2D.Interpolate;
+            _rigidbody.collisionDetectionMode =
+                CollisionDetectionMode2D.Continuous;
+            _rigidbody.interpolation =
+                RigidbodyInterpolation2D.Interpolate;
         }
 
         private void Update()
         {
             _moveInput = ReadMovement();
+
             if (_moveInput.sqrMagnitude > 0.0001f)
             {
                 _lastMoveDirection = _moveInput;
+
                 if (Mathf.Abs(_moveInput.x) > 0.01f)
                 {
-                    FacingDirection = _moveInput.x > 0f ? 1 : -1;
+                    FacingDirection =
+                        _moveInput.x > 0f
+                            ? 1
+                            : -1;
                 }
             }
 
-            _dashRemaining = Mathf.Max(0f, _dashRemaining - Time.deltaTime);
-            _dashCooldownRemaining = Mathf.Max(0f, _dashCooldownRemaining - Time.deltaTime);
+            _dashRemaining =
+                Mathf.Max(
+                    0f,
+                    _dashRemaining -
+                    Time.deltaTime);
 
-            if (ReadDashPressed() && _dashCooldownRemaining <= 0f)
+            _dashCooldownRemaining =
+                Mathf.Max(
+                    0f,
+                    _dashCooldownRemaining -
+                    Time.deltaTime);
+
+            if (ReadDashPressed() &&
+                _dashCooldownRemaining <= 0f)
             {
-                _dashDirection = PlayerMovementMath.ResolveDashDirection(_moveInput, _lastMoveDirection);
-                _dashRemaining = _dashDuration;
-                _dashCooldownRemaining = _dashCooldown;
+                _dashDirection =
+                    PlayerMovementMath.ResolveDashDirection(
+                        _moveInput,
+                        _lastMoveDirection);
+
+                _dashRemaining =
+                    _dashDuration;
+
+                _dashCooldownRemaining =
+                    _dashCooldown;
             }
         }
 
         private void FixedUpdate()
         {
-            Vector2 direction = IsDashing ? _dashDirection : _moveInput;
-            float speed = IsDashing ? _dashSpeed : _moveSpeed;
-            _rigidbody.linearVelocity = direction * speed;
+            Vector2 direction =
+                IsDashing
+                    ? _dashDirection
+                    : _moveInput;
+
+            float speed =
+                IsDashing
+                    ? _dashSpeed
+                    : _moveSpeed;
+
+            _rigidbody.linearVelocity =
+                direction * speed;
+        }
+
+        public void FaceToward(
+            float worldX)
+        {
+            float deltaX =
+                worldX -
+                transform.position.x;
+
+            if (Mathf.Abs(deltaX) <= 0.001f)
+            {
+                return;
+            }
+
+            FacingDirection =
+                deltaX > 0f
+                    ? 1
+                    : -1;
         }
 
         private void OnDisable()
         {
             if (_rigidbody != null)
             {
-                _rigidbody.linearVelocity = Vector2.zero;
+                _rigidbody.linearVelocity =
+                    Vector2.zero;
             }
         }
 
@@ -82,36 +134,51 @@ namespace ProjectTheta.Player
             float x = 0f;
             float y = 0f;
 
-            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
+            if (Keyboard.current.aKey.isPressed ||
+                Keyboard.current.leftArrowKey.isPressed)
             {
                 x -= 1f;
             }
-            if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
+
+            if (Keyboard.current.dKey.isPressed ||
+                Keyboard.current.rightArrowKey.isPressed)
             {
                 x += 1f;
             }
-            if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed)
+
+            if (Keyboard.current.wKey.isPressed ||
+                Keyboard.current.upArrowKey.isPressed)
             {
                 y += 1f;
             }
-            if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed)
+
+            if (Keyboard.current.sKey.isPressed ||
+                Keyboard.current.downArrowKey.isPressed)
             {
                 y -= 1f;
             }
 
-            return PlayerMovementMath.NormalizeInput(new Vector2(x, y));
+            return PlayerMovementMath.NormalizeInput(
+                new Vector2(x, y));
 #else
-            return PlayerMovementMath.NormalizeInput(new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")));
+            return PlayerMovementMath.NormalizeInput(
+                new Vector2(
+                    Input.GetAxisRaw("Horizontal"),
+                    Input.GetAxisRaw("Vertical")));
 #endif
         }
 
         private bool ReadDashPressed()
         {
 #if ENABLE_INPUT_SYSTEM
-            return Keyboard.current != null &&
-                   (Keyboard.current.leftShiftKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame);
+            return
+                Keyboard.current != null &&
+                (Keyboard.current.leftShiftKey.wasPressedThisFrame ||
+                 Keyboard.current.spaceKey.wasPressedThisFrame);
 #else
-            return Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.Space);
+            return
+                Input.GetKeyDown(KeyCode.LeftShift) ||
+                Input.GetKeyDown(KeyCode.Space);
 #endif
         }
     }

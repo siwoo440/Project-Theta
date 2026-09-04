@@ -4,6 +4,7 @@ using ProjectTheta.Core;
 namespace ProjectTheta.NPC
 {
     [RequireComponent(typeof(Rigidbody2D))]
+    [RequireComponent(typeof(NpcSoftSeparation))]
     public sealed class NpcAgent : MonoBehaviour
     {
         [SerializeField] private float _moveSpeed = 1.65f;
@@ -16,6 +17,7 @@ namespace ProjectTheta.NPC
         private Rigidbody2D _body;
         private Transform _player;
         private RuntimeCharacterSpriteAnimator _animator;
+        private NpcSoftSeparation _separation;
         private Vector2 _moveTarget;
         private float _idleRemaining;
         private bool _configured;
@@ -25,11 +27,18 @@ namespace ProjectTheta.NPC
 
         private void Awake()
         {
-            _body = GetComponent<Rigidbody2D>();
+            _body =
+                GetComponent<Rigidbody2D>();
+
+            _separation =
+                GetComponent<NpcSoftSeparation>();
+
             _body.gravityScale = 0f;
             _body.freezeRotation = true;
+
             _body.collisionDetectionMode =
                 CollisionDetectionMode2D.Continuous;
+
             _body.interpolation =
                 RigidbodyInterpolation2D.Interpolate;
         }
@@ -41,12 +50,36 @@ namespace ProjectTheta.NPC
             _player = player;
             _animator = animator;
             _configured = true;
+
+            EnterIdle();
+        }
+
+        public void EnterFollowing()
+        {
+            if (_body != null)
+            {
+                _body.linearVelocity =
+                    Vector2.zero;
+            }
+
+            SetState(
+                NpcState.Following);
+        }
+
+        public void ReturnToRoaming()
+        {
+            if (!_configured)
+            {
+                return;
+            }
+
             EnterIdle();
         }
 
         private void Update()
         {
-            if (!_configured)
+            if (!_configured ||
+                State == NpcState.Following)
             {
                 return;
             }
@@ -63,7 +96,8 @@ namespace ProjectTheta.NPC
                     playerDistance,
                     _alertDistance))
             {
-                SetState(NpcState.Alert);
+                SetState(
+                    NpcState.Alert);
             }
             else if (
                 State == NpcState.Alert &&
@@ -74,7 +108,8 @@ namespace ProjectTheta.NPC
                 EnterMove();
             }
 
-            if (State == NpcState.Alert)
+            if (State ==
+                NpcState.Alert)
             {
                 if (_player != null)
                 {
@@ -86,9 +121,11 @@ namespace ProjectTheta.NPC
                 return;
             }
 
-            if (State == NpcState.Idle)
+            if (State ==
+                NpcState.Idle)
             {
-                _idleRemaining -= Time.deltaTime;
+                _idleRemaining -=
+                    Time.deltaTime;
 
                 if (_idleRemaining <= 0f)
                 {
@@ -98,7 +135,8 @@ namespace ProjectTheta.NPC
                 return;
             }
 
-            if (State == NpcState.Move)
+            if (State ==
+                NpcState.Move)
             {
                 if (Vector2.Distance(
                         transform.position,
@@ -112,9 +150,31 @@ namespace ProjectTheta.NPC
 
         private void FixedUpdate()
         {
-            if (!_configured || State != NpcState.Move)
+            if (!_configured)
             {
-                _body.linearVelocity = Vector2.zero;
+                _body.linearVelocity =
+                    Vector2.zero;
+
+                return;
+            }
+
+            if (State ==
+                NpcState.Following)
+            {
+                return;
+            }
+
+            Vector2 separationVelocity =
+                _separation == null
+                    ? Vector2.zero
+                    : _separation.GetCorrectionVelocity();
+
+            if (State !=
+                NpcState.Move)
+            {
+                _body.linearVelocity =
+                    separationVelocity;
+
                 return;
             }
 
@@ -123,19 +183,31 @@ namespace ProjectTheta.NPC
                 (Vector2)transform.position;
 
             if (direction.sqrMagnitude <=
-                _arrivalDistance * _arrivalDistance)
+                _arrivalDistance *
+                _arrivalDistance)
             {
-                _body.linearVelocity = Vector2.zero;
+                _body.linearVelocity =
+                    separationVelocity;
+
                 return;
             }
 
+            Vector2 movementVelocity =
+                direction.normalized *
+                _moveSpeed;
+
             _body.linearVelocity =
-                direction.normalized * _moveSpeed;
+                Vector2.ClampMagnitude(
+                    movementVelocity +
+                    separationVelocity,
+                    _moveSpeed + 0.65f);
         }
 
         private void EnterIdle()
         {
-            SetState(NpcState.Idle);
+            SetState(
+                NpcState.Idle);
+
             _idleRemaining =
                 Random.Range(
                     _minimumIdleTime,
@@ -144,18 +216,21 @@ namespace ProjectTheta.NPC
 
         private void EnterMove()
         {
-            SetState(NpcState.Move);
+            SetState(
+                NpcState.Move);
 
-            _moveTarget = new Vector2(
-                Random.Range(
-                    SchoolHallwayPrototypeBuilder.WalkMinX + 1.0f,
-                    SchoolHallwayPrototypeBuilder.WalkMaxX - 1.0f),
-                Random.Range(
-                    SchoolHallwayPrototypeBuilder.WalkMinY + 0.7f,
-                    SchoolHallwayPrototypeBuilder.WalkMaxY - 0.4f));
+            _moveTarget =
+                new Vector2(
+                    Random.Range(
+                        SchoolHallwayPrototypeBuilder.WalkMinX + 1.0f,
+                        SchoolHallwayPrototypeBuilder.WalkMaxX - 1.0f),
+                    Random.Range(
+                        SchoolHallwayPrototypeBuilder.WalkMinY + 0.7f,
+                        SchoolHallwayPrototypeBuilder.WalkMaxY - 0.4f));
         }
 
-        private void SetState(NpcState state)
+        private void SetState(
+            NpcState state)
         {
             State = state;
 
@@ -168,13 +243,19 @@ namespace ProjectTheta.NPC
             {
                 case NpcState.Alert:
                     _animator.SetBaseTint(
-                        new Color(1f, 0.78f, 0.60f, 1f));
+                        new Color(
+                            1f,
+                            0.78f,
+                            0.60f,
+                            1f));
                     break;
 
+                case NpcState.Following:
                 case NpcState.Idle:
                 case NpcState.Move:
                 default:
-                    _animator.SetBaseTint(Color.white);
+                    _animator.SetBaseTint(
+                        Color.white);
                     break;
             }
         }
@@ -183,7 +264,8 @@ namespace ProjectTheta.NPC
         {
             if (_body != null)
             {
-                _body.linearVelocity = Vector2.zero;
+                _body.linearVelocity =
+                    Vector2.zero;
             }
         }
     }
