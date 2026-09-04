@@ -4,7 +4,7 @@
 PlayerSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 28
-  productGUID: 037518886c72b8148baffddda1f08846
+  productGUID: 27b3d9adce2b6a44f9dd5bc7ccd93c60
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
@@ -304,10 +304,7 @@ PlayerSettings:
   m_BuildTargetShaderSettings: []
   m_BuildTargetGraphicsJobs: []
   m_BuildTargetGraphicsJobMode: []
-  m_BuildTargetGraphicsAPIs:
-  - m_BuildTarget: WindowsStandaloneSupport
-    m_APIs: 0200000012000000
-    m_Automatic: 0
+  m_BuildTargetGraphicsAPIs: []
   m_BuildTargetVRSettings: []
   m_DefaultShaderChunkSizeInMB: 16
   m_DefaultShaderChunkCount: 0
@@ -689,10 +686,10 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: 8865a6e7-c8b2-4f13-84e1-d74f5f77eb1f
+  cloudProjectId: aa429008-59dd-4b72-b24f-220121ceab9c
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: Project-Theta 2026-09-03_23-28-29
+  projectName: Project-Theta 2026-09-04_00-46-18
   organizationId: siwoo090511
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0

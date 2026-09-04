@@ -2,21 +2,71 @@ using UnityEngine;
 
 namespace ProjectTheta.Core
 {
-    [RequireComponent(typeof(SpriteRenderer))]
     public sealed class DepthSortByY : MonoBehaviour
     {
-        [SerializeField] private int _baseOrder = 1000; // 기본 정렬값
-        [SerializeField] private float _precision = 100f; // 깊이 정밀도
-        private SpriteRenderer _renderer; // 스프라이트 렌더러
+        [SerializeField] private int _baseOrder = 1000;
+        [SerializeField] private float _unitsToOrder = 100f;
+        [SerializeField] private bool _includeChildren = true;
+
+        private SpriteRenderer[] _renderers;
+        private int[] _relativeOrders;
 
         private void Awake()
         {
-            _renderer = GetComponent<SpriteRenderer>(); // 렌더러 참조
+            CacheRenderers();
+            ApplySorting();
         }
 
         private void LateUpdate()
         {
-            _renderer.sortingOrder = _baseOrder - Mathf.RoundToInt(transform.position.y * _precision); // 아래쪽을 앞에 정렬
+            ApplySorting();
+        }
+
+        public void Refresh()
+        {
+            CacheRenderers();
+            ApplySorting();
+        }
+
+        private void CacheRenderers()
+        {
+            _renderers = _includeChildren
+                ? GetComponentsInChildren<SpriteRenderer>(true)
+                : GetComponents<SpriteRenderer>();
+
+            _relativeOrders = new int[_renderers.Length];
+            if (_renderers.Length == 0)
+            {
+                return;
+            }
+
+            int minimumOrder = _renderers[0].sortingOrder;
+            for (int i = 1; i < _renderers.Length; i++)
+            {
+                minimumOrder = Mathf.Min(minimumOrder, _renderers[i].sortingOrder);
+            }
+
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                _relativeOrders[i] = _renderers[i].sortingOrder - minimumOrder;
+            }
+        }
+
+        private void ApplySorting()
+        {
+            if (_renderers == null || _renderers.Length == 0)
+            {
+                return;
+            }
+
+            int yOrder = -Mathf.RoundToInt(transform.position.y * _unitsToOrder);
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                if (_renderers[i] != null)
+                {
+                    _renderers[i].sortingOrder = _baseOrder + yOrder + _relativeOrders[i];
+                }
+            }
         }
     }
 }

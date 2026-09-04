@@ -3,7 +3,9 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - Player
+  - NPC
   layers:
   - Default
   - TransparentFX
@@ -13,10 +15,10 @@ TagManager:
   - UI
   - 
   - 
-  - 
-  - 
-  - 
-  - 
+  - Player
+  - NPC
+  - Environment
+  - Interactable
   - 
   - 
   - 
@@ -42,19 +44,22 @@ TagManager:
     uniqueID: 0
     locked: 0
   - name: Background
-    uniqueID: 11690740
+    uniqueID: 1688512744
     locked: 0
-  - name: EnvironmentBack
-    uniqueID: 1577774681
+  - name: Environment_Back
+    uniqueID: 485741078
     locked: 0
-  - name: Character
-    uniqueID: 1174490154
+  - name: Characters
+    uniqueID: 625849
     locked: 0
-  - name: EnvironmentFront
-    uniqueID: 0
+  - name: Environment_Front
+    uniqueID: 1582336920
     locked: 0
   - name: VFX
-    uniqueID: 0
+    uniqueID: 1898104235
+    locked: 0
+  - name: UI
+    uniqueID: 448589719
     locked: 0
   m_RenderingLayers:
   - Default
