@@ -6,28 +6,29 @@ using ProjectTheta.Ownership;
 
 namespace ProjectTheta.Rival
 {
-    public sealed class RivalFollowerManager : MonoBehaviour
+    public sealed class PopularGuyFollowerManager : MonoBehaviour
     {
         [SerializeField] private float _horizontalSpacing = 0.78f;
         [SerializeField] private float _rowSpacing = 0.46f;
         [SerializeField] private int _rowsPerColumn = 3;
 
-        private readonly List<RivalFollowerController> _followers =
-            new List<RivalFollowerController>();
+        private readonly List<PopularGuyFollowerController> _followers =
+            new List<PopularGuyFollowerController>();
 
-        private RivalController _controller;
+        private PopularGuyController _controller;
 
         public int Count =>
             _followers.Count;
 
-        private RivalController Controller
+        private PopularGuyController Controller
         {
             get
             {
                 if (_controller == null)
                 {
                     _controller =
-                        GetComponent<RivalController>();
+                        GetComponent<
+                            PopularGuyController>();
                 }
 
                 return _controller;
@@ -39,20 +40,20 @@ namespace ProjectTheta.Rival
         {
             if (target == null ||
                 target.Owner !=
-                NpcOwner.Geumtaeyang)
+                NpcOwner.PopularGuy)
             {
                 return false;
             }
 
-            RivalFollowerController follower =
+            PopularGuyFollowerController follower =
                 target.GetComponent<
-                    RivalFollowerController>();
+                    PopularGuyFollowerController>();
 
             if (follower == null)
             {
                 follower =
                     target.gameObject.AddComponent<
-                        RivalFollowerController>();
+                        PopularGuyFollowerController>();
             }
 
             if (_followers.Contains(
@@ -80,9 +81,9 @@ namespace ProjectTheta.Rival
                 return false;
             }
 
-            RivalFollowerController follower =
+            PopularGuyFollowerController follower =
                 target.GetComponent<
-                    RivalFollowerController>();
+                    PopularGuyFollowerController>();
 
             if (follower == null)
             {

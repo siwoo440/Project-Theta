@@ -33,11 +33,20 @@ namespace ProjectTheta.Ownership
                    NpcOwner.Player;
         }
 
-        public static bool CanRivalContest(
+        public static bool CanGeumtaeyangContest(
             NpcOwner owner)
         {
             return owner ==
                    NpcOwner.Player;
+        }
+
+        public static bool CanPopularGuyContest(
+            NpcOwner owner)
+        {
+            return owner !=
+                   NpcOwner.Neutral &&
+                   owner !=
+                   NpcOwner.PopularGuy;
         }
     }
 }

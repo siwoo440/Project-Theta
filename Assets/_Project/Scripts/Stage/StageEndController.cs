@@ -1,5 +1,6 @@
 using UnityEngine;
 using ProjectTheta.Capture;
+using ProjectTheta.Duel;
 using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
@@ -44,6 +45,12 @@ namespace ProjectTheta.Stage
         private void ApplyStageEnd()
         {
             _applied = true;
+
+            OpponentDuelController duel =
+                FindFirstObjectByType<
+                    OpponentDuelController>();
+
+            duel?.ForceEndForStage();
 
             _capture?.ForceEndCapture(
                 false);
@@ -146,6 +153,36 @@ namespace ProjectTheta.Stage
                 if (rivalFollowers[i] != null)
                 {
                     rivalFollowers[i].enabled =
+                        false;
+                }
+            }
+
+            PopularGuyController[] popularGuys =
+                FindObjectsByType<PopularGuyController>(
+                    FindObjectsSortMode.None);
+
+            for (int i = 0;
+                 i < popularGuys.Length;
+                 i++)
+            {
+                if (popularGuys[i] != null)
+                {
+                    popularGuys[i].enabled =
+                        false;
+                }
+            }
+
+            PopularGuyFollowerController[] popularGuyFollowers =
+                FindObjectsByType<PopularGuyFollowerController>(
+                    FindObjectsSortMode.None);
+
+            for (int i = 0;
+                 i < popularGuyFollowers.Length;
+                 i++)
+            {
+                if (popularGuyFollowers[i] != null)
+                {
+                    popularGuyFollowers[i].enabled =
                         false;
                 }
             }

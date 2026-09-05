@@ -19,6 +19,8 @@ namespace ProjectTheta.Rival
         [Header("Targeting")]
         [SerializeField] private float _searchRange = 10f;
         [SerializeField] private float _reacquireInterval = 0.30f;
+        [SerializeField] private float _abandonDistance = 13f;
+        [SerializeField] private float _maximumPursuitDuration = 5.0f;
 
         [Header("Idle")]
         [SerializeField] private float _minimumIdleDuration = 0.6f;
@@ -41,6 +43,9 @@ namespace ProjectTheta.Rival
         private HypnosisTarget _target;
         private float _reacquireTimer;
         private float _idleRemaining;
+        private float _pursuitElapsed;
+        private bool _duelLocked;
+        private float _duelStunRemaining;
 
         public RivalState State { get; private set; } =
             RivalState.Idle;
@@ -62,6 +67,16 @@ namespace ProjectTheta.Rival
             _target == null
                 ? 0f
                 : _target.HypnosisNormalized;
+
+        public bool CanStartPlayerDuel =>
+            !_duelLocked &&
+            _duelStunRemaining <=
+                0f &&
+            State ==
+                RivalState.Contest &&
+            _target != null &&
+            _target.Owner ==
+                NpcOwner.Player;
 
         private void Awake()
         {
@@ -117,6 +132,38 @@ namespace ProjectTheta.Rival
                 return;
             }
 
+            if (_duelLocked)
+            {
+                StopMovement();
+
+                return;
+            }
+
+            if (_duelStunRemaining >
+                0f)
+            {
+                _duelStunRemaining =
+                    Mathf.Max(
+                        0f,
+                        _duelStunRemaining -
+                        Time.deltaTime);
+
+                State =
+                    RivalState.Stunned;
+
+                StopMovement();
+
+                if (_duelStunRemaining <=
+                    0f)
+                {
+                    EnterIdle(
+                        _lostTargetIdleMinimum,
+                        _lostTargetIdleMaximum);
+                }
+
+                return;
+            }
+
             if (State ==
                 RivalState.Idle)
             {
@@ -143,12 +190,7 @@ namespace ProjectTheta.Rival
             if (targetDecision ==
                 RivalTargetDecision.Wait)
             {
-                _target =
-                    null;
-
-                EnterIdle(
-                    _lostTargetIdleMinimum,
-                    _lostTargetIdleMaximum);
+                ClearTarget();
 
                 return;
             }
@@ -166,11 +208,28 @@ namespace ProjectTheta.Rival
             if (distance >
                 _contestDistance)
             {
+                _pursuitElapsed +=
+                    Time.deltaTime;
+
+                if (OpponentTargetingLogic.
+                        ShouldAbandon(
+                            distance,
+                            _pursuitElapsed,
+                            _abandonDistance,
+                            _maximumPursuitDuration))
+                {
+                    ClearTarget();
+
+                    return;
+                }
+
                 State =
                     RivalState.Approach;
 
                 return;
             }
+
+            _pursuitElapsed = 0f;
 
             State =
                 RivalState.Contest;
@@ -178,7 +237,7 @@ namespace ProjectTheta.Rival
             StopMovement();
 
             bool depleted =
-                _target.ApplyRivalPressure(
+                _target.ApplyGeumtaeyangPressure(
                     _contestDrainPerSecond,
                     Time.deltaTime);
 
@@ -193,6 +252,9 @@ namespace ProjectTheta.Rival
         {
             if (_stage == null ||
                 !_stage.IsRunning ||
+                _duelLocked ||
+                _duelStunRemaining >
+                    0f ||
                 State !=
                 RivalState.Approach ||
                 _target == null)
@@ -227,6 +289,45 @@ namespace ProjectTheta.Rival
 
             _body.linearVelocity =
                 velocity;
+        }
+
+        public void SetDuelLocked(
+            bool locked)
+        {
+            _duelLocked =
+                locked;
+
+            if (locked)
+            {
+                StopMovement();
+            }
+        }
+
+        public void ApplyDuelStun(
+            float duration)
+        {
+            if (_target != null)
+            {
+                _target.SetOpponentTargeted(
+                    NpcOwner.Geumtaeyang,
+                    false);
+            }
+
+            _target =
+                null;
+
+            _duelLocked =
+                false;
+
+            _duelStunRemaining =
+                Mathf.Max(
+                    0f,
+                    duration);
+
+            State =
+                RivalState.Stunned;
+
+            StopMovement();
         }
 
         public void ReleaseOwnedTarget(
@@ -272,7 +373,7 @@ namespace ProjectTheta.Rival
                 return;
             }
 
-            target.ClaimByRival(
+            target.ClaimByGeumtaeyang(
                 this);
 
             _ownedFollowers?.TryAdd(
@@ -280,6 +381,8 @@ namespace ProjectTheta.Rival
 
             _target =
                 null;
+
+            _pursuitElapsed = 0f;
 
             EnterIdle(
                 _postCaptureIdleMinimum,
@@ -303,7 +406,16 @@ namespace ProjectTheta.Rival
                     _reacquireInterval);
 
             _target =
-                FindNearestPlayerTarget();
+                FindBestPlayerTarget();
+
+            if (_target != null)
+            {
+                _target.SetOpponentTargeted(
+                    NpcOwner.Geumtaeyang,
+                    true);
+
+                _pursuitElapsed = 0f;
+            }
 
             State =
                 _target == null
@@ -311,7 +423,7 @@ namespace ProjectTheta.Rival
                     : RivalState.Approach;
         }
 
-        private HypnosisTarget FindNearestPlayerTarget()
+        private HypnosisTarget FindBestPlayerTarget()
         {
             HypnosisTarget[] targets =
                 FindObjectsByType<HypnosisTarget>(
@@ -320,14 +432,13 @@ namespace ProjectTheta.Rival
             HypnosisTarget best =
                 null;
 
+            float bestScore =
+                float.NegativeInfinity;
+
             float range =
                 Mathf.Max(
                     0f,
                     _searchRange);
-
-            float bestDistanceSquared =
-                range *
-                range;
 
             for (int i = 0;
                  i < targets.Length;
@@ -342,15 +453,32 @@ namespace ProjectTheta.Rival
                     continue;
                 }
 
-                Vector2 delta =
-                    (Vector2)candidate.transform.position -
-                    (Vector2)transform.position;
+                float opponentDistance =
+                    Vector2.Distance(
+                        transform.position,
+                        candidate.transform.position);
 
-                float distanceSquared =
-                    delta.sqrMagnitude;
+                if (opponentDistance >
+                    range)
+                {
+                    continue;
+                }
 
-                if (distanceSquared >
-                    bestDistanceSquared)
+                float playerDistance =
+                    _playerFollowers == null
+                        ? 0f
+                        : Vector2.Distance(
+                            _playerFollowers.transform.position,
+                            candidate.transform.position);
+
+                float score =
+                    OpponentTargetingLogic.
+                        ScoreGeumtaeyangTarget(
+                            opponentDistance,
+                            playerDistance);
+
+                if (score <=
+                    bestScore)
                 {
                     continue;
                 }
@@ -358,8 +486,8 @@ namespace ProjectTheta.Rival
                 best =
                     candidate;
 
-                bestDistanceSquared =
-                    distanceSquared;
+                bestScore =
+                    score;
             }
 
             return best;
@@ -404,9 +532,6 @@ namespace ProjectTheta.Rival
 
         private void ClearTarget()
         {
-            _target =
-                null;
-
             EnterIdle(
                 _lostTargetIdleMinimum,
                 _lostTargetIdleMaximum);
@@ -436,11 +561,21 @@ namespace ProjectTheta.Rival
             float minimum,
             float maximum)
         {
+            if (_target != null)
+            {
+                _target.SetOpponentTargeted(
+                    NpcOwner.Geumtaeyang,
+                    false);
+            }
+
             State =
                 RivalState.Idle;
 
             _target =
                 null;
+
+            _pursuitElapsed =
+                0f;
 
             _idleRemaining =
                 RivalIdleLogic.ResolveDuration(
@@ -484,6 +619,13 @@ namespace ProjectTheta.Rival
 
         private void OnDisable()
         {
+            if (_target != null)
+            {
+                _target.SetOpponentTargeted(
+                    NpcOwner.Geumtaeyang,
+                    false);
+            }
+
             StopMovement();
         }
     }
