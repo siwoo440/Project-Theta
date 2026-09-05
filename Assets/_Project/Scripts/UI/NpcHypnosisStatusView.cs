@@ -270,18 +270,35 @@ namespace ProjectTheta.UI
                 _target.Owner ==
                 NpcOwner.Player;
 
-            bool rivalOwned =
+            bool geumtaeyangOwned =
                 _target.Owner ==
-                NpcOwner.Rival;
+                NpcOwner.Geumtaeyang;
+
+            bool popularGuyOwned =
+                _target.Owner ==
+                NpcOwner.PopularGuy;
+
+            bool isHypnotized =
+                _target.Owner !=
+                NpcOwner.Neutral;
+
+            bool popularGuyNeutralClaim =
+                _target.Owner ==
+                    NpcOwner.Neutral &&
+                _target.PopularGuyClaimNormalized >
+                    0f;
 
             bool hasImpulse =
                 playerOwned &&
                 _impulse != null &&
                 _target.IsFollowing;
 
-            bool showWarningIcon =
+            bool showImpulseWarning =
                 hasImpulse &&
                 _impulse.IsWarningIconVisible;
+
+            bool showOpponentWarning =
+                _target.IsOpponentTargeted;
 
             bool showPrimaryGauge =
                 _target.Owner ==
@@ -316,61 +333,92 @@ namespace ProjectTheta.UI
                 }
             }
 
-            bool showOwnershipGauge =
-                playerOwned ||
-                rivalOwned;
-
             if (_ownershipGaugeRoot != null)
             {
                 _ownershipGaugeRoot.SetActive(
-                    showOwnershipGauge);
+                    isHypnotized ||
+                    popularGuyNeutralClaim);
             }
 
-            if (showOwnershipGauge)
+            if (isHypnotized ||
+                popularGuyNeutralClaim)
             {
                 SetGaugeProgress(
                     _ownershipFillTransform,
-                    _target.HypnosisNormalized);
+                    popularGuyNeutralClaim
+                        ? _target.PopularGuyClaimNormalized
+                        : _target.HypnosisNormalized);
 
                 if (_ownershipFillRenderer != null)
                 {
                     _ownershipFillRenderer.color =
-                        playerOwned
-                            ? new Color(
-                                1.00f,
-                                0.42f,
-                                0.78f,
-                                1f)
-                            : new Color(
-                                0.96f,
-                                0.22f,
-                                0.25f,
-                                1f);
+                        popularGuyNeutralClaim
+                            ? GetOwnershipColor(
+                                NpcOwner.PopularGuy)
+                            : GetOwnershipColor(
+                                _target.Owner);
                 }
             }
 
             if (_heartRenderer != null)
             {
                 _heartRenderer.enabled =
-                    (playerOwned ||
-                     rivalOwned) &&
-                    !showWarningIcon;
+                    isHypnotized &&
+                    !showImpulseWarning &&
+                    !showOpponentWarning;
 
                 _heartRenderer.color =
-                    rivalOwned
-                        ? new Color(
-                            1f,
-                            0.34f,
-                            0.34f,
-                            1f)
-                        : Color.white;
+                    GetOwnershipColor(
+                        _target.Owner);
             }
 
             if (_exclamationRenderer != null)
             {
                 _exclamationRenderer.enabled =
-                    playerOwned &&
-                    showWarningIcon;
+                    showImpulseWarning ||
+                    showOpponentWarning;
+
+                _exclamationRenderer.color =
+                    showOpponentWarning
+                        ? GetOwnershipColor(
+                            _target.PrimaryThreatOwner)
+                        : Color.white;
+            }
+        }
+
+        private Color GetOwnershipColor(
+            NpcOwner owner)
+        {
+            switch (owner)
+            {
+                case NpcOwner.Geumtaeyang:
+                    return new Color(
+                        0.96f,
+                        0.22f,
+                        0.25f,
+                        1f);
+
+                case NpcOwner.PopularGuy:
+                    return new Color(
+                        0.20f,
+                        0.84f,
+                        0.92f,
+                        1f);
+
+                case NpcOwner.Player:
+                    return new Color(
+                        1.00f,
+                        0.42f,
+                        0.78f,
+                        1f);
+
+                case NpcOwner.Neutral:
+                default:
+                    return new Color(
+                        1.00f,
+                        0.76f,
+                        0.35f,
+                        1f);
             }
         }
 

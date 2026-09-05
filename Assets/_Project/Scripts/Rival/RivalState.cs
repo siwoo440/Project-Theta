@@ -5,6 +5,7 @@ namespace ProjectTheta.Rival
         Idle,
         Search,
         Approach,
-        Contest
+        Contest,
+        Stunned
     }
 }

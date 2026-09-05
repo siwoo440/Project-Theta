@@ -86,13 +86,18 @@ namespace ProjectTheta.Hypnosis
             }
 
             if (target.Owner ==
-                NpcOwner.Rival)
+                NpcOwner.Geumtaeyang)
             {
-                RivalController rival =
-                    target.RivalOwner;
-
-                rival?.ReleaseOwnedTarget(
-                    target);
+                target.GeumtaeyangOwner?.
+                    ReleaseOwnedTarget(
+                        target);
+            }
+            else if (target.Owner ==
+                     NpcOwner.PopularGuy)
+            {
+                target.PopularGuyOwner?.
+                    ReleaseOwnedTarget(
+                        target);
             }
 
             target.ClaimByPlayer();
