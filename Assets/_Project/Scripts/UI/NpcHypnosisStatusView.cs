@@ -1,5 +1,6 @@
 using UnityEngine;
 using ProjectTheta.Hypnosis;
+using ProjectTheta.Impulse;
 
 namespace ProjectTheta.UI
 {
@@ -12,25 +13,33 @@ namespace ProjectTheta.UI
         [SerializeField] private Vector2 _gaugeOffset =
             new Vector2(0f, -0.18f);
 
-        [SerializeField] private Vector2 _heartOffset =
+        [SerializeField] private Vector2 _iconOffset =
             new Vector2(0.43f, 1.67f);
 
         private HypnosisTarget _target;
+        private ImpulseMeter _impulse;
 
         private GameObject _gaugeRoot;
         private Transform _fillTransform;
+        private SpriteRenderer _fillRenderer;
         private SpriteRenderer _heartRenderer;
+        private SpriteRenderer _exclamationRenderer;
 
         private static Sprite _squareSprite;
         private Sprite _heartSprite;
+        private Sprite _exclamationSprite;
 
         private void Awake()
         {
             _target =
                 GetComponent<HypnosisTarget>();
 
+            _impulse =
+                GetComponent<ImpulseMeter>();
+
             CreateGauge();
-            CreateHeart();
+            CreateIcons();
+            MatchIconVisualSize();
             UpdateVisuals();
         }
 
@@ -43,7 +52,7 @@ namespace ProjectTheta.UI
         {
             _gaugeRoot =
                 new GameObject(
-                    "HypnosisGauge");
+                    "StatusGauge");
 
             _gaugeRoot.transform.SetParent(
                 transform,
@@ -86,7 +95,7 @@ namespace ProjectTheta.UI
             GameObject fill =
                 CreateBar(
                     _gaugeRoot.transform,
-                    "PurpleFill",
+                    "Fill",
                     new Vector2(
                         -_gaugeWidth * 0.5f,
                         0f),
@@ -102,34 +111,57 @@ namespace ProjectTheta.UI
 
             _fillTransform =
                 fill.transform;
+
+            _fillRenderer =
+                fill.GetComponent<SpriteRenderer>();
         }
 
-        private void CreateHeart()
+        private void CreateIcons()
         {
-            GameObject heart =
-                new GameObject(
-                    "HypnosisHeart");
+            _heartRenderer =
+                CreateIconRenderer(
+                    "Heart",
+                    "UI/Hypnosis/Heart",
+                    out _heartSprite);
 
-            heart.transform.SetParent(
+            _exclamationRenderer =
+                CreateIconRenderer(
+                    "Exclamation",
+                    "UI/Hypnosis/Exclamation",
+                    out _exclamationSprite);
+        }
+
+        private SpriteRenderer CreateIconRenderer(
+            string objectName,
+            string resourcePath,
+            out Sprite runtimeSprite)
+        {
+            runtimeSprite = null;
+
+            GameObject icon =
+                new GameObject(
+                    objectName);
+
+            icon.transform.SetParent(
                 transform,
                 false);
 
-            heart.transform.localPosition =
+            icon.transform.localPosition =
                 new Vector3(
-                    _heartOffset.x,
-                    _heartOffset.y,
+                    _iconOffset.x,
+                    _iconOffset.y,
                     0f);
 
-            _heartRenderer =
-                heart.AddComponent<SpriteRenderer>();
+            SpriteRenderer renderer =
+                icon.AddComponent<SpriteRenderer>();
 
             Texture2D texture =
                 Resources.Load<Texture2D>(
-                    "UI/Hypnosis/Heart");
+                    resourcePath);
 
             if (texture != null)
             {
-                _heartSprite =
+                runtimeSprite =
                     Sprite.Create(
                         texture,
                         new Rect(
@@ -142,18 +174,56 @@ namespace ProjectTheta.UI
                             0.5f),
                         320f);
 
-                _heartSprite.name =
-                    "HypnosisHeart_RuntimeSprite";
+                runtimeSprite.name =
+                    objectName +
+                    "_RuntimeSprite";
 
-                _heartRenderer.sprite =
-                    _heartSprite;
+                renderer.sprite =
+                    runtimeSprite;
             }
 
-            _heartRenderer.sortingOrder =
+            renderer.sortingOrder =
                 12;
 
-            _heartRenderer.enabled =
+            renderer.enabled =
                 false;
+
+            return renderer;
+        }
+
+        private void MatchIconVisualSize()
+        {
+            if (_heartRenderer == null ||
+                _exclamationRenderer == null ||
+                _heartRenderer.sprite == null ||
+                _exclamationRenderer.sprite == null)
+            {
+                return;
+            }
+
+            Vector2 heartSize =
+                _heartRenderer.sprite.bounds.size;
+
+            Vector2 exclamationSize =
+                _exclamationRenderer.sprite.bounds.size;
+
+            float scaleX =
+                exclamationSize.x <= 0.0001f
+                    ? 1f
+                    : heartSize.x /
+                      exclamationSize.x;
+
+            float scaleY =
+                exclamationSize.y <= 0.0001f
+                    ? 1f
+                    : heartSize.y /
+                      exclamationSize.y;
+
+            _exclamationRenderer.transform.localScale =
+                new Vector3(
+                    scaleX,
+                    scaleY,
+                    1f);
         }
 
         private void UpdateVisuals()
@@ -164,24 +234,40 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            bool completed =
+            bool isHypnotized =
                 _target.IsHypnotized;
+
+            bool hasImpulse =
+                _impulse != null &&
+                _target.IsFollowing;
+
+            bool showWarningIcon =
+                hasImpulse &&
+                _impulse.IsWarningIconVisible;
+
+            float progress =
+                !isHypnotized
+                    ? _target.HypnosisNormalized
+                    : hasImpulse
+                        ? _impulse.ImpulseNormalized
+                        : 0f;
+
+            bool showGauge =
+                !isHypnotized ||
+                hasImpulse;
 
             if (_gaugeRoot != null)
             {
                 _gaugeRoot.SetActive(
-                    !completed);
+                    showGauge);
             }
 
-            if (!completed)
+            if (showGauge)
             {
-                float progress =
-                    Mathf.Clamp01(
-                        _target.HypnosisNormalized);
-
                 float width =
                     _gaugeWidth *
-                    progress;
+                    Mathf.Clamp01(
+                        progress);
 
                 _fillTransform.localScale =
                     new Vector3(
@@ -195,12 +281,86 @@ namespace ProjectTheta.UI
                         (width * 0.5f),
                         0f,
                         0f);
+
+                if (_fillRenderer != null)
+                {
+                    _fillRenderer.color =
+                        GetGaugeColor(
+                            isHypnotized,
+                            hasImpulse);
+                }
             }
 
             if (_heartRenderer != null)
             {
                 _heartRenderer.enabled =
-                    completed;
+                    isHypnotized &&
+                    !showWarningIcon;
+            }
+
+            if (_exclamationRenderer != null)
+            {
+                _exclamationRenderer.enabled =
+                    isHypnotized &&
+                    showWarningIcon;
+            }
+        }
+
+        private Color GetGaugeColor(
+            bool isHypnotized,
+            bool hasImpulse)
+        {
+            if (!isHypnotized)
+            {
+                return new Color(
+                    0.69f,
+                    0.20f,
+                    1.00f,
+                    1f);
+            }
+
+            if (!hasImpulse ||
+                _impulse == null)
+            {
+                return new Color(
+                    1.00f,
+                    0.52f,
+                    0.85f,
+                    1f);
+            }
+
+            switch (_impulse.State)
+            {
+                case ImpulseState.Danger:
+                case ImpulseState.Preparing:
+                case ImpulseState.Rampaging:
+                    return new Color(
+                        1.00f,
+                        0.46f,
+                        0.46f,
+                        1f);
+
+                case ImpulseState.Warning:
+                    return new Color(
+                        1.00f,
+                        0.76f,
+                        0.35f,
+                        1f);
+
+                case ImpulseState.Recovering:
+                    return new Color(
+                        1.00f,
+                        0.56f,
+                        0.72f,
+                        1f);
+
+                case ImpulseState.Calm:
+                default:
+                    return new Color(
+                        1.00f,
+                        0.52f,
+                        0.85f,
+                        1f);
             }
         }
 
@@ -257,7 +417,7 @@ namespace ProjectTheta.UI
                 new Texture2D(1, 1)
                 {
                     name =
-                        "HypnosisGaugeSquare",
+                        "StatusGaugeSquare",
                     filterMode =
                         FilterMode.Point,
                     wrapMode =
@@ -293,6 +453,12 @@ namespace ProjectTheta.UI
             {
                 Destroy(
                     _heartSprite);
+            }
+
+            if (_exclamationSprite != null)
+            {
+                Destroy(
+                    _exclamationSprite);
             }
         }
     }

@@ -42,6 +42,7 @@ namespace ProjectTheta.Companion
         private int _slotIndex;
         private float _stability;
         private bool _isFollowing;
+        private bool _isUnderExternalControl;
 
         private Vector2 _personalFormationOffset;
         private float _wanderPhase;
@@ -93,6 +94,7 @@ namespace ProjectTheta.Companion
                 _maximumStability;
 
             _isFollowing = true;
+            _isUnderExternalControl = false;
 
             RandomizeFormationPersonality();
 
@@ -107,14 +109,26 @@ namespace ProjectTheta.Companion
                 Mathf.Max(
                     0,
                     slotIndex);
+        }
 
-            // 재정렬되어도 완전히 같은 열로 정렬되지 않도록
-            // 개인 오프셋은 유지한다.
+        public void SetExternalControl(
+            bool isActive)
+        {
+            _isUnderExternalControl =
+                isActive;
+
+            if (_body != null &&
+                isActive)
+            {
+                _body.linearVelocity =
+                    Vector2.zero;
+            }
         }
 
         public void StopFollowing()
         {
             _isFollowing = false;
+            _isUnderExternalControl = false;
             _manager = null;
             _leader = null;
 
@@ -133,6 +147,11 @@ namespace ProjectTheta.Companion
             if (!_isFollowing ||
                 _manager == null ||
                 _leader == null)
+            {
+                return;
+            }
+
+            if (_isUnderExternalControl)
             {
                 return;
             }
