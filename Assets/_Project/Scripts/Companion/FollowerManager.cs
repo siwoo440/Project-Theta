@@ -112,9 +112,6 @@ namespace ProjectTheta.Companion
                         slotIndex,
                         _rowSpacing);
 
-            // personalOffset.x는 대열의 앞/뒤 간격을 흐트러뜨린다.
-            // 플레이어가 방향을 바꿔도 "뒤쪽" 기준이 유지되도록
-            // facingDirection 안쪽에 포함한다.
             float trailingDistance =
                 Mathf.Max(
                     0.45f,
@@ -142,9 +139,26 @@ namespace ProjectTheta.Companion
         public void RequestRelease(
             FollowerController follower)
         {
+            RemoveFollower(
+                follower,
+                true);
+        }
+
+        public bool ConsumeFollower(
+            FollowerController follower)
+        {
+            return RemoveFollower(
+                follower,
+                true);
+        }
+
+        private bool RemoveFollower(
+            FollowerController follower,
+            bool stopFollowing)
+        {
             if (follower == null)
             {
-                return;
+                return false;
             }
 
             int index =
@@ -153,14 +167,19 @@ namespace ProjectTheta.Companion
 
             if (index < 0)
             {
-                return;
+                return false;
             }
 
             _followers.RemoveAt(index);
 
-            follower.StopFollowing();
+            if (stopFollowing)
+            {
+                follower.StopFollowing();
+            }
 
             ReindexFollowers();
+
+            return true;
         }
 
         private void ReindexFollowers()
