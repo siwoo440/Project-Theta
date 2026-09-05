@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectTheta.Capture;
 using ProjectTheta.Companion;
 using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
@@ -36,10 +37,10 @@ namespace ProjectTheta.Impulse
         private Transform _player;
         private RampageCoordinator _coordinator;
         private StageSessionController _stage;
+        private PlayerCaptureController _captureController;
 
         private float _buildRateMultiplier = 1f;
         private float _phaseRemaining;
-        private bool _catchRewardGranted;
 
         public float CurrentImpulse { get; private set; }
 
@@ -55,7 +56,8 @@ namespace ProjectTheta.Impulse
 
         public bool IsWarningIconVisible =>
             State == ImpulseState.Preparing ||
-            State == ImpulseState.Rampaging;
+            State == ImpulseState.Rampaging ||
+            State == ImpulseState.Capturing;
 
         public bool IsFollowingActive =>
             _target != null &&
@@ -106,6 +108,7 @@ namespace ProjectTheta.Impulse
             if (!IsFollowingActive)
             {
                 ResetWhenInactive();
+
                 return;
             }
 
@@ -117,6 +120,10 @@ namespace ProjectTheta.Impulse
 
                 case ImpulseState.Rampaging:
                     UpdateRampaging();
+                    break;
+
+                case ImpulseState.Capturing:
+                    UpdateCapturing();
                     break;
 
                 case ImpulseState.Recovering:
@@ -167,6 +174,7 @@ namespace ProjectTheta.Impulse
                     this))
             {
                 BeginPreparing();
+
                 return;
             }
 
@@ -181,9 +189,6 @@ namespace ProjectTheta.Impulse
 
             _phaseRemaining =
                 _prepareDuration;
-
-            _catchRewardGranted =
-                false;
 
             TakeControl();
             FacePlayer();
@@ -216,9 +221,6 @@ namespace ProjectTheta.Impulse
             _phaseRemaining =
                 _rampageDuration;
 
-            _catchRewardGranted =
-                false;
-
             TakeControl();
         }
 
@@ -231,6 +233,7 @@ namespace ProjectTheta.Impulse
                 _player == null)
             {
                 BeginRecovering();
+
                 return;
             }
 
@@ -246,8 +249,8 @@ namespace ProjectTheta.Impulse
             if (distance <=
                 _catchDistance)
             {
-                HandlePlayerCaught();
-                BeginRecovering();
+                TryBeginCapture();
+
                 return;
             }
 
@@ -269,17 +272,75 @@ namespace ProjectTheta.Impulse
             }
         }
 
-        private void HandlePlayerCaught()
+        private void TryBeginCapture()
         {
-            if (_catchRewardGranted)
+            if (_captureController != null &&
+                _captureController.TryBeginCapture(
+                    this))
+            {
+                State =
+                    ImpulseState.Capturing;
+
+                if (_body != null)
+                {
+                    _body.linearVelocity =
+                        Vector2.zero;
+                }
+
+                return;
+            }
+
+            BeginRecovering();
+        }
+
+        private void UpdateCapturing()
+        {
+            FacePlayer();
+
+            if (_body != null)
+            {
+                _body.linearVelocity =
+                    Vector2.zero;
+            }
+
+            if (_captureController != null &&
+                _captureController.IsCapturing &&
+                _captureController.ActiveCaptor ==
+                this)
             {
                 return;
             }
 
-            _catchRewardGranted =
-                true;
+            BeginRecovering();
+        }
 
-            _stage?.HandleRampageCatch();
+        public void CancelForRecovery()
+        {
+            if (_captureController != null)
+            {
+                _captureController.NotifyCaptorUnavailable(
+                    this);
+            }
+
+            if (_coordinator != null)
+            {
+                _coordinator.End(
+                    this);
+            }
+
+            ReleaseControl();
+
+            if (_body != null)
+            {
+                _body.linearVelocity =
+                    Vector2.zero;
+            }
+
+            State =
+                ImpulseState.Calm;
+
+            CurrentImpulse = 0f;
+            _phaseRemaining = 0f;
         }
 
         private void BeginRecovering()
@@ -370,7 +431,6 @@ namespace ProjectTheta.Impulse
 
             CurrentImpulse = 0f;
             _phaseRemaining = 0f;
-            _catchRewardGranted = false;
             State = ImpulseState.Calm;
         }
 
@@ -415,10 +475,23 @@ namespace ProjectTheta.Impulse
                     FindFirstObjectByType<
                         StageSessionController>();
             }
+
+            if (_captureController == null)
+            {
+                _captureController =
+                    FindFirstObjectByType<
+                        PlayerCaptureController>();
+            }
         }
 
         private void OnDisable()
         {
+            if (_captureController != null)
+            {
+                _captureController.NotifyCaptorUnavailable(
+                    this);
+            }
+
             if (_coordinator != null)
             {
                 _coordinator.End(

@@ -7,6 +7,7 @@ namespace ProjectTheta.Impulse
         Danger,
         Preparing,
         Rampaging,
+        Capturing,
         Recovering
     }
 }

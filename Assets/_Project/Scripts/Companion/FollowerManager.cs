@@ -11,6 +11,7 @@ namespace ProjectTheta.Companion
     {
         [SerializeField] private float _horizontalSpacing = 0.92f;
         [SerializeField] private float _rowSpacing = 0.48f;
+        [SerializeField] private int _rowsPerColumn = 3;
 
         private readonly List<FollowerController> _followers =
             new List<FollowerController>();
@@ -100,17 +101,24 @@ namespace ProjectTheta.Companion
                     ? 1
                     : _playerController.FacingDirection;
 
+            int rows =
+                Mathf.Max(
+                    1,
+                    _rowsPerColumn);
+
             float horizontalDistance =
                 FollowerFormationLogic.
-                    GetHorizontalDistance(
+                    GetCompactHorizontalDistance(
                         slotIndex,
-                        _horizontalSpacing);
+                        _horizontalSpacing,
+                        rows);
 
             float verticalOffset =
                 FollowerFormationLogic.
-                    GetVerticalOffset(
+                    GetCompactVerticalOffset(
                         slotIndex,
-                        _rowSpacing);
+                        _rowSpacing,
+                        rows);
 
             float trailingDistance =
                 Mathf.Max(

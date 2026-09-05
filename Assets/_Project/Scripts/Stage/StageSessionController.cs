@@ -1,5 +1,6 @@
 using UnityEngine;
 using ProjectTheta.Companion;
+using ProjectTheta.Impulse;
 using ProjectTheta.Player;
 
 namespace ProjectTheta.Stage
@@ -14,11 +15,15 @@ namespace ProjectTheta.Stage
         [SerializeField] private int _recoveryReward = 5;
         [SerializeField] private int _rampageCaughtReward = 10;
         [SerializeField] private int _passiveEssencePerFollower = 1;
+        [SerializeField] private float _passiveTickInterval = 1.0f;
 
-        [Header("Rampage Penalty")]
-        [SerializeField] private int _rampageCaughtDamage = 25;
+        [Header("Capture Damage")]
+        [SerializeField] private int _captureTickDamage = 1;
+        [SerializeField] private int _captureMaxDamage = 10;
 
         private PlayerHealth _playerHealth;
+        private FollowerManager _followers;
+        private float _passiveTickTimer;
 
         public StageState State { get; private set; } =
             StageState.Running;
@@ -26,6 +31,10 @@ namespace ProjectTheta.Stage
         public float RemainingTime { get; private set; }
 
         public int CurrentEssence { get; private set; }
+
+        public int RampageCaptureCount { get; private set; }
+
+        public int RecoveredFollowerCount { get; private set; }
 
         public int TargetEssence =>
             Mathf.Max(
@@ -47,10 +56,15 @@ namespace ProjectTheta.Stage
                 0,
                 _rampageCaughtReward);
 
-        public int RampageCaughtDamage =>
+        public int CaptureTickDamage =>
             Mathf.Max(
-                0,
-                _rampageCaughtDamage);
+                1,
+                _captureTickDamage);
+
+        public int CaptureMaxDamage =>
+            Mathf.Max(
+                1,
+                _captureMaxDamage);
 
         public bool IsRunning =>
             State == StageState.Running;
@@ -60,6 +74,19 @@ namespace ProjectTheta.Stage
                 CurrentEssence /
                 (float)TargetEssence);
 
+        public float ElapsedTime =>
+            Mathf.Max(
+                0f,
+                _timeLimitSeconds -
+                RemainingTime);
+
+        public int PassiveProductionPerSecond =>
+            StageRules.ComputeProductionPerSecond(
+                _followers == null
+                    ? 0
+                    : _followers.Count,
+                PassiveEssencePerFollower);
+
         private void Awake()
         {
             RemainingTime =
@@ -68,17 +95,27 @@ namespace ProjectTheta.Stage
                     _timeLimitSeconds);
 
             CurrentEssence = 0;
+            RampageCaptureCount = 0;
+            RecoveredFollowerCount = 0;
+            _passiveTickTimer = 0f;
             State = StageState.Running;
 
             _playerHealth =
                 GetComponent<PlayerHealth>();
+
+            _followers =
+                GetComponent<FollowerManager>();
         }
 
         public void Configure(
-            PlayerHealth playerHealth)
+            PlayerHealth playerHealth,
+            FollowerManager followers)
         {
             _playerHealth =
                 playerHealth;
+
+            _followers =
+                followers;
 
             EvaluateState();
         }
@@ -96,6 +133,13 @@ namespace ProjectTheta.Stage
                     Time.deltaTime);
 
             EvaluateState();
+
+            if (!IsRunning)
+            {
+                return;
+            }
+
+            UpdatePassiveProduction();
         }
 
         public void AddEssence(
@@ -115,25 +159,21 @@ namespace ProjectTheta.Stage
             EvaluateState();
         }
 
-        public void HandleRampageCatch()
+        public void GrantRampageCaptureReward()
         {
             if (!IsRunning)
             {
                 return;
             }
 
-            CurrentEssence =
-                StageRules.AddEssence(
-                    CurrentEssence,
-                    RampageCaughtReward,
-                    TargetEssence);
+            RampageCaptureCount++;
 
-            if (_playerHealth != null)
-            {
-                _playerHealth.TakeDamage(
-                    RampageCaughtDamage);
-            }
+            AddEssence(
+                RampageCaughtReward);
+        }
 
+        public void RefreshState()
+        {
             EvaluateState();
         }
 
@@ -148,17 +188,21 @@ namespace ProjectTheta.Stage
                 return false;
             }
 
+            ImpulseMeter impulse =
+                follower.GetComponent<ImpulseMeter>();
+
+            impulse?.CancelForRecovery();
+
             if (!followerManager.ConsumeFollower(
                     follower))
             {
                 return false;
             }
 
-            CurrentEssence =
-                StageRules.AddEssence(
-                    CurrentEssence,
-                    RecoveryReward,
-                    TargetEssence);
+            RecoveredFollowerCount++;
+
+            AddEssence(
+                RecoveryReward);
 
             follower.gameObject.SetActive(
                 false);
@@ -184,6 +228,38 @@ namespace ProjectTheta.Stage
                 case StageState.Running:
                 default:
                     return "RUNNING";
+            }
+        }
+
+        private void UpdatePassiveProduction()
+        {
+            float interval =
+                Mathf.Max(
+                    0.05f,
+                    _passiveTickInterval);
+
+            _passiveTickTimer +=
+                Time.deltaTime;
+
+            while (_passiveTickTimer >=
+                   interval)
+            {
+                _passiveTickTimer -=
+                    interval;
+
+                int production =
+                    PassiveProductionPerSecond;
+
+                if (production > 0)
+                {
+                    AddEssence(
+                        production);
+                }
+
+                if (!IsRunning)
+                {
+                    break;
+                }
             }
         }
 

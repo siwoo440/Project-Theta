@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using ProjectTheta.Capture;
 using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
@@ -54,6 +55,14 @@ namespace ProjectTheta.Core
                 player.GetComponent<
                     FollowerManager>();
 
+            PlayerHealth health =
+                player.GetComponent<
+                    PlayerHealth>();
+
+            PlayerCaptureController capture =
+                player.GetComponent<
+                    PlayerCaptureController>();
+
             CreateCamera(
                 player.transform);
 
@@ -66,10 +75,25 @@ namespace ProjectTheta.Core
 
             CreateCursorController();
 
+            CreateCaptureHud(
+                capture);
+
+            CreateStageTelemetry(
+                stage,
+                followers,
+                health);
+
+            CreateStageEndController(
+                stage,
+                player,
+                player.GetComponent<HypnosisCaster>(),
+                capture);
+
             CreateHud(
                 player.GetComponent<HypnosisCaster>(),
                 stage,
-                player.GetComponent<PlayerHealth>());
+                health,
+                capture);
         }
 
         private PlayerSideViewController CreatePlayer()
@@ -136,7 +160,11 @@ namespace ProjectTheta.Core
                     StageSessionController>();
 
             stage.Configure(
-                health);
+                health,
+                player.GetComponent<FollowerManager>());
+
+            player.AddComponent<
+                PlayerCaptureController>();
 
             return controller;
         }
@@ -272,7 +300,6 @@ namespace ProjectTheta.Core
                 npc.AddComponent<HypnosisTarget>();
                 npc.AddComponent<FollowerController>();
                 npc.AddComponent<ImpulseMeter>();
-                npc.AddComponent<FollowerEssenceProducer>();
                 npc.AddComponent<NpcHypnosisStatusView>();
                 npc.AddComponent<DepthSortByY>();
 
@@ -324,10 +351,66 @@ namespace ProjectTheta.Core
                 HypnosisCursorController>();
         }
 
+        private void CreateCaptureHud(
+            PlayerCaptureController capture)
+        {
+            GameObject captureHud =
+                new GameObject(
+                    "CaptureHud");
+
+            CaptureHudView view =
+                captureHud.AddComponent<
+                    CaptureHudView>();
+
+            view.Configure(
+                capture);
+        }
+
+        private void CreateStageTelemetry(
+            StageSessionController stage,
+            FollowerManager followers,
+            PlayerHealth health)
+        {
+            GameObject telemetryObject =
+                new GameObject(
+                    "StageTelemetry");
+
+            StageTelemetry telemetry =
+                telemetryObject.AddComponent<
+                    StageTelemetry>();
+
+            telemetry.Configure(
+                stage,
+                followers,
+                health);
+        }
+
+        private void CreateStageEndController(
+            StageSessionController stage,
+            PlayerSideViewController movement,
+            HypnosisCaster hypnosis,
+            PlayerCaptureController capture)
+        {
+            GameObject endControllerObject =
+                new GameObject(
+                    "StageEndController");
+
+            StageEndController endController =
+                endControllerObject.AddComponent<
+                    StageEndController>();
+
+            endController.Configure(
+                stage,
+                movement,
+                hypnosis,
+                capture);
+        }
+
         private void CreateHud(
             HypnosisCaster caster,
             StageSessionController stage,
-            PlayerHealth health)
+            PlayerHealth health,
+            PlayerCaptureController capture)
         {
             GameObject hud =
                 new GameObject(
@@ -339,7 +422,8 @@ namespace ProjectTheta.Core
             prototypeHud.Configure(
                 caster,
                 stage,
-                health);
+                health,
+                capture);
         }
     }
 }

@@ -1,4 +1,4 @@
 ﻿<Solution>
-  <Project Path="ProjectTheta.Runtime.csproj" />
   <Project Path="ProjectTheta.Tests.EditMode.csproj" />
+  <Project Path="ProjectTheta.Runtime.csproj" />
 </Solution>

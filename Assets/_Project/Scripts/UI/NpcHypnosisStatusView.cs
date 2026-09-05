@@ -334,6 +334,7 @@ namespace ProjectTheta.UI
                 case ImpulseState.Danger:
                 case ImpulseState.Preparing:
                 case ImpulseState.Rampaging:
+                case ImpulseState.Capturing:
                     return new Color(
                         1.00f,
                         0.46f,
