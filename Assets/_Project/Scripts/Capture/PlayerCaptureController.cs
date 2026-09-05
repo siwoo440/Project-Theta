@@ -2,6 +2,7 @@ using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
+using ProjectTheta.Duel;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
 using ProjectTheta.Player;
@@ -88,10 +89,17 @@ namespace ProjectTheta.Capture
         public bool TryBeginCapture(
             ImpulseMeter captor)
         {
+            OpponentDuelController duel =
+                GetComponent<
+                    OpponentDuelController>();
+
             if (_isCapturing ||
                 captor == null ||
                 _stage == null ||
-                !_stage.IsRunning)
+                !_stage.IsRunning ||
+                (duel != null &&
+                 (duel.IsDueling ||
+                  duel.IsPlayerStunned)))
             {
                 return false;
             }

@@ -8,7 +8,7 @@ namespace ProjectTheta.Rival
     [RequireComponent(typeof(HypnosisTarget))]
     [RequireComponent(typeof(NpcAgent))]
     [RequireComponent(typeof(NpcSoftSeparation))]
-    public sealed class RivalFollowerController : MonoBehaviour
+    public sealed class PopularGuyFollowerController : MonoBehaviour
     {
         [SerializeField] private float _followSpeed = 4.8f;
         [SerializeField] private float _catchUpDistance = 4.0f;
@@ -20,7 +20,7 @@ namespace ProjectTheta.Rival
         private NpcAgent _agent;
         private NpcSoftSeparation _separation;
 
-        private RivalFollowerManager _manager;
+        private PopularGuyFollowerManager _manager;
         private Transform _leader;
         private int _slotIndex;
         private bool _isFollowing;
@@ -41,7 +41,7 @@ namespace ProjectTheta.Rival
         }
 
         public void BeginFollowing(
-            RivalFollowerManager manager,
+            PopularGuyFollowerManager manager,
             Transform leader,
             int slotIndex)
         {
@@ -98,7 +98,7 @@ namespace ProjectTheta.Rival
                 _manager == null ||
                 _leader == null ||
                 _target == null ||
-                _target.GeumtaeyangOwner == null)
+                _target.PopularGuyOwner == null)
             {
                 return;
             }

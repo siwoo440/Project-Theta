@@ -14,6 +14,9 @@ namespace ProjectTheta.Hypnosis
         [SerializeField] private float _playerReclaimPerSecond = 24f;
 
         private RuntimeCharacterSpriteAnimator _animator;
+        private bool _geumtaeyangTargeted;
+        private bool _popularGuyTargeted;
+        private float _popularGuyClaimNormalized;
 
         public float CurrentHypnosis { get; private set; }
 
@@ -30,7 +33,9 @@ namespace ProjectTheta.Hypnosis
         public NpcOwner Owner { get; private set; } =
             NpcOwner.Neutral;
 
-        public RivalController RivalOwner { get; private set; }
+        public RivalController GeumtaeyangOwner { get; private set; }
+
+        public PopularGuyController PopularGuyOwner { get; private set; }
 
         public bool IsHypnotized =>
             Owner !=
@@ -39,6 +44,21 @@ namespace ProjectTheta.Hypnosis
         public bool IsFollowing { get; private set; }
 
         public bool IsTargeted { get; private set; }
+
+        public bool IsOpponentTargeted =>
+            _geumtaeyangTargeted ||
+            _popularGuyTargeted;
+
+        public float PopularGuyClaimNormalized =>
+            Mathf.Clamp01(
+                _popularGuyClaimNormalized);
+
+        public NpcOwner PrimaryThreatOwner =>
+            _popularGuyTargeted
+                ? NpcOwner.PopularGuy
+                : _geumtaeyangTargeted
+                    ? NpcOwner.Geumtaeyang
+                    : NpcOwner.Neutral;
 
         public bool CanPlayerFocus =>
             OwnershipContestLogic.CanPlayerContest(
@@ -60,6 +80,45 @@ namespace ProjectTheta.Hypnosis
 
             _animator?.SetHighlighted(
                 IsTargeted);
+        }
+
+        public void SetOpponentTargeted(
+            NpcOwner opponent,
+            bool targeted)
+        {
+            switch (opponent)
+            {
+                case NpcOwner.Geumtaeyang:
+                    _geumtaeyangTargeted =
+                        targeted;
+                    break;
+
+                case NpcOwner.PopularGuy:
+                    _popularGuyTargeted =
+                        targeted;
+
+                    if (!targeted &&
+                        Owner ==
+                        NpcOwner.Neutral)
+                    {
+                        ClearPopularGuyClaimProgress();
+                    }
+                    break;
+            }
+        }
+
+        public void SetPopularGuyClaimProgress(
+            float normalized)
+        {
+            _popularGuyClaimNormalized =
+                Mathf.Clamp01(
+                    normalized);
+        }
+
+        public void ClearPopularGuyClaimProgress()
+        {
+            _popularGuyClaimNormalized =
+                0f;
         }
 
         public bool ApplyFocus(
@@ -91,28 +150,50 @@ namespace ProjectTheta.Hypnosis
                        MaximumHypnosis;
             }
 
-            if (Owner ==
-                NpcOwner.Rival)
-            {
-                CurrentHypnosis =
-                    OwnershipContestLogic.Drain(
-                        CurrentHypnosis,
-                        _playerReclaimPerSecond,
-                        deltaTime);
+            CurrentHypnosis =
+                OwnershipContestLogic.Drain(
+                    CurrentHypnosis,
+                    _playerReclaimPerSecond,
+                    deltaTime);
 
-                return OwnershipContestLogic.IsDepleted(
-                    CurrentHypnosis);
-            }
-
-            return false;
+            return OwnershipContestLogic.IsDepleted(
+                CurrentHypnosis);
         }
 
-        public bool ApplyRivalPressure(
+        public bool ApplyGeumtaeyangPressure(
             float drainPerSecond,
             float deltaTime)
         {
-            if (!OwnershipContestLogic.CanRivalContest(
-                    Owner) ||
+            if (!OwnershipContestLogic.
+                    CanGeumtaeyangContest(
+                        Owner) ||
+                !IsFollowing)
+            {
+                return false;
+            }
+
+            CurrentHypnosis =
+                OwnershipContestLogic.Drain(
+                    CurrentHypnosis,
+                    drainPerSecond,
+                    deltaTime);
+
+            return OwnershipContestLogic.IsDepleted(
+                CurrentHypnosis);
+        }
+
+        public bool ApplyPopularGuyPressure(
+            float drainPerSecond,
+            float deltaTime)
+        {
+            if (!PopularGuyLogic.CanContest(
+                    Owner))
+            {
+                return false;
+            }
+
+            if (Owner ==
+                    NpcOwner.Player &&
                 !IsFollowing)
             {
                 return false;
@@ -133,35 +214,75 @@ namespace ProjectTheta.Hypnosis
             Owner =
                 NpcOwner.Player;
 
-            RivalOwner = null;
+            GeumtaeyangOwner = null;
+            PopularGuyOwner = null;
 
             CurrentHypnosis =
                 MaximumHypnosis;
 
+            ClearPopularGuyClaimProgress();
+
             IsFollowing = false;
+
+            ClearOpponentTargeting();
 
             SetTargeted(
                 false);
         }
 
-        public void ClaimByRival(
-            RivalController rival)
+        public void ClaimByGeumtaeyang(
+            RivalController geumtaeyang)
         {
-            if (rival == null)
+            if (geumtaeyang == null)
             {
                 return;
             }
 
             Owner =
-                NpcOwner.Rival;
+                NpcOwner.Geumtaeyang;
 
-            RivalOwner =
-                rival;
+            GeumtaeyangOwner =
+                geumtaeyang;
+
+            PopularGuyOwner = null;
 
             CurrentHypnosis =
                 MaximumHypnosis;
 
+            ClearPopularGuyClaimProgress();
+
             IsFollowing = false;
+
+            ClearOpponentTargeting();
+
+            SetTargeted(
+                false);
+        }
+
+        public void ClaimByPopularGuy(
+            PopularGuyController popularGuy)
+        {
+            if (popularGuy == null)
+            {
+                return;
+            }
+
+            Owner =
+                NpcOwner.PopularGuy;
+
+            PopularGuyOwner =
+                popularGuy;
+
+            GeumtaeyangOwner = null;
+
+            CurrentHypnosis =
+                MaximumHypnosis;
+
+            ClearPopularGuyClaimProgress();
+
+            IsFollowing = false;
+
+            ClearOpponentTargeting();
 
             SetTargeted(
                 false);
@@ -197,14 +318,25 @@ namespace ProjectTheta.Hypnosis
             ResetToNeutral();
         }
 
+        private void ClearOpponentTargeting()
+        {
+            _geumtaeyangTargeted = false;
+            _popularGuyTargeted = false;
+        }
+
         private void ResetToNeutral()
         {
             Owner =
                 NpcOwner.Neutral;
 
-            RivalOwner = null;
+            GeumtaeyangOwner = null;
+            PopularGuyOwner = null;
 
             CurrentHypnosis = 0f;
+
+            ClearPopularGuyClaimProgress();
+
+            ClearOpponentTargeting();
 
             SetTargeted(
                 false);

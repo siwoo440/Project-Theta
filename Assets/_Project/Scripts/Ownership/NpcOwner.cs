@@ -4,6 +4,7 @@ namespace ProjectTheta.Ownership
     {
         Neutral,
         Player,
-        Rival
+        Geumtaeyang,
+        PopularGuy
     }
 }

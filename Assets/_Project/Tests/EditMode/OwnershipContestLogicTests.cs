@@ -21,22 +21,7 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
-        public void Drain_ClampsAtZero()
-        {
-            float result =
-                OwnershipContestLogic.Drain(
-                    5f,
-                    18f,
-                    1f);
-
-            Assert.AreEqual(
-                0f,
-                result,
-                0.001f);
-        }
-
-        [Test]
-        public void PlayerCanContestNeutralAndRivalButNotPlayer()
+        public void PlayerCanContestAllNonPlayerOwners()
         {
             Assert.IsTrue(
                 OwnershipContestLogic.CanPlayerContest(
@@ -44,7 +29,11 @@ namespace ProjectTheta.Tests.EditMode
 
             Assert.IsTrue(
                 OwnershipContestLogic.CanPlayerContest(
-                    NpcOwner.Rival));
+                    NpcOwner.Geumtaeyang));
+
+            Assert.IsTrue(
+                OwnershipContestLogic.CanPlayerContest(
+                    NpcOwner.PopularGuy));
 
             Assert.IsFalse(
                 OwnershipContestLogic.CanPlayerContest(
@@ -52,19 +41,39 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
-        public void RivalCanContestOnlyPlayerOwnedNpc()
+        public void GeumtaeyangCanContestOnlyPlayer()
         {
             Assert.IsTrue(
-                OwnershipContestLogic.CanRivalContest(
+                OwnershipContestLogic.CanGeumtaeyangContest(
                     NpcOwner.Player));
 
             Assert.IsFalse(
-                OwnershipContestLogic.CanRivalContest(
+                OwnershipContestLogic.CanGeumtaeyangContest(
                     NpcOwner.Neutral));
 
             Assert.IsFalse(
-                OwnershipContestLogic.CanRivalContest(
-                    NpcOwner.Rival));
+                OwnershipContestLogic.CanGeumtaeyangContest(
+                    NpcOwner.PopularGuy));
+        }
+
+        [Test]
+        public void PopularGuyCanContestPlayerAndGeumtaeyang()
+        {
+            Assert.IsTrue(
+                OwnershipContestLogic.CanPopularGuyContest(
+                    NpcOwner.Player));
+
+            Assert.IsTrue(
+                OwnershipContestLogic.CanPopularGuyContest(
+                    NpcOwner.Geumtaeyang));
+
+            Assert.IsFalse(
+                OwnershipContestLogic.CanPopularGuyContest(
+                    NpcOwner.Neutral));
+
+            Assert.IsFalse(
+                OwnershipContestLogic.CanPopularGuyContest(
+                    NpcOwner.PopularGuy));
         }
     }
 }

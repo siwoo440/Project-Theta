@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using ProjectTheta.Capture;
+using ProjectTheta.Duel;
 using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
@@ -64,13 +65,22 @@ namespace ProjectTheta.Core
                 player.GetComponent<
                     PlayerCaptureController>();
 
+            OpponentDuelController duel =
+                player.GetComponent<
+                    OpponentDuelController>();
+
             CreateCamera(
                 player.transform);
 
             CreateNpcs(
                 player);
 
-            CreateRival(
+            CreateGeumtaeyang(
+                stage,
+                followers,
+                player);
+
+            CreatePopularGuy(
                 stage,
                 followers,
                 player);
@@ -83,6 +93,9 @@ namespace ProjectTheta.Core
 
             CreateCaptureHud(
                 capture);
+
+            CreateDuelHud(
+                duel);
 
             CreateStageTelemetry(
                 stage,
@@ -171,6 +184,9 @@ namespace ProjectTheta.Core
 
             player.AddComponent<
                 PlayerCaptureController>();
+
+            player.AddComponent<
+                OpponentDuelController>();
 
             return controller;
         }
@@ -315,14 +331,14 @@ namespace ProjectTheta.Core
             }
         }
 
-        private void CreateRival(
+        private void CreateGeumtaeyang(
             StageSessionController stage,
             FollowerManager playerFollowers,
             PlayerSideViewController player)
         {
             GameObject rival =
                 new GameObject(
-                    "Rival_Male_01");
+                    "금태양_01");
 
             rival.transform.position =
                 new Vector3(
@@ -338,16 +354,12 @@ namespace ProjectTheta.Core
                     RuntimeCharacterSpriteAnimator>();
 
             animator.Configure(
-                "Characters/Player",
+                "Characters/Geumtaeyang",
                 8f,
                 390f);
 
             animator.SetBaseTint(
-                new Color(
-                    0.48f,
-                    0.72f,
-                    1.00f,
-                    1f));
+                Color.white);
 
             Rigidbody2D body =
                 rival.AddComponent<
@@ -396,6 +408,99 @@ namespace ProjectTheta.Core
                 stage,
                 playerFollowers,
                 animator);
+
+            OpponentDuelTarget duelTarget =
+                rival.AddComponent<
+                    OpponentDuelTarget>();
+
+            duelTarget.Configure(
+                OpponentDuelKind.Geumtaeyang);
+        }
+
+        private void CreatePopularGuy(
+            StageSessionController stage,
+            FollowerManager playerFollowers,
+            PlayerSideViewController player)
+        {
+            GameObject popularGuy =
+                new GameObject(
+                    "인기남_01");
+
+            popularGuy.transform.position =
+                new Vector3(
+                    8.2f,
+                    -2.8f,
+                    0f);
+
+            popularGuy.AddComponent<
+                SpriteRenderer>();
+
+            RuntimeCharacterSpriteAnimator animator =
+                popularGuy.AddComponent<
+                    RuntimeCharacterSpriteAnimator>();
+
+            animator.Configure(
+                "Characters/PopularGuy",
+                8f,
+                390f);
+
+            animator.SetBaseTint(
+                Color.white);
+
+            Rigidbody2D body =
+                popularGuy.AddComponent<
+                    Rigidbody2D>();
+
+            body.gravityScale =
+                0f;
+
+            body.constraints =
+                RigidbodyConstraints2D.FreezeRotation;
+
+            body.collisionDetectionMode =
+                CollisionDetectionMode2D.Continuous;
+
+            body.interpolation =
+                RigidbodyInterpolation2D.Interpolate;
+
+            BoxCollider2D collider =
+                popularGuy.AddComponent<
+                    BoxCollider2D>();
+
+            collider.size =
+                new Vector2(
+                    0.52f,
+                    0.34f);
+
+            collider.offset =
+                new Vector2(
+                    0f,
+                    0.17f);
+
+            collider.isTrigger =
+                true;
+
+            popularGuy.AddComponent<
+                DepthSortByY>();
+
+            popularGuy.AddComponent<
+                PopularGuyFollowerManager>();
+
+            PopularGuyController controller =
+                popularGuy.AddComponent<
+                    PopularGuyController>();
+
+            controller.Configure(
+                stage,
+                playerFollowers,
+                animator);
+
+            OpponentDuelTarget duelTarget =
+                popularGuy.AddComponent<
+                    OpponentDuelTarget>();
+
+            duelTarget.Configure(
+                OpponentDuelKind.PopularGuy);
         }
 
         private void CreateRecoveryPoint(
@@ -453,6 +558,21 @@ namespace ProjectTheta.Core
 
             view.Configure(
                 capture);
+        }
+
+        private void CreateDuelHud(
+            OpponentDuelController duel)
+        {
+            GameObject duelHud =
+                new GameObject(
+                    "OpponentDuelHud");
+
+            OpponentDuelHud view =
+                duelHud.AddComponent<
+                    OpponentDuelHud>();
+
+            view.Configure(
+                duel);
         }
 
         private void CreateStageTelemetry(

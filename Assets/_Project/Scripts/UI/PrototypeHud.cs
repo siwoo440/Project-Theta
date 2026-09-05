@@ -19,7 +19,8 @@ namespace ProjectTheta.UI
         private PlayerHealth _health;
         private PlayerCaptureController _capture;
         private StageTelemetry _telemetry;
-        private RivalController _rival;
+        private RivalController _geumtaeyang;
+        private PopularGuyController _popularGuy;
 
         private GUIStyle _centerLabelStyle;
         private GUIStyle _centerTitleStyle;
@@ -40,8 +41,12 @@ namespace ProjectTheta.UI
             _telemetry =
                 FindFirstObjectByType<StageTelemetry>();
 
-            _rival =
+            _geumtaeyang =
                 FindFirstObjectByType<RivalController>();
+
+            _popularGuy =
+                FindFirstObjectByType<
+                    PopularGuyController>();
 
             _followers =
                 caster == null
@@ -218,8 +223,8 @@ namespace ProjectTheta.UI
                     x,
                     y,
                     width,
-                    374f),
-                "Day 08 Debug");
+                    424f),
+                "Day 09 Debug");
 
             if (_followers != null)
             {
@@ -282,25 +287,32 @@ namespace ProjectTheta.UI
                     "회수 지점: 복도 오른쪽 보라색 영역");
             }
 
-            DrawRivalDebug(
+            DrawOpponentDebug(
                 x,
                 y,
                 width);
         }
 
-        private void DrawRivalDebug(
+        private void DrawOpponentDebug(
             float x,
             float y,
             float width)
         {
-            if (_rival == null)
+            if (_geumtaeyang == null)
             {
-                _rival =
+                _geumtaeyang =
                     FindFirstObjectByType<
                         RivalController>();
             }
 
-            if (_rival == null)
+            if (_popularGuy == null)
+            {
+                _popularGuy =
+                    FindFirstObjectByType<
+                        PopularGuyController>();
+            }
+
+            if (_geumtaeyang == null)
             {
                 GUI.Label(
                     new Rect(
@@ -308,26 +320,55 @@ namespace ProjectTheta.UI
                         y + 326f,
                         width - 28f,
                         22f),
-                    "라이벌: 없음");
+                    "금태양: 없음");
+            }
+            else
+            {
+                GUI.Label(
+                    new Rect(
+                        x + 14f,
+                        y + 326f,
+                        width - 28f,
+                        22f),
+                    $"금태양: {_geumtaeyang.State} / 보유 {_geumtaeyang.OwnedFollowerCount}명");
 
-                return;
+                GUI.Label(
+                    new Rect(
+                        x + 14f,
+                        y + 348f,
+                        width - 28f,
+                        22f),
+                    $"금태양 대상: {_geumtaeyang.CurrentTargetName} / 지배 {_geumtaeyang.CurrentTargetControlNormalized * 100f:0}%");
             }
 
-            GUI.Label(
-                new Rect(
-                    x + 14f,
-                    y + 326f,
-                    width - 28f,
-                    22f),
-                $"라이벌: {_rival.State} / 보유 {_rival.OwnedFollowerCount}명");
+            if (_popularGuy == null)
+            {
+                GUI.Label(
+                    new Rect(
+                        x + 14f,
+                        y + 370f,
+                        width - 28f,
+                        22f),
+                    "인기남: 없음");
+            }
+            else
+            {
+                GUI.Label(
+                    new Rect(
+                        x + 14f,
+                        y + 370f,
+                        width - 28f,
+                        22f),
+                    $"인기남: {_popularGuy.State} / {_popularGuy.CurrentModeLabel} / 보유 {_popularGuy.OwnedFollowerCount}명");
 
-            GUI.Label(
-                new Rect(
-                    x + 14f,
-                    y + 348f,
-                    width - 28f,
-                    22f),
-                $"쟁탈 대상: {_rival.CurrentTargetName} / 지배 {_rival.CurrentTargetControlNormalized * 100f:0}%");
+                GUI.Label(
+                    new Rect(
+                        x + 14f,
+                        y + 392f,
+                        width - 28f,
+                        22f),
+                    $"인기남 대상: {_popularGuy.CurrentTargetName} / 지배 {_popularGuy.CurrentTargetControlNormalized * 100f:0}%");
+            }
         }
 
         private void DrawTargetDebug(
