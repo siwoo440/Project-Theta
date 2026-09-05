@@ -142,6 +142,23 @@ namespace ProjectTheta.Companion
             _agent?.ReturnToRoaming();
         }
 
+        public void StopFollowingForOwnershipTransfer()
+        {
+            _isFollowing = false;
+            _isUnderExternalControl = false;
+            _manager = null;
+            _leader = null;
+
+            if (_body != null)
+            {
+                _body.linearVelocity =
+                    Vector2.zero;
+            }
+
+            _target?.StopPlayerFollowingForTransfer();
+            _agent?.EnterFollowing();
+        }
+
         private void FixedUpdate()
         {
             if (!_isFollowing ||

@@ -7,6 +7,7 @@ using ProjectTheta.Impulse;
 using ProjectTheta.NPC;
 using ProjectTheta.Player;
 using ProjectTheta.Stage;
+using ProjectTheta.Rival;
 using ProjectTheta.UI;
 
 namespace ProjectTheta.Core
@@ -67,6 +68,11 @@ namespace ProjectTheta.Core
                 player.transform);
 
             CreateNpcs(
+                player);
+
+            CreateRival(
+                stage,
+                followers,
                 player);
 
             CreateRecoveryPoint(
@@ -307,6 +313,89 @@ namespace ProjectTheta.Core
                     player.transform,
                     animator);
             }
+        }
+
+        private void CreateRival(
+            StageSessionController stage,
+            FollowerManager playerFollowers,
+            PlayerSideViewController player)
+        {
+            GameObject rival =
+                new GameObject(
+                    "Rival_Male_01");
+
+            rival.transform.position =
+                new Vector3(
+                    -4.0f,
+                    -2.7f,
+                    0f);
+
+            rival.AddComponent<
+                SpriteRenderer>();
+
+            RuntimeCharacterSpriteAnimator animator =
+                rival.AddComponent<
+                    RuntimeCharacterSpriteAnimator>();
+
+            animator.Configure(
+                "Characters/Player",
+                8f,
+                390f);
+
+            animator.SetBaseTint(
+                new Color(
+                    0.48f,
+                    0.72f,
+                    1.00f,
+                    1f));
+
+            Rigidbody2D body =
+                rival.AddComponent<
+                    Rigidbody2D>();
+
+            body.gravityScale =
+                0f;
+
+            body.constraints =
+                RigidbodyConstraints2D.FreezeRotation;
+
+            body.collisionDetectionMode =
+                CollisionDetectionMode2D.Continuous;
+
+            body.interpolation =
+                RigidbodyInterpolation2D.Interpolate;
+
+            BoxCollider2D collider =
+                rival.AddComponent<
+                    BoxCollider2D>();
+
+            collider.size =
+                new Vector2(
+                    0.52f,
+                    0.34f);
+
+            collider.offset =
+                new Vector2(
+                    0f,
+                    0.17f);
+
+            collider.isTrigger =
+                true;
+
+            rival.AddComponent<
+                DepthSortByY>();
+
+            rival.AddComponent<
+                RivalFollowerManager>();
+
+            RivalController controller =
+                rival.AddComponent<
+                    RivalController>();
+
+            controller.Configure(
+                stage,
+                playerFollowers,
+                animator);
         }
 
         private void CreateRecoveryPoint(

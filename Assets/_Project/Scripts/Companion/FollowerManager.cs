@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
+using ProjectTheta.Ownership;
 using ProjectTheta.Player;
 
 namespace ProjectTheta.Companion
@@ -64,6 +65,8 @@ namespace ProjectTheta.Companion
             HypnosisTarget target)
         {
             if (target == null ||
+                target.Owner !=
+                NpcOwner.Player ||
                 target.IsFollowing)
             {
                 return false;
@@ -77,17 +80,44 @@ namespace ProjectTheta.Companion
                 return false;
             }
 
-            if (_followers.Contains(follower))
+            if (_followers.Contains(
+                    follower))
             {
                 return true;
             }
 
-            _followers.Add(follower);
+            _followers.Add(
+                follower);
 
             follower.BeginFollowing(
                 this,
                 transform,
                 _followers.Count - 1);
+
+            return true;
+        }
+
+        public bool TransferOutFollower(
+            FollowerController follower)
+        {
+            if (follower == null)
+            {
+                return false;
+            }
+
+            int index =
+                _followers.IndexOf(
+                    follower);
+
+            if (index >= 0)
+            {
+                _followers.RemoveAt(
+                    index);
+
+                ReindexFollowers();
+            }
+
+            follower.StopFollowingForOwnershipTransfer();
 
             return true;
         }
@@ -178,7 +208,8 @@ namespace ProjectTheta.Companion
                 return false;
             }
 
-            _followers.RemoveAt(index);
+            _followers.RemoveAt(
+                index);
 
             if (stopFollowing)
             {
@@ -201,7 +232,8 @@ namespace ProjectTheta.Companion
 
                 if (follower != null)
                 {
-                    follower.SetSlotIndex(i);
+                    follower.SetSlotIndex(
+                        i);
                 }
             }
         }

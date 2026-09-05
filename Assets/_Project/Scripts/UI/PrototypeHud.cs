@@ -6,6 +6,7 @@ using ProjectTheta.Impulse;
 using ProjectTheta.NPC;
 using ProjectTheta.Player;
 using ProjectTheta.Stage;
+using ProjectTheta.Rival;
 
 namespace ProjectTheta.UI
 {
@@ -18,6 +19,7 @@ namespace ProjectTheta.UI
         private PlayerHealth _health;
         private PlayerCaptureController _capture;
         private StageTelemetry _telemetry;
+        private RivalController _rival;
 
         private GUIStyle _centerLabelStyle;
         private GUIStyle _centerTitleStyle;
@@ -37,6 +39,9 @@ namespace ProjectTheta.UI
 
             _telemetry =
                 FindFirstObjectByType<StageTelemetry>();
+
+            _rival =
+                FindFirstObjectByType<RivalController>();
 
             _followers =
                 caster == null
@@ -213,8 +218,8 @@ namespace ProjectTheta.UI
                     x,
                     y,
                     width,
-                    326f),
-                "Day 07 Debug");
+                    374f),
+                "Day 08 Debug");
 
             if (_followers != null)
             {
@@ -276,6 +281,53 @@ namespace ProjectTheta.UI
                         22f),
                     "회수 지점: 복도 오른쪽 보라색 영역");
             }
+
+            DrawRivalDebug(
+                x,
+                y,
+                width);
+        }
+
+        private void DrawRivalDebug(
+            float x,
+            float y,
+            float width)
+        {
+            if (_rival == null)
+            {
+                _rival =
+                    FindFirstObjectByType<
+                        RivalController>();
+            }
+
+            if (_rival == null)
+            {
+                GUI.Label(
+                    new Rect(
+                        x + 14f,
+                        y + 326f,
+                        width - 28f,
+                        22f),
+                    "라이벌: 없음");
+
+                return;
+            }
+
+            GUI.Label(
+                new Rect(
+                    x + 14f,
+                    y + 326f,
+                    width - 28f,
+                    22f),
+                $"라이벌: {_rival.State} / 보유 {_rival.OwnedFollowerCount}명");
+
+            GUI.Label(
+                new Rect(
+                    x + 14f,
+                    y + 348f,
+                    width - 28f,
+                    22f),
+                $"쟁탈 대상: {_rival.CurrentTargetName} / 지배 {_rival.CurrentTargetControlNormalized * 100f:0}%");
         }
 
         private void DrawTargetDebug(

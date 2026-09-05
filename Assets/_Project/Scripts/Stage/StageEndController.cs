@@ -5,6 +5,7 @@ using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
 using ProjectTheta.NPC;
 using ProjectTheta.Player;
+using ProjectTheta.Rival;
 
 namespace ProjectTheta.Stage
 {
@@ -115,6 +116,36 @@ namespace ProjectTheta.Stage
                 if (agents[i] != null)
                 {
                     agents[i].enabled =
+                        false;
+                }
+            }
+
+            RivalController[] rivals =
+                FindObjectsByType<RivalController>(
+                    FindObjectsSortMode.None);
+
+            for (int i = 0;
+                 i < rivals.Length;
+                 i++)
+            {
+                if (rivals[i] != null)
+                {
+                    rivals[i].enabled =
+                        false;
+                }
+            }
+
+            RivalFollowerController[] rivalFollowers =
+                FindObjectsByType<RivalFollowerController>(
+                    FindObjectsSortMode.None);
+
+            for (int i = 0;
+                 i < rivalFollowers.Length;
+                 i++)
+            {
+                if (rivalFollowers[i] != null)
+                {
+                    rivalFollowers[i].enabled =
                         false;
                 }
             }

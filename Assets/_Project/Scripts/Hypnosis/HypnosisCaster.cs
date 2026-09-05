@@ -3,7 +3,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 using ProjectTheta.Companion;
+using ProjectTheta.Ownership;
 using ProjectTheta.Player;
+using ProjectTheta.Rival;
 
 namespace ProjectTheta.Hypnosis
 {
@@ -58,7 +60,7 @@ namespace ProjectTheta.Hypnosis
             }
 
             bool completed =
-                _currentTarget.ApplyFocus(
+                _currentTarget.ApplyPlayerFocus(
                     Time.deltaTime);
 
             if (!completed)
@@ -71,11 +73,35 @@ namespace ProjectTheta.Hypnosis
 
             ChangeTarget(null);
 
+            ClaimForPlayer(
+                completedTarget);
+        }
+
+        private void ClaimForPlayer(
+            HypnosisTarget target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            if (target.Owner ==
+                NpcOwner.Rival)
+            {
+                RivalController rival =
+                    target.RivalOwner;
+
+                rival?.ReleaseOwnedTarget(
+                    target);
+            }
+
+            target.ClaimByPlayer();
+
             if (_followerManager == null ||
                 !_followerManager.TryAdd(
-                    completedTarget))
+                    target))
             {
-                completedTarget.ResetHypnosis();
+                target.ResetHypnosis();
             }
         }
 
@@ -98,8 +124,9 @@ namespace ProjectTheta.Hypnosis
                     targets[i];
 
                 if (target == null ||
-                    target.IsHypnotized ||
-                    target.IsFollowing)
+                    !target.isActiveAndEnabled ||
+                    target.Owner ==
+                    NpcOwner.Player)
                 {
                     continue;
                 }
@@ -126,7 +153,8 @@ namespace ProjectTheta.Hypnosis
                     continue;
                 }
 
-                best = target;
+                best =
+                    target;
 
                 bestDistanceSquared =
                     distanceSquared;
@@ -171,7 +199,8 @@ namespace ProjectTheta.Hypnosis
                 Mouse.current != null &&
                 Mouse.current.leftButton.isPressed;
 
-            return keyboard || mouse;
+            return keyboard ||
+                   mouse;
 #else
             return Input.GetKey(KeyCode.E) ||
                    Input.GetMouseButton(0);
