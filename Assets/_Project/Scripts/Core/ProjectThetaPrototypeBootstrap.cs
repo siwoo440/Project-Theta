@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
+using ProjectTheta.Impulse;
 using ProjectTheta.NPC;
 using ProjectTheta.Player;
 using ProjectTheta.UI;
@@ -112,6 +113,7 @@ namespace ProjectTheta.Core
                     PlayerSideViewController>();
 
             player.AddComponent<FollowerManager>();
+            player.AddComponent<RampageCoordinator>();
             player.AddComponent<HypnosisCaster>();
 
             return controller;
@@ -256,6 +258,7 @@ namespace ProjectTheta.Core
 
                 npc.AddComponent<HypnosisTarget>();
                 npc.AddComponent<FollowerController>();
+                npc.AddComponent<ImpulseMeter>();
                 npc.AddComponent<NpcHypnosisStatusView>();
                 npc.AddComponent<DepthSortByY>();
 

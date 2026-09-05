@@ -9,6 +9,7 @@ namespace ProjectTheta.UI
         MonoBehaviour
     {
         [SerializeField] private float _frameDuration = 0.14f;
+        [SerializeField] private float _hypnosisCursorScale = 0.5f;
 
         private Texture2D _coinCursor;
         private Texture2D[] _hypnosisCursors;
@@ -33,17 +34,20 @@ namespace ProjectTheta.UI
             _coinCursor =
                 CreateCursorCompatibleTexture(
                     coinSource,
-                    "CoinCursor_Runtime");
+                    "CoinCursor_Runtime",
+                    0.5f);
 
             _hypnosisCursors =
                 new Texture2D[2]
                 {
                     CreateCursorCompatibleTexture(
                         hypnosisSource0,
-                        "HypnosisCursor_0_Runtime"),
+                        "HypnosisCursor_0_Runtime",
+                        _hypnosisCursorScale),
                     CreateCursorCompatibleTexture(
                         hypnosisSource1,
-                        "HypnosisCursor_1_Runtime")
+                        "HypnosisCursor_1_Runtime",
+                        _hypnosisCursorScale)
                 };
 
             Cursor.visible = true;
@@ -146,7 +150,8 @@ namespace ProjectTheta.UI
         private static Texture2D
             CreateCursorCompatibleTexture(
                 Texture2D source,
-                string textureName)
+                string textureName,
+                float scale)
         {
             if (source == null)
             {
@@ -156,13 +161,33 @@ namespace ProjectTheta.UI
                 return null;
             }
 
+            float safeScale =
+                Mathf.Clamp(
+                    scale,
+                    0.1f,
+                    1f);
+
+            int targetWidth =
+                Mathf.Max(
+                    1,
+                    Mathf.RoundToInt(
+                        source.width *
+                        safeScale));
+
+            int targetHeight =
+                Mathf.Max(
+                    1,
+                    Mathf.RoundToInt(
+                        source.height *
+                        safeScale));
+
             RenderTexture previous =
                 RenderTexture.active;
 
             RenderTexture temporary =
                 RenderTexture.GetTemporary(
-                    source.width,
-                    source.height,
+                    targetWidth,
+                    targetHeight,
                     0,
                     RenderTextureFormat.ARGB32,
                     RenderTextureReadWrite.Default);
@@ -178,8 +203,8 @@ namespace ProjectTheta.UI
 
                 Texture2D compatible =
                     new Texture2D(
-                        source.width,
-                        source.height,
+                        targetWidth,
+                        targetHeight,
                         TextureFormat.RGBA32,
                         false,
                         false)
@@ -195,15 +220,12 @@ namespace ProjectTheta.UI
                     new Rect(
                         0f,
                         0f,
-                        source.width,
-                        source.height),
+                        targetWidth,
+                        targetHeight),
                     0,
                     0,
                     false);
 
-                // false, false:
-                // 1) mip chain을 만들지 않음
-                // 2) CPU Read/Write 가능 상태를 유지
                 compatible.Apply(
                     false,
                     false);
