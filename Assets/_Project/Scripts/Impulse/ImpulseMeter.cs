@@ -2,6 +2,7 @@ using UnityEngine;
 using ProjectTheta.Companion;
 using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
+using ProjectTheta.Stage;
 
 namespace ProjectTheta.Impulse
 {
@@ -34,9 +35,11 @@ namespace ProjectTheta.Impulse
 
         private Transform _player;
         private RampageCoordinator _coordinator;
+        private StageSessionController _stage;
 
         private float _buildRateMultiplier = 1f;
         private float _phaseRemaining;
+        private bool _catchRewardGranted;
 
         public float CurrentImpulse { get; private set; }
 
@@ -88,10 +91,21 @@ namespace ProjectTheta.Impulse
         {
             ResolveRuntimeReferences();
 
+            if (_stage != null &&
+                !_stage.IsRunning)
+            {
+                if (_body != null)
+                {
+                    _body.linearVelocity =
+                        Vector2.zero;
+                }
+
+                return;
+            }
+
             if (!IsFollowingActive)
             {
                 ResetWhenInactive();
-
                 return;
             }
 
@@ -153,7 +167,6 @@ namespace ProjectTheta.Impulse
                     this))
             {
                 BeginPreparing();
-
                 return;
             }
 
@@ -169,8 +182,10 @@ namespace ProjectTheta.Impulse
             _phaseRemaining =
                 _prepareDuration;
 
-            TakeControl();
+            _catchRewardGranted =
+                false;
 
+            TakeControl();
             FacePlayer();
         }
 
@@ -201,6 +216,9 @@ namespace ProjectTheta.Impulse
             _phaseRemaining =
                 _rampageDuration;
 
+            _catchRewardGranted =
+                false;
+
             TakeControl();
         }
 
@@ -213,7 +231,6 @@ namespace ProjectTheta.Impulse
                 _player == null)
             {
                 BeginRecovering();
-
                 return;
             }
 
@@ -229,8 +246,8 @@ namespace ProjectTheta.Impulse
             if (distance <=
                 _catchDistance)
             {
+                HandlePlayerCaught();
                 BeginRecovering();
-
                 return;
             }
 
@@ -250,6 +267,19 @@ namespace ProjectTheta.Impulse
             {
                 BeginRecovering();
             }
+        }
+
+        private void HandlePlayerCaught()
+        {
+            if (_catchRewardGranted)
+            {
+                return;
+            }
+
+            _catchRewardGranted =
+                true;
+
+            _stage?.HandleRampageCatch();
         }
 
         private void BeginRecovering()
@@ -340,6 +370,7 @@ namespace ProjectTheta.Impulse
 
             CurrentImpulse = 0f;
             _phaseRemaining = 0f;
+            _catchRewardGranted = false;
             State = ImpulseState.Calm;
         }
 
@@ -376,6 +407,13 @@ namespace ProjectTheta.Impulse
                 _coordinator =
                     FindFirstObjectByType<
                         RampageCoordinator>();
+            }
+
+            if (_stage == null)
+            {
+                _stage =
+                    FindFirstObjectByType<
+                        StageSessionController>();
             }
         }
 

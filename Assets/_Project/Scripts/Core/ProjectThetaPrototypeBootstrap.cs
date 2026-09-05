@@ -5,6 +5,7 @@ using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
 using ProjectTheta.NPC;
 using ProjectTheta.Player;
+using ProjectTheta.Stage;
 using ProjectTheta.UI;
 
 namespace ProjectTheta.Core
@@ -45,16 +46,30 @@ namespace ProjectTheta.Core
             PlayerSideViewController player =
                 CreatePlayer();
 
+            StageSessionController stage =
+                player.GetComponent<
+                    StageSessionController>();
+
+            FollowerManager followers =
+                player.GetComponent<
+                    FollowerManager>();
+
             CreateCamera(
                 player.transform);
 
             CreateNpcs(
                 player);
 
+            CreateRecoveryPoint(
+                stage,
+                followers);
+
             CreateCursorController();
 
             CreateHud(
-                player.GetComponent<HypnosisCaster>());
+                player.GetComponent<HypnosisCaster>(),
+                stage,
+                player.GetComponent<PlayerHealth>());
         }
 
         private PlayerSideViewController CreatePlayer()
@@ -83,13 +98,10 @@ namespace ProjectTheta.Core
                 player.AddComponent<Rigidbody2D>();
 
             body.gravityScale = 0f;
-
             body.constraints =
                 RigidbodyConstraints2D.FreezeRotation;
-
             body.collisionDetectionMode =
                 CollisionDetectionMode2D.Continuous;
-
             body.interpolation =
                 RigidbodyInterpolation2D.Interpolate;
 
@@ -116,6 +128,16 @@ namespace ProjectTheta.Core
             player.AddComponent<RampageCoordinator>();
             player.AddComponent<HypnosisCaster>();
 
+            PlayerHealth health =
+                player.AddComponent<PlayerHealth>();
+
+            StageSessionController stage =
+                player.AddComponent<
+                    StageSessionController>();
+
+            stage.Configure(
+                health);
+
             return controller;
         }
 
@@ -139,10 +161,7 @@ namespace ProjectTheta.Core
             }
 
             camera.orthographic = true;
-
-            camera.orthographicSize =
-                4.65f;
-
+            camera.orthographicSize = 4.65f;
             camera.backgroundColor =
                 new Color(
                     0.16f,
@@ -215,20 +234,14 @@ namespace ProjectTheta.Core
                 Rigidbody2D body =
                     npc.AddComponent<Rigidbody2D>();
 
-                body.gravityScale =
-                    0f;
-
+                body.gravityScale = 0f;
                 body.constraints =
                     RigidbodyConstraints2D.FreezeRotation;
-
                 body.collisionDetectionMode =
                     CollisionDetectionMode2D.Continuous;
-
                 body.interpolation =
                     RigidbodyInterpolation2D.Interpolate;
-
-                body.mass =
-                    0.65f;
+                body.mass = 0.65f;
 
                 BoxCollider2D collider =
                     npc.AddComponent<BoxCollider2D>();
@@ -259,6 +272,7 @@ namespace ProjectTheta.Core
                 npc.AddComponent<HypnosisTarget>();
                 npc.AddComponent<FollowerController>();
                 npc.AddComponent<ImpulseMeter>();
+                npc.AddComponent<FollowerEssenceProducer>();
                 npc.AddComponent<NpcHypnosisStatusView>();
                 npc.AddComponent<DepthSortByY>();
 
@@ -266,6 +280,32 @@ namespace ProjectTheta.Core
                     player.transform,
                     animator);
             }
+        }
+
+        private void CreateRecoveryPoint(
+            StageSessionController stage,
+            FollowerManager followers)
+        {
+            GameObject recovery =
+                new GameObject(
+                    "RecoveryPoint");
+
+            recovery.AddComponent<
+                SpriteRenderer>();
+
+            RecoveryPoint point =
+                recovery.AddComponent<
+                    RecoveryPoint>();
+
+            point.Configure(
+                stage,
+                followers,
+                new Vector2(
+                    16.2f,
+                    -2.15f),
+                new Vector2(
+                    1.8f,
+                    5.0f));
         }
 
         private void CreateCursorController()
@@ -285,7 +325,9 @@ namespace ProjectTheta.Core
         }
 
         private void CreateHud(
-            HypnosisCaster caster)
+            HypnosisCaster caster,
+            StageSessionController stage,
+            PlayerHealth health)
         {
             GameObject hud =
                 new GameObject(
@@ -295,7 +337,9 @@ namespace ProjectTheta.Core
                 hud.AddComponent<PrototypeHud>();
 
             prototypeHud.Configure(
-                caster);
+                caster,
+                stage,
+                health);
         }
     }
 }

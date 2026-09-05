@@ -3,6 +3,8 @@ using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
 using ProjectTheta.NPC;
+using ProjectTheta.Player;
+using ProjectTheta.Stage;
 
 namespace ProjectTheta.UI
 {
@@ -11,11 +13,22 @@ namespace ProjectTheta.UI
         private HypnosisCaster _caster;
         private FollowerManager _followers;
         private RampageCoordinator _coordinator;
+        private StageSessionController _stage;
+        private PlayerHealth _health;
+
+        private GUIStyle _centerLabelStyle;
+        private GUIStyle _centerTitleStyle;
+        private GUIStyle _leftLabelStyle;
+        private GUIStyle _resultStyle;
 
         public void Configure(
-            HypnosisCaster caster)
+            HypnosisCaster caster,
+            StageSessionController stage,
+            PlayerHealth health)
         {
             _caster = caster;
+            _stage = stage;
+            _health = health;
 
             _followers =
                 caster == null
@@ -31,96 +44,234 @@ namespace ProjectTheta.UI
 
         private void OnGUI()
         {
-            GUI.Box(
-                new Rect(
-                    12f,
-                    12f,
-                    410f,
-                    286f),
-                "Project θ - Day 05");
+            EnsureStyles();
 
-            GUI.Label(
-                new Rect(
-                    24f,
-                    42f,
-                    380f,
-                    22f),
-                "이동: W/A/S/D 또는 방향키");
-
-            GUI.Label(
-                new Rect(
-                    24f,
-                    64f,
-                    380f,
-                    22f),
-                "대시: Left Shift / Space");
-
-            GUI.Label(
-                new Rect(
-                    24f,
-                    86f,
-                    380f,
-                    22f),
-                "최면: E 또는 마우스 왼쪽 버튼 유지");
-
-            GUI.Label(
-                new Rect(
-                    24f,
-                    108f,
-                    380f,
-                    22f),
-                "폭주 경고: ! 아이콘 / 종료 후 하트 복귀");
-
-            DrawFollowerStatus();
-            DrawHypnosisStatus();
-            DrawImpulseStatus();
+            DrawHealthHud();
+            DrawStageHud();
+            DrawDebugHud();
         }
 
-        private void DrawFollowerStatus()
+        private void DrawHealthHud()
         {
-            if (_followers == null)
+            if (_health == null ||
+                _stage == null)
             {
-                GUI.Label(
-                    new Rect(
-                        24f,
-                        136f,
-                        380f,
-                        22f),
-                    "동행 인원: -");
-
                 return;
             }
 
+            const float x = 20f;
+            const float y = 18f;
+            const float width = 280f;
+            const float barHeight = 22f;
+
             GUI.Label(
                 new Rect(
-                    24f,
-                    136f,
-                    380f,
-                    22f),
-                $"동행 인원: {_followers.Count}");
+                    x,
+                    y,
+                    width,
+                    24f),
+                $"HP  {_health.CurrentHealth} / {_health.MaximumHealth}",
+                _leftLabelStyle);
 
-            if (_followers.Count > 0)
+            DrawProgressBar(
+                new Rect(
+                    x,
+                    y + 27f,
+                    width,
+                    barHeight),
+                _health.HealthNormalized,
+                new Color(
+                    0.88f,
+                    0.20f,
+                    0.27f,
+                    1f),
+                new Color(
+                    0.14f,
+                    0.06f,
+                    0.07f,
+                    0.92f));
+
+            GUI.Label(
+                new Rect(
+                    x,
+                    y + 54f,
+                    width,
+                    20f),
+                $"폭주 피격: HP -{_stage.RampageCaughtDamage} / 정기 +{_stage.RampageCaughtReward}",
+                _leftLabelStyle);
+        }
+
+        private void DrawStageHud()
+        {
+            if (_stage == null)
+            {
+                return;
+            }
+
+            float width =
+                Mathf.Min(
+                    520f,
+                    Screen.width * 0.42f);
+
+            float x =
+                (Screen.width - width) *
+                0.5f;
+
+            float y = 12f;
+
+            GUI.Label(
+                new Rect(
+                    x,
+                    y,
+                    width,
+                    28f),
+                $"남은 시간  {FormatTime(_stage.RemainingTime)}",
+                _centerTitleStyle);
+
+            GUI.Label(
+                new Rect(
+                    x,
+                    y + 31f,
+                    width,
+                    24f),
+                $"정기  {_stage.CurrentEssence} / {_stage.TargetEssence}",
+                _centerLabelStyle);
+
+            DrawProgressBar(
+                new Rect(
+                    x,
+                    y + 57f,
+                    width,
+                    24f),
+                _stage.EssenceNormalized,
+                new Color(
+                    0.70f,
+                    0.25f,
+                    1.00f,
+                    1f),
+                new Color(
+                    0.11f,
+                    0.06f,
+                    0.16f,
+                    0.94f));
+
+            int followerCount =
+                _followers == null
+                    ? 0
+                    : _followers.Count;
+
+            int production =
+                StageRules.ComputeProductionPerSecond(
+                    followerCount,
+                    _stage.PassiveEssencePerFollower);
+
+            GUI.Label(
+                new Rect(
+                    x,
+                    y + 84f,
+                    width,
+                    22f),
+                $"지속 생산 +{production} / sec   |   회수 +{_stage.RecoveryReward}",
+                _centerLabelStyle);
+
+            if (!_stage.IsRunning)
             {
                 GUI.Label(
                     new Rect(
-                        220f,
-                        136f,
-                        180f,
-                        22f),
-                    $"최저 유지도: {_followers.LowestStabilityNormalized * 100f:0}%");
+                        x,
+                        y + 112f,
+                        width,
+                        44f),
+                    _stage.GetStateLabel(),
+                    _resultStyle);
             }
         }
 
-        private void DrawHypnosisStatus()
+        private void DrawDebugHud()
+        {
+            const float width = 330f;
+            float x =
+                Mathf.Max(
+                    0f,
+                    Screen.width -
+                    width -
+                    18f);
+
+            const float y = 18f;
+
+            GUI.Box(
+                new Rect(
+                    x,
+                    y,
+                    width,
+                    232f),
+                "Day 06 Debug");
+
+            if (_followers != null)
+            {
+                GUI.Label(
+                    new Rect(
+                        x + 14f,
+                        y + 32f,
+                        width - 28f,
+                        22f),
+                    $"동행 인원: {_followers.Count}");
+
+                if (_followers.Count > 0)
+                {
+                    GUI.Label(
+                        new Rect(
+                            x + 14f,
+                            y + 54f,
+                            width - 28f,
+                            22f),
+                        $"최저 유지도: {_followers.LowestStabilityNormalized * 100f:0}%");
+                }
+            }
+
+            DrawTargetDebug(
+                x,
+                y,
+                width);
+
+            DrawImpulseDebug(
+                x,
+                y,
+                width);
+
+            if (_stage != null)
+            {
+                GUI.Label(
+                    new Rect(
+                        x + 14f,
+                        y + 188f,
+                        width - 28f,
+                        22f),
+                    $"상태: {_stage.GetStateLabel()}");
+
+                GUI.Label(
+                    new Rect(
+                        x + 14f,
+                        y + 210f,
+                        width - 28f,
+                        22f),
+                    "회수 지점: 복도 오른쪽 보라색 영역");
+            }
+        }
+
+        private void DrawTargetDebug(
+            float x,
+            float y,
+            float width)
         {
             if (_caster == null ||
                 _caster.CurrentTarget == null)
             {
                 GUI.Label(
                     new Rect(
-                        24f,
-                        164f,
-                        380f,
+                        x + 14f,
+                        y + 82f,
+                        width - 28f,
                         22f),
                     "최면 대상: 없음");
 
@@ -140,42 +291,32 @@ namespace ProjectTheta.UI
 
             GUI.Label(
                 new Rect(
-                    24f,
-                    164f,
-                    380f,
+                    x + 14f,
+                    y + 82f,
+                    width - 28f,
                     22f),
-                $"최면 대상: {target.name} / 상태: {stateText}");
-
-            GUI.HorizontalSlider(
-                new Rect(
-                    24f,
-                    194f,
-                    340f,
-                    18f),
-                target.HypnosisNormalized,
-                0f,
-                1f);
+                $"최면 대상: {target.name}");
 
             GUI.Label(
                 new Rect(
-                    300f,
-                    194f,
-                    90f,
+                    x + 14f,
+                    y + 104f,
+                    width - 28f,
                     22f),
-                $"{target.HypnosisNormalized * 100f:0}%");
+                $"NPC 상태: {stateText} / 최면 {target.HypnosisNormalized * 100f:0}%");
         }
 
-        private void DrawImpulseStatus()
+        private void DrawImpulseDebug(
+            float x,
+            float y,
+            float width)
         {
             ImpulseMeter[] meters =
                 FindObjectsByType<ImpulseMeter>(
                     FindObjectsSortMode.None);
 
-            float highest =
-                0f;
-
-            string highestName =
-                "-";
+            float highest = 0f;
+            string highestName = "-";
 
             for (int i = 0;
                  i < meters.Length;
@@ -198,14 +339,16 @@ namespace ProjectTheta.UI
 
                 highest =
                     meter.ImpulseNormalized;
-                highestName = meter.name;
+
+                highestName =
+                    meter.name;
             }
 
             GUI.Label(
                 new Rect(
-                    24f,
-                    226f,
-                    380f,
+                    x + 14f,
+                    y + 132f,
+                    width - 28f,
                     22f),
                 $"최고 충동: {highest * 100f:0}% / {highestName}");
 
@@ -216,11 +359,132 @@ namespace ProjectTheta.UI
 
             GUI.Label(
                 new Rect(
-                    24f,
-                    248f,
-                    380f,
+                    x + 14f,
+                    y + 154f,
+                    width - 28f,
                     22f),
                 $"현재 폭주 NPC: {activeRampage}");
+        }
+
+        private void EnsureStyles()
+        {
+            if (_centerLabelStyle != null)
+            {
+                return;
+            }
+
+            _centerTitleStyle =
+                new GUIStyle(
+                    GUI.skin.label)
+                {
+                    alignment =
+                        TextAnchor.MiddleCenter,
+                    fontSize = 19,
+                    fontStyle =
+                        FontStyle.Bold
+                };
+
+            _centerLabelStyle =
+                new GUIStyle(
+                    GUI.skin.label)
+                {
+                    alignment =
+                        TextAnchor.MiddleCenter,
+                    fontSize = 15,
+                    fontStyle =
+                        FontStyle.Bold
+                };
+
+            _leftLabelStyle =
+                new GUIStyle(
+                    GUI.skin.label)
+                {
+                    alignment =
+                        TextAnchor.MiddleLeft,
+                    fontSize = 14,
+                    fontStyle =
+                        FontStyle.Bold
+                };
+
+            _resultStyle =
+                new GUIStyle(
+                    GUI.skin.label)
+                {
+                    alignment =
+                        TextAnchor.MiddleCenter,
+                    fontSize = 28,
+                    fontStyle =
+                        FontStyle.Bold
+                };
+        }
+
+        private static void DrawProgressBar(
+            Rect rect,
+            float normalized,
+            Color fillColor,
+            Color backgroundColor)
+        {
+            float value =
+                Mathf.Clamp01(
+                    normalized);
+
+            Color previousColor =
+                GUI.color;
+
+            GUI.color =
+                new Color(
+                    0f,
+                    0f,
+                    0f,
+                    0.82f);
+
+            GUI.DrawTexture(
+                new Rect(
+                    rect.x - 2f,
+                    rect.y - 2f,
+                    rect.width + 4f,
+                    rect.height + 4f),
+                Texture2D.whiteTexture);
+
+            GUI.color =
+                backgroundColor;
+
+            GUI.DrawTexture(
+                rect,
+                Texture2D.whiteTexture);
+
+            GUI.color =
+                fillColor;
+
+            GUI.DrawTexture(
+                new Rect(
+                    rect.x,
+                    rect.y,
+                    rect.width *
+                    value,
+                    rect.height),
+                Texture2D.whiteTexture);
+
+            GUI.color =
+                previousColor;
+        }
+
+        private static string FormatTime(
+            float seconds)
+        {
+            int totalSeconds =
+                Mathf.Max(
+                    0,
+                    Mathf.CeilToInt(
+                        seconds));
+
+            int minutes =
+                totalSeconds / 60;
+
+            int remainder =
+                totalSeconds % 60;
+
+            return $"{minutes:00}:{remainder:00}";
         }
     }
 }
