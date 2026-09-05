@@ -19,14 +19,18 @@ namespace ProjectTheta.Player
         private Vector2 _dashDirection = Vector2.right;
         private float _dashRemaining;
         private float _dashCooldownRemaining;
+        private bool _inputLocked;
 
         public int FacingDirection { get; private set; } = 1;
         public bool IsDashing => _dashRemaining > 0f;
         public Vector2 MoveInput => _moveInput;
+        public bool IsInputLocked => _inputLocked;
 
         private void Awake()
         {
-            _rigidbody = GetComponent<Rigidbody2D>();
+            _rigidbody =
+                GetComponent<Rigidbody2D>();
+
             _rigidbody.gravityScale = 0f;
             _rigidbody.freezeRotation = true;
             _rigidbody.collisionDetectionMode =
@@ -37,13 +41,28 @@ namespace ProjectTheta.Player
 
         private void Update()
         {
-            _moveInput = ReadMovement();
-
-            if (_moveInput.sqrMagnitude > 0.0001f)
+            if (_inputLocked)
             {
-                _lastMoveDirection = _moveInput;
+                _moveInput =
+                    Vector2.zero;
 
-                if (Mathf.Abs(_moveInput.x) > 0.01f)
+                _dashRemaining = 0f;
+
+                return;
+            }
+
+            _moveInput =
+                ReadMovement();
+
+            if (_moveInput.sqrMagnitude >
+                0.0001f)
+            {
+                _lastMoveDirection =
+                    _moveInput;
+
+                if (Mathf.Abs(
+                        _moveInput.x) >
+                    0.01f)
                 {
                     FacingDirection =
                         _moveInput.x > 0f
@@ -82,6 +101,14 @@ namespace ProjectTheta.Player
 
         private void FixedUpdate()
         {
+            if (_inputLocked)
+            {
+                _rigidbody.linearVelocity =
+                    Vector2.zero;
+
+                return;
+            }
+
             Vector2 direction =
                 IsDashing
                     ? _dashDirection
@@ -93,7 +120,31 @@ namespace ProjectTheta.Player
                     : _moveSpeed;
 
             _rigidbody.linearVelocity =
-                direction * speed;
+                direction *
+                speed;
+        }
+
+        public void SetInputLocked(
+            bool isLocked)
+        {
+            _inputLocked =
+                isLocked;
+
+            if (!isLocked)
+            {
+                return;
+            }
+
+            _moveInput =
+                Vector2.zero;
+
+            _dashRemaining = 0f;
+
+            if (_rigidbody != null)
+            {
+                _rigidbody.linearVelocity =
+                    Vector2.zero;
+            }
         }
 
         public void FaceToward(
@@ -103,7 +154,8 @@ namespace ProjectTheta.Player
                 worldX -
                 transform.position.x;
 
-            if (Mathf.Abs(deltaX) <= 0.001f)
+            if (Mathf.Abs(deltaX) <=
+                0.001f)
             {
                 return;
             }
@@ -159,7 +211,9 @@ namespace ProjectTheta.Player
             }
 
             return PlayerMovementMath.NormalizeInput(
-                new Vector2(x, y));
+                new Vector2(
+                    x,
+                    y));
 #else
             return PlayerMovementMath.NormalizeInput(
                 new Vector2(

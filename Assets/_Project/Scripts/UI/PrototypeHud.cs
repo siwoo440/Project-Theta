@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectTheta.Capture;
 using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
@@ -15,6 +16,8 @@ namespace ProjectTheta.UI
         private RampageCoordinator _coordinator;
         private StageSessionController _stage;
         private PlayerHealth _health;
+        private PlayerCaptureController _capture;
+        private StageTelemetry _telemetry;
 
         private GUIStyle _centerLabelStyle;
         private GUIStyle _centerTitleStyle;
@@ -24,11 +27,16 @@ namespace ProjectTheta.UI
         public void Configure(
             HypnosisCaster caster,
             StageSessionController stage,
-            PlayerHealth health)
+            PlayerHealth health,
+            PlayerCaptureController capture)
         {
             _caster = caster;
             _stage = stage;
             _health = health;
+            _capture = capture;
+
+            _telemetry =
+                FindFirstObjectByType<StageTelemetry>();
 
             _followers =
                 caster == null
@@ -49,6 +57,7 @@ namespace ProjectTheta.UI
             DrawHealthHud();
             DrawStageHud();
             DrawDebugHud();
+            DrawStageEndOverlay();
         }
 
         private void DrawHealthHud()
@@ -95,9 +104,9 @@ namespace ProjectTheta.UI
                 new Rect(
                     x,
                     y + 54f,
-                    width,
+                    width + 80f,
                     20f),
-                $"폭주 피격: HP -{_stage.RampageCaughtDamage} / 정기 +{_stage.RampageCaughtReward}",
+                $"폭주 피격: 정기 +{_stage.RampageCaughtReward} / 포획 중 HP -{_stage.CaptureTickDamage} 누적 {_stage.CaptureMaxDamage}",
                 _leftLabelStyle);
         }
 
@@ -189,7 +198,7 @@ namespace ProjectTheta.UI
 
         private void DrawDebugHud()
         {
-            const float width = 330f;
+            const float width = 360f;
             float x =
                 Mathf.Max(
                     0f,
@@ -204,8 +213,8 @@ namespace ProjectTheta.UI
                     x,
                     y,
                     width,
-                    232f),
-                "Day 06 Debug");
+                    326f),
+                "Day 07 Debug");
 
             if (_followers != null)
             {
@@ -239,12 +248,22 @@ namespace ProjectTheta.UI
                 y,
                 width);
 
+            DrawCaptureDebug(
+                x,
+                y,
+                width);
+
+            DrawTelemetryDebug(
+                x,
+                y,
+                width);
+
             if (_stage != null)
             {
                 GUI.Label(
                     new Rect(
                         x + 14f,
-                        y + 188f,
+                        y + 282f,
                         width - 28f,
                         22f),
                     $"상태: {_stage.GetStateLabel()}");
@@ -252,7 +271,7 @@ namespace ProjectTheta.UI
                 GUI.Label(
                     new Rect(
                         x + 14f,
-                        y + 210f,
+                        y + 304f,
                         width - 28f,
                         22f),
                     "회수 지점: 복도 오른쪽 보라색 영역");
@@ -364,6 +383,177 @@ namespace ProjectTheta.UI
                     width - 28f,
                     22f),
                 $"현재 폭주 NPC: {activeRampage}");
+        }
+
+        private void DrawCaptureDebug(
+            float x,
+            float y,
+            float width)
+        {
+            if (_capture == null ||
+                !_capture.IsCapturing)
+            {
+                GUI.Label(
+                    new Rect(
+                        x + 14f,
+                        y + 182f,
+                        width - 28f,
+                        22f),
+                    "포획 상태: 없음");
+
+                return;
+            }
+
+            GUI.Label(
+                new Rect(
+                    x + 14f,
+                    y + 182f,
+                    width - 28f,
+                    22f),
+                $"포획 상태: 진행 중 / 다음 입력: {_capture.ExpectedInputLabel}");
+
+            GUI.Label(
+                new Rect(
+                    x + 14f,
+                    y + 204f,
+                    width - 28f,
+                    22f),
+                $"탈출 { _capture.EscapeNormalized * 100f:0}% / 피해 {_capture.DamageTaken}/{_capture.DamageCap}");
+        }
+
+        private void DrawTelemetryDebug(
+            float x,
+            float y,
+            float width)
+        {
+            if (_telemetry == null)
+            {
+                _telemetry =
+                    FindFirstObjectByType<
+                        StageTelemetry>();
+            }
+
+            if (_telemetry == null ||
+                _stage == null)
+            {
+                return;
+            }
+
+            GUI.Label(
+                new Rect(
+                    x + 14f,
+                    y + 228f,
+                    width - 28f,
+                    22f),
+                $"획득 시간 1/3/5명: {_telemetry.FormatTime(_telemetry.FirstFollowerTime)} / {_telemetry.FormatTime(_telemetry.ThreeFollowersTime)} / {_telemetry.FormatTime(_telemetry.FiveFollowersTime)}");
+
+            GUI.Label(
+                new Rect(
+                    x + 14f,
+                    y + 250f,
+                    width - 28f,
+                    22f),
+                $"정기 100/200: {_telemetry.FormatTime(_telemetry.Essence100Time)} / {_telemetry.FormatTime(_telemetry.Essence200Time)}");
+
+            GUI.Label(
+                new Rect(
+                    x + 14f,
+                    y + 272f,
+                    width - 28f,
+                    22f),
+                $"폭주 피격: {_stage.RampageCaptureCount} / 회수: {_stage.RecoveredFollowerCount}");
+        }
+
+        private void DrawStageEndOverlay()
+        {
+            if (_stage == null ||
+                _stage.IsRunning)
+            {
+                return;
+            }
+
+            float width =
+                Mathf.Min(
+                    560f,
+                    Screen.width *
+                    0.64f);
+
+            const float height = 250f;
+
+            float x =
+                (Screen.width -
+                 width) *
+                0.5f;
+
+            float y =
+                (Screen.height -
+                 height) *
+                0.5f;
+
+            GUI.Box(
+                new Rect(
+                    x,
+                    y,
+                    width,
+                    height),
+                string.Empty);
+
+            GUI.Label(
+                new Rect(
+                    x,
+                    y + 18f,
+                    width,
+                    48f),
+                _stage.GetStateLabel(),
+                _resultStyle);
+
+            GUI.Label(
+                new Rect(
+                    x + 24f,
+                    y + 78f,
+                    width - 48f,
+                    28f),
+                $"정기 {_stage.CurrentEssence} / {_stage.TargetEssence}",
+                _centerTitleStyle);
+
+            GUI.Label(
+                new Rect(
+                    x + 24f,
+                    y + 112f,
+                    width - 48f,
+                    24f),
+                $"플레이 시간 {FormatTime(_stage.ElapsedTime)}",
+                _centerLabelStyle);
+
+            if (_health != null)
+            {
+                GUI.Label(
+                    new Rect(
+                        x + 24f,
+                        y + 140f,
+                        width - 48f,
+                        24f),
+                    $"남은 체력 {_health.CurrentHealth} / {_health.MaximumHealth}",
+                    _centerLabelStyle);
+            }
+
+            GUI.Label(
+                new Rect(
+                    x + 24f,
+                    y + 168f,
+                    width - 48f,
+                    24f),
+                $"폭주 피격 {_stage.RampageCaptureCount}회   |   회수 {_stage.RecoveredFollowerCount}명",
+                _centerLabelStyle);
+
+            GUI.Label(
+                new Rect(
+                    x + 24f,
+                    y + 202f,
+                    width - 48f,
+                    24f),
+                "스테이지 종료 - 입력 및 NPC 진행 정지",
+                _centerLabelStyle);
         }
 
         private void EnsureStyles()

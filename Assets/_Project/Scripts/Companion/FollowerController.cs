@@ -156,16 +156,27 @@ namespace ProjectTheta.Companion
                 return;
             }
 
-            float leaderDistance =
-                Vector2.Distance(
-                    transform.position,
-                    _leader.position);
+            Vector2 looseOffset =
+                _personalFormationOffset +
+                GetWanderOffset();
+
+            Vector2 targetPosition =
+                _manager.GetSlotWorldPosition(
+                    _slotIndex,
+                    looseOffset);
+
+            Vector2 delta =
+                targetPosition -
+                (Vector2)transform.position;
+
+            float targetDistance =
+                delta.magnitude;
 
             _stability =
                 FollowerStabilityLogic.Tick(
                     _stability,
                     _maximumStability,
-                    leaderDistance,
+                    targetDistance,
                     _breakDistance,
                     _stabilityDecayPerSecond,
                     _stabilityRecoveryPerSecond,
@@ -187,22 +198,6 @@ namespace ProjectTheta.Companion
                     ? Vector2.zero
                     : _separation.GetCorrectionVelocity();
 
-            Vector2 looseOffset =
-                _personalFormationOffset +
-                GetWanderOffset();
-
-            Vector2 targetPosition =
-                _manager.GetSlotWorldPosition(
-                    _slotIndex,
-                    looseOffset);
-
-            Vector2 delta =
-                targetPosition -
-                (Vector2)transform.position;
-
-            float targetDistance =
-                delta.magnitude;
-
             if (targetDistance <=
                 _personalStopDistance)
             {
@@ -213,7 +208,7 @@ namespace ProjectTheta.Companion
             }
 
             float baseSpeed =
-                leaderDistance >
+                targetDistance >
                 _catchUpDistance
                     ? _catchUpSpeed
                     : _followSpeed;
