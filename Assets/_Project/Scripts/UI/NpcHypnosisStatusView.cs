@@ -1,6 +1,7 @@
 using UnityEngine;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
+using ProjectTheta.Ownership;
 
 namespace ProjectTheta.UI
 {
@@ -13,6 +14,9 @@ namespace ProjectTheta.UI
         [SerializeField] private Vector2 _gaugeOffset =
             new Vector2(0f, -0.18f);
 
+        [SerializeField] private Vector2 _ownershipGaugeOffset =
+            new Vector2(0f, -0.32f);
+
         [SerializeField] private Vector2 _iconOffset =
             new Vector2(0.43f, 1.67f);
 
@@ -22,6 +26,11 @@ namespace ProjectTheta.UI
         private GameObject _gaugeRoot;
         private Transform _fillTransform;
         private SpriteRenderer _fillRenderer;
+
+        private GameObject _ownershipGaugeRoot;
+        private Transform _ownershipFillTransform;
+        private SpriteRenderer _ownershipFillRenderer;
+
         private SpriteRenderer _heartRenderer;
         private SpriteRenderer _exclamationRenderer;
 
@@ -37,7 +46,8 @@ namespace ProjectTheta.UI
             _impulse =
                 GetComponent<ImpulseMeter>();
 
-            CreateGauge();
+            CreatePrimaryGauge();
+            CreateOwnershipGauge();
             CreateIcons();
             MatchIconVisualSize();
             UpdateVisuals();
@@ -48,24 +58,49 @@ namespace ProjectTheta.UI
             UpdateVisuals();
         }
 
-        private void CreateGauge()
+        private void CreatePrimaryGauge()
         {
-            _gaugeRoot =
-                new GameObject(
-                    "StatusGauge");
+            CreateGauge(
+                "StatusGauge",
+                _gaugeOffset,
+                out _gaugeRoot,
+                out _fillTransform,
+                out _fillRenderer);
+        }
 
-            _gaugeRoot.transform.SetParent(
+        private void CreateOwnershipGauge()
+        {
+            CreateGauge(
+                "OwnershipGauge",
+                _ownershipGaugeOffset,
+                out _ownershipGaugeRoot,
+                out _ownershipFillTransform,
+                out _ownershipFillRenderer);
+        }
+
+        private void CreateGauge(
+            string name,
+            Vector2 offset,
+            out GameObject root,
+            out Transform fillTransform,
+            out SpriteRenderer fillRenderer)
+        {
+            root =
+                new GameObject(
+                    name);
+
+            root.transform.SetParent(
                 transform,
                 false);
 
-            _gaugeRoot.transform.localPosition =
+            root.transform.localPosition =
                 new Vector3(
-                    _gaugeOffset.x,
-                    _gaugeOffset.y,
+                    offset.x,
+                    offset.y,
                     0f);
 
             CreateBar(
-                _gaugeRoot.transform,
+                root.transform,
                 "Outline",
                 Vector2.zero,
                 new Vector2(
@@ -79,7 +114,7 @@ namespace ProjectTheta.UI
                 8);
 
             CreateBar(
-                _gaugeRoot.transform,
+                root.transform,
                 "Track",
                 Vector2.zero,
                 new Vector2(
@@ -94,26 +129,24 @@ namespace ProjectTheta.UI
 
             GameObject fill =
                 CreateBar(
-                    _gaugeRoot.transform,
+                    root.transform,
                     "Fill",
                     new Vector2(
-                        -_gaugeWidth * 0.5f,
+                        -_gaugeWidth *
+                        0.5f,
                         0f),
                     new Vector2(
                         0f,
                         _gaugeHeight),
-                    new Color(
-                        0.69f,
-                        0.20f,
-                        1.00f,
-                        1f),
+                    Color.white,
                     10);
 
-            _fillTransform =
+            fillTransform =
                 fill.transform;
 
-            _fillRenderer =
-                fill.GetComponent<SpriteRenderer>();
+            fillRenderer =
+                fill.GetComponent<
+                    SpriteRenderer>();
         }
 
         private void CreateIcons()
@@ -228,16 +261,21 @@ namespace ProjectTheta.UI
 
         private void UpdateVisuals()
         {
-            if (_target == null ||
-                _fillTransform == null)
+            if (_target == null)
             {
                 return;
             }
 
-            bool isHypnotized =
-                _target.IsHypnotized;
+            bool playerOwned =
+                _target.Owner ==
+                NpcOwner.Player;
+
+            bool rivalOwned =
+                _target.Owner ==
+                NpcOwner.Rival;
 
             bool hasImpulse =
+                playerOwned &&
                 _impulse != null &&
                 _target.IsFollowing;
 
@@ -245,72 +283,132 @@ namespace ProjectTheta.UI
                 hasImpulse &&
                 _impulse.IsWarningIconVisible;
 
-            float progress =
-                !isHypnotized
+            bool showPrimaryGauge =
+                _target.Owner ==
+                NpcOwner.Neutral ||
+                hasImpulse;
+
+            float primaryProgress =
+                _target.Owner ==
+                NpcOwner.Neutral
                     ? _target.HypnosisNormalized
                     : hasImpulse
                         ? _impulse.ImpulseNormalized
                         : 0f;
 
-            bool showGauge =
-                !isHypnotized ||
-                hasImpulse;
-
             if (_gaugeRoot != null)
             {
                 _gaugeRoot.SetActive(
-                    showGauge);
+                    showPrimaryGauge);
             }
 
-            if (showGauge)
+            if (showPrimaryGauge)
             {
-                float width =
-                    _gaugeWidth *
-                    Mathf.Clamp01(
-                        progress);
-
-                _fillTransform.localScale =
-                    new Vector3(
-                        width,
-                        _gaugeHeight,
-                        1f);
-
-                _fillTransform.localPosition =
-                    new Vector3(
-                        (-_gaugeWidth * 0.5f) +
-                        (width * 0.5f),
-                        0f,
-                        0f);
+                SetGaugeProgress(
+                    _fillTransform,
+                    primaryProgress);
 
                 if (_fillRenderer != null)
                 {
                     _fillRenderer.color =
-                        GetGaugeColor(
-                            isHypnotized,
+                        GetPrimaryGaugeColor(
                             hasImpulse);
+                }
+            }
+
+            bool showOwnershipGauge =
+                playerOwned ||
+                rivalOwned;
+
+            if (_ownershipGaugeRoot != null)
+            {
+                _ownershipGaugeRoot.SetActive(
+                    showOwnershipGauge);
+            }
+
+            if (showOwnershipGauge)
+            {
+                SetGaugeProgress(
+                    _ownershipFillTransform,
+                    _target.HypnosisNormalized);
+
+                if (_ownershipFillRenderer != null)
+                {
+                    _ownershipFillRenderer.color =
+                        playerOwned
+                            ? new Color(
+                                1.00f,
+                                0.42f,
+                                0.78f,
+                                1f)
+                            : new Color(
+                                0.96f,
+                                0.22f,
+                                0.25f,
+                                1f);
                 }
             }
 
             if (_heartRenderer != null)
             {
                 _heartRenderer.enabled =
-                    isHypnotized &&
+                    (playerOwned ||
+                     rivalOwned) &&
                     !showWarningIcon;
+
+                _heartRenderer.color =
+                    rivalOwned
+                        ? new Color(
+                            1f,
+                            0.34f,
+                            0.34f,
+                            1f)
+                        : Color.white;
             }
 
             if (_exclamationRenderer != null)
             {
                 _exclamationRenderer.enabled =
-                    isHypnotized &&
+                    playerOwned &&
                     showWarningIcon;
             }
         }
 
-        private Color GetGaugeColor(
-            bool isHypnotized,
+        private void SetGaugeProgress(
+            Transform fillTransform,
+            float progress)
+        {
+            if (fillTransform == null)
+            {
+                return;
+            }
+
+            float width =
+                _gaugeWidth *
+                Mathf.Clamp01(
+                    progress);
+
+            fillTransform.localScale =
+                new Vector3(
+                    width,
+                    _gaugeHeight,
+                    1f);
+
+            fillTransform.localPosition =
+                new Vector3(
+                    (-_gaugeWidth *
+                     0.5f) +
+                    (width *
+                     0.5f),
+                    0f,
+                    0f);
+        }
+
+        private Color GetPrimaryGaugeColor(
             bool hasImpulse)
         {
-            if (!isHypnotized)
+            if (_target.Owner ==
+                NpcOwner.Neutral)
             {
                 return new Color(
                     0.69f,
@@ -374,7 +472,8 @@ namespace ProjectTheta.UI
             int sortingOrder)
         {
             GameObject bar =
-                new GameObject(name);
+                new GameObject(
+                    name);
 
             bar.transform.SetParent(
                 parent,
