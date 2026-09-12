@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using ProjectTheta.Companion;
 using ProjectTheta.Core;
 using ProjectTheta.NPC;
 using ProjectTheta.Ownership;
@@ -89,6 +90,23 @@ namespace ProjectTheta.Hypnosis
             }
         }
 
+        private FollowerManager _playerFollowers;
+
+        private FollowerManager PlayerFollowers
+        {
+            get
+            {
+                if (_playerFollowers == null)
+                {
+                    _playerFollowers =
+                        FindFirstObjectByType<
+                            FollowerManager>();
+                }
+
+                return _playerFollowers;
+            }
+        }
+
         private NpcProfile Profile
         {
             get
@@ -170,6 +188,16 @@ namespace ProjectTheta.Hypnosis
         public bool ApplyPlayerFocus(
             float deltaTime)
         {
+            return ApplyPlayerFocus(
+                deltaTime,
+                1f);
+        }
+
+        /// <summary>체인 최면은 단계가 깊어질수록 속도 배율이 낮아진다.</summary>
+        public bool ApplyPlayerFocus(
+            float deltaTime,
+            float speedMultiplier)
+        {
             if (!CanPlayerFocus)
             {
                 return false;
@@ -188,7 +216,10 @@ namespace ProjectTheta.Hypnosis
                     HypnosisTargetingLogic.BuildProgress(
                         CurrentHypnosis,
                         MaximumHypnosis,
-                        BuildPerSecond,
+                        BuildPerSecond *
+                        Mathf.Max(
+                            0f,
+                            speedMultiplier),
                         deltaTime);
 
                 return CurrentHypnosis >=
@@ -222,10 +253,19 @@ namespace ProjectTheta.Hypnosis
             }
 
             if (Owner ==
-                    NpcOwner.Player &&
-                !IsFollowing)
+                NpcOwner.Player)
             {
-                return false;
+                if (!IsFollowing)
+                {
+                    return false;
+                }
+
+                // 차단 부적이 켜져 있는 동안에는 경쟁자가 지배 수치를 깎지 못한다.
+                if (PlayerFollowers != null &&
+                    PlayerFollowers.IsContestWarded)
+                {
+                    return false;
+                }
             }
 
             CurrentHypnosis =

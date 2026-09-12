@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using ProjectTheta.NPC;
 
 namespace ProjectTheta.Tests.EditMode
@@ -84,8 +84,10 @@ namespace ProjectTheta.Tests.EditMode
         [Test]
         public void Every_Trait_Has_A_Profile()
         {
+            // 특성이 추가돼도 테이블이 함께 갱신되는지 열거형 기준으로 확인한다.
             Assert.AreEqual(
-                5,
+                System.Enum.GetValues(
+                    typeof(NpcTrait)).Length,
                 NpcTraitTable.Count);
 
             foreach (NpcTrait trait in
