@@ -683,9 +683,18 @@ namespace ProjectTheta.Core
             PlayerHealth health,
             PlayerCaptureController capture)
         {
+            // 플레이어용 정식 HUD와 개발용 디버그 HUD를 나눠 붙인다.
             GameObject hud =
                 new GameObject(
-                    "PrototypeHud");
+                    "StageHud");
+
+            StageHudView view =
+                hud.AddComponent<StageHudView>();
+
+            view.Configure(
+                caster,
+                stage,
+                health);
 
             PrototypeHud prototypeHud =
                 hud.AddComponent<PrototypeHud>();
@@ -693,7 +702,6 @@ namespace ProjectTheta.Core
             prototypeHud.Configure(
                 caster,
                 stage,
-                health,
                 capture);
         }
     }

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Companion;
 
 namespace ProjectTheta.Stage
@@ -28,6 +28,12 @@ namespace ProjectTheta.Stage
         public int HighGradeRecoveredCount { get; private set; }
 
         public int CaptureCount { get; private set; }
+
+        /// <summary>최면 성공 횟수다. 튜토리얼 진행 판정에 쓴다.</summary>
+        public int HypnosisCount { get; private set; }
+
+        /// <summary>회수 묶음이 확정된 횟수다. 튜토리얼 진행 판정에 쓴다.</summary>
+        public int RecoveryCount { get; private set; }
 
         public int CurrentCombo =>
             _combo;
@@ -87,6 +93,8 @@ namespace ProjectTheta.Stage
         public void ReportHypnosisSuccess(
             bool wasReclaim)
         {
+            HypnosisCount++;
+
             AddCombo();
 
             if (wasReclaim)
@@ -111,6 +119,8 @@ namespace ProjectTheta.Stage
             int riskyRecoveries,
             int highGradeRecoveries)
         {
+            RecoveryCount++;
+
             RecoveredEssence +=
                 Mathf.Max(
                     0,
