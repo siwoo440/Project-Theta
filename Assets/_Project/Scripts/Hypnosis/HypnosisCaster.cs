@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using ProjectTheta.Stage;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -25,6 +26,27 @@ namespace ProjectTheta.Hypnosis
 
         public FollowerManager FollowerManager =>
             _followerManager;
+
+        private StageScoreTracker _scoreTracker;
+
+        /// <summary>점수 집계기는 플레이어 오브젝트에 함께 붙어 있다.</summary>
+        private StageScoreTracker ResolveScoreTracker()
+        {
+            if (_scoreTracker == null)
+            {
+                _scoreTracker =
+                    GetComponent<StageScoreTracker>();
+            }
+
+            if (_scoreTracker == null)
+            {
+                _scoreTracker =
+                    FindFirstObjectByType<
+                        StageScoreTracker>();
+            }
+
+            return _scoreTracker;
+        }
 
         private void Awake()
         {
@@ -85,11 +107,19 @@ namespace ProjectTheta.Hypnosis
                 return;
             }
 
+            bool wasReclaim =
+                target.Owner !=
+                NpcOwner.Neutral;
+
             target.OpponentOwner?.
                 ReleaseOwnedTarget(
                     target);
 
             target.ClaimByPlayer();
+
+            ResolveScoreTracker()?.
+                ReportHypnosisSuccess(
+                    wasReclaim);
 
             if (_followerManager == null ||
                 !_followerManager.TryAdd(

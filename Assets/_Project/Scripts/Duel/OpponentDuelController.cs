@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -347,6 +347,18 @@ namespace ProjectTheta.Duel
                     transform.position,
                     _opponentStunDuration,
                     _opponentKnockbackDistance);
+
+                StageScoreTracker tracker =
+                    GetComponent<StageScoreTracker>();
+
+                if (tracker == null)
+                {
+                    tracker =
+                        FindFirstObjectByType<
+                            StageScoreTracker>();
+                }
+
+                tracker?.ReportDuelWin();
             }
 
             EndDuel(

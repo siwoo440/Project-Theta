@@ -16,15 +16,6 @@ namespace ProjectTheta.Tests.EditMode
                     200));
         }
 
-        [Test]
-        public void ComputeProductionPerSecond_MultipliesFollowers()
-        {
-            Assert.AreEqual(
-                7,
-                StageRules.ComputeProductionPerSecond(
-                    7,
-                    1));
-        }
 
         [Test]
         public void TickTime_DoesNotGoBelowZero()

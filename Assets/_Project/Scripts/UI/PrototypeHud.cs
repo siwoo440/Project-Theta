@@ -19,13 +19,13 @@ namespace ProjectTheta.UI
         private PlayerHealth _health;
         private PlayerCaptureController _capture;
         private StageTelemetry _telemetry;
+        private StageScoreTracker _scoreTracker;
         private GeumtaeyangController _geumtaeyang;
         private PopularGuyController _popularGuy;
 
         private GUIStyle _centerLabelStyle;
         private GUIStyle _centerTitleStyle;
         private GUIStyle _leftLabelStyle;
-        private GUIStyle _resultStyle;
 
         public void Configure(
             HypnosisCaster caster,
@@ -40,6 +40,10 @@ namespace ProjectTheta.UI
 
             _telemetry =
                 FindFirstObjectByType<StageTelemetry>();
+
+            _scoreTracker =
+                FindFirstObjectByType<
+                    StageScoreTracker>();
 
             _geumtaeyang =
                 FindFirstObjectByType<GeumtaeyangController>();
@@ -67,7 +71,6 @@ namespace ProjectTheta.UI
             DrawHealthHud();
             DrawStageHud();
             DrawDebugHud();
-            DrawStageEndOverlay();
         }
 
         private void DrawHealthHud()
@@ -179,10 +182,16 @@ namespace ProjectTheta.UI
                     ? 0
                     : _followers.Count;
 
-            int production =
-                StageRules.ComputeProductionPerSecond(
-                    followerCount,
-                    _stage.PassiveEssencePerFollower);
+            string recoveryText =
+                _stage.HasPendingRecovery
+                    ? $"회수 정산 중 {_stage.PendingRecoveryCount}명  ×{_stage.PendingRecoveryMultiplier:0.0}"
+                    : "회수 지점에 도착해야 정기가 확정됩니다";
+
+            string comboText =
+                _scoreTracker == null ||
+                _scoreTracker.CurrentCombo <= 0
+                    ? string.Empty
+                    : $"   |   콤보 ×{_scoreTracker.CurrentComboMultiplier:0.0}";
 
             GUI.Label(
                 new Rect(
@@ -190,20 +199,9 @@ namespace ProjectTheta.UI
                     y + 84f,
                     width,
                     22f),
-                $"지속 생산 +{production} / sec   |   회수 +{_stage.RecoveryReward}",
+                recoveryText +
+                comboText,
                 _centerLabelStyle);
-
-            if (!_stage.IsRunning)
-            {
-                GUI.Label(
-                    new Rect(
-                        x,
-                        y + 112f,
-                        width,
-                        44f),
-                    _stage.GetStateLabel(),
-                    _resultStyle);
-            }
         }
 
         private void DrawDebugHud()
@@ -572,7 +570,7 @@ namespace ProjectTheta.UI
                     y + 250f,
                     width - 28f,
                     22f),
-                $"정기 100/200: {_telemetry.FormatTime(_telemetry.Essence100Time)} / {_telemetry.FormatTime(_telemetry.Essence200Time)}");
+                $"정기 절반/달성: {_telemetry.FormatTime(_telemetry.Essence100Time)} / {_telemetry.FormatTime(_telemetry.Essence200Time)}");
 
             GUI.Label(
                 new Rect(
@@ -581,98 +579,6 @@ namespace ProjectTheta.UI
                     width - 28f,
                     22f),
                 $"폭주 피격: {_stage.RampageCaptureCount} / 회수: {_stage.RecoveredFollowerCount}");
-        }
-
-        private void DrawStageEndOverlay()
-        {
-            if (_stage == null ||
-                _stage.IsRunning)
-            {
-                return;
-            }
-
-            float width =
-                Mathf.Min(
-                    560f,
-                    Screen.width *
-                    0.64f);
-
-            const float height = 250f;
-
-            float x =
-                (Screen.width -
-                 width) *
-                0.5f;
-
-            float y =
-                (Screen.height -
-                 height) *
-                0.5f;
-
-            GUI.Box(
-                new Rect(
-                    x,
-                    y,
-                    width,
-                    height),
-                string.Empty);
-
-            GUI.Label(
-                new Rect(
-                    x,
-                    y + 18f,
-                    width,
-                    48f),
-                _stage.GetStateLabel(),
-                _resultStyle);
-
-            GUI.Label(
-                new Rect(
-                    x + 24f,
-                    y + 78f,
-                    width - 48f,
-                    28f),
-                $"정기 {_stage.CurrentEssence} / {_stage.TargetEssence}",
-                _centerTitleStyle);
-
-            GUI.Label(
-                new Rect(
-                    x + 24f,
-                    y + 112f,
-                    width - 48f,
-                    24f),
-                $"플레이 시간 {FormatTime(_stage.ElapsedTime)}",
-                _centerLabelStyle);
-
-            if (_health != null)
-            {
-                GUI.Label(
-                    new Rect(
-                        x + 24f,
-                        y + 140f,
-                        width - 48f,
-                        24f),
-                    $"남은 체력 {_health.CurrentHealth} / {_health.MaximumHealth}",
-                    _centerLabelStyle);
-            }
-
-            GUI.Label(
-                new Rect(
-                    x + 24f,
-                    y + 168f,
-                    width - 48f,
-                    24f),
-                $"폭주 피격 {_stage.RampageCaptureCount}회   |   회수 {_stage.RecoveredFollowerCount}명",
-                _centerLabelStyle);
-
-            GUI.Label(
-                new Rect(
-                    x + 24f,
-                    y + 202f,
-                    width - 48f,
-                    24f),
-                "스테이지 종료 - 입력 및 NPC 진행 정지",
-                _centerLabelStyle);
         }
 
         private void EnsureStyles()
@@ -715,16 +621,6 @@ namespace ProjectTheta.UI
                         FontStyle.Bold
                 };
 
-            _resultStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleCenter,
-                    fontSize = 28,
-                    fontStyle =
-                        FontStyle.Bold
-                };
         }
 
         private static void DrawProgressBar(
