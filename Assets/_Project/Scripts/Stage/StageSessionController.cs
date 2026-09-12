@@ -48,7 +48,9 @@ namespace ProjectTheta.Stage
         public int TargetEssence =>
             Mathf.Max(
                 1,
-                _targetEssence);
+                Mathf.RoundToInt(
+                    _targetEssence *
+                    PlayerUpgradeMultipliers.TargetEssence));
 
         /// <summary>정산 대기 중인 회수 인원이다. HUD가 현재 배율을 미리 보여주는 데 사용한다.</summary>
         public int PendingRecoveryCount =>
@@ -98,7 +100,8 @@ namespace ProjectTheta.Stage
             RemainingTime =
                 Mathf.Max(
                     0f,
-                    _timeLimitSeconds);
+                    _timeLimitSeconds *
+                    PlayerUpgradeMultipliers.TimeLimit);
 
             CurrentEssence = 0;
             RampageCaptureCount = 0;

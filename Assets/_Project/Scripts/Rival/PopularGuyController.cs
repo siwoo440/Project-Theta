@@ -1,6 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Ownership;
+using ProjectTheta.Presentation;
 
 namespace ProjectTheta.Rival
 {
@@ -15,7 +16,6 @@ namespace ProjectTheta.Rival
         private int _neutralClaimStep;
         private float _neutralClaimTimer;
         private AudioSource _claimTickSource;
-        private AudioClip _claimTickClip;
 
         public override NpcOwner OwnerTag =>
             NpcOwner.PopularGuy;
@@ -74,9 +74,6 @@ namespace ProjectTheta.Rival
 
             _claimTickSource.volume =
                 0.45f;
-
-            _claimTickClip =
-                CreateClaimTickClip();
         }
 
         protected override void SearchForTarget()
@@ -381,83 +378,11 @@ namespace ProjectTheta.Rival
 
         private void PlayClaimTick()
         {
-            if (_claimTickSource == null ||
-                _claimTickClip == null)
-            {
-                return;
-            }
-
-            _claimTickSource.PlayOneShot(
-                _claimTickClip);
+            GameAudio.PlayAt(
+                _claimTickSource,
+                GameSfx.ClaimTick);
         }
 
-        private static AudioClip CreateClaimTickClip()
-        {
-            const int sampleRate =
-                44100;
 
-            const float duration =
-                0.055f;
-
-            const float frequency =
-                880f;
-
-            int sampleCount =
-                Mathf.Max(
-                    1,
-                    Mathf.RoundToInt(
-                        sampleRate *
-                        duration));
-
-            float[] samples =
-                new float[
-                    sampleCount];
-
-            for (int i = 0;
-                 i < samples.Length;
-                 i++)
-            {
-                float t =
-                    i /
-                    (float)sampleRate;
-
-                float fade =
-                    1f -
-                    (i /
-                     (float)samples.Length);
-
-                samples[i] =
-                    Mathf.Sin(
-                        Mathf.PI *
-                        2f *
-                        frequency *
-                        t) *
-                    0.16f *
-                    fade;
-            }
-
-            AudioClip clip =
-                AudioClip.Create(
-                    "PopularGuyClaimTick",
-                    sampleCount,
-                    1,
-                    sampleRate,
-                    false);
-
-            clip.SetData(
-                samples,
-                0);
-
-            return clip;
-        }
-
-        private void OnDestroy()
-        {
-            if (_claimTickClip != null)
-            {
-                Destroy(
-                    _claimTickClip);
-            }
-        }
     }
 }

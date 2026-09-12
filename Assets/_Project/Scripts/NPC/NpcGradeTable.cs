@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace ProjectTheta.NPC
 {
@@ -68,6 +68,18 @@ namespace ProjectTheta.NPC
         /// <summary>정기 가치 배율의 기준이 되는 일반 등급 가치다.</summary>
         public const int ReferenceEssenceValue = 10;
 
+        /// <summary>
+        /// 자산에서 읽은 등급 표다. null이면 아래 기본 표를 쓴다.
+        /// 테스트에서는 항상 null이므로 Unity 자산 없이 그대로 동작한다.
+        /// </summary>
+        public static NpcGradeProfile[] Override { get; set; }
+
+        private static NpcGradeProfile[] Active =>
+            Override != null &&
+            Override.Length > 0
+                ? Override
+                : Profiles;
+
         private static readonly NpcGradeProfile[] Profiles =
         {
             new NpcGradeProfile(
@@ -122,33 +134,39 @@ namespace ProjectTheta.NPC
         };
 
         public static int Count =>
-            Profiles.Length;
+            Active.Length;
 
         public static NpcGradeProfile Get(
             NpcGrade grade)
         {
+            NpcGradeProfile[] table =
+                Active;
+
             for (int i = 0;
-                 i < Profiles.Length;
+                 i < table.Length;
                  i++)
             {
-                if (Profiles[i].Grade ==
+                if (table[i].Grade ==
                     grade)
                 {
-                    return Profiles[i];
+                    return table[i];
                 }
             }
 
-            return Profiles[0];
+            return table[0];
         }
 
         public static NpcGradeProfile GetAt(
             int index)
         {
-            return Profiles[
+            NpcGradeProfile[] table =
+                Active;
+
+            return table[
                 Mathf.Clamp(
                     index,
                     0,
-                    Profiles.Length - 1)];
+                    table.Length - 1)];
         }
     }
 }

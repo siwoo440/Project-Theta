@@ -32,6 +32,15 @@ namespace ProjectTheta.NPC
 
     public static class NpcTraitTable
     {
+        /// <summary>자산에서 읽은 특성 표다. null이면 아래 기본 표를 쓴다.</summary>
+        public static NpcTraitProfile[] Override { get; set; }
+
+        private static NpcTraitProfile[] Active =>
+            Override != null &&
+            Override.Length > 0
+                ? Override
+                : Profiles;
+
         private static readonly NpcTraitProfile[] Profiles =
         {
             new NpcTraitProfile(
@@ -78,23 +87,26 @@ namespace ProjectTheta.NPC
         };
 
         public static int Count =>
-            Profiles.Length;
+            Active.Length;
 
         public static NpcTraitProfile Get(
             NpcTrait trait)
         {
+            NpcTraitProfile[] table =
+                Active;
+
             for (int i = 0;
-                 i < Profiles.Length;
+                 i < table.Length;
                  i++)
             {
-                if (Profiles[i].Trait ==
+                if (table[i].Trait ==
                     trait)
                 {
-                    return Profiles[i];
+                    return table[i];
                 }
             }
 
-            return Profiles[0];
+            return table[0];
         }
 
         public static bool Contains(

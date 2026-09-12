@@ -3,6 +3,7 @@
 using UnityEngine.InputSystem;
 #endif
 using ProjectTheta.Core;
+using ProjectTheta.Presentation;
 using ProjectTheta.Save;
 using ProjectTheta.Stage;
 
@@ -17,7 +18,7 @@ namespace ProjectTheta.UI
     /// </summary>
     public sealed class StageResultPanel : MonoBehaviour
     {
-        private const int RowCount = 7;
+        private const int RowCount = 8;
 
         [SerializeField] private float _rowInterval =
             StageResultRevealLogic.DefaultRowInterval;
@@ -36,15 +37,12 @@ namespace ProjectTheta.UI
 
         private StageScoreBreakdown _breakdown;
         private StageRank _rank;
+        private int _contractEssence;
         private bool _snapshotTaken;
         private bool _skipped;
         private float _elapsed;
         private int _playedRowTicks;
         private bool _playedStamp;
-
-        private AudioSource _audioSource;
-        private AudioClip _tickClip;
-        private AudioClip _stampClip;
 
         private GUIStyle _rowLabelStyle;
         private GUIStyle _rowValueStyle;
@@ -61,25 +59,6 @@ namespace ProjectTheta.UI
         {
             _stage = stage;
             _tracker = tracker;
-        }
-
-        private void Awake()
-        {
-            _audioSource =
-                gameObject.AddComponent<
-                    AudioSource>();
-
-            _audioSource.playOnAwake =
-                false;
-
-            _audioSource.spatialBlend =
-                0f;
-
-            _tickClip =
-                RuntimeUiSfx.CreateTick();
-
-            _stampClip =
-                RuntimeUiSfx.CreateStamp();
         }
 
         private void Update()
@@ -156,8 +135,8 @@ namespace ProjectTheta.UI
             {
                 _playedStamp = true;
 
-                PlayClip(
-                    _stampClip);
+                GameAudio.Play(
+                    GameSfx.UiStamp);
             }
 
             _playedRowTicks =
@@ -201,6 +180,19 @@ namespace ProjectTheta.UI
                 _stage.State ==
                 StageState.Cleared;
 
+            string rankLabel =
+                cleared
+                    ? StageRankLogic.GetLabel(
+                        _rank)
+                    : "-";
+
+            _contractEssence =
+                ContractEssenceLogic.Compute(
+                    _tracker.RecoveredEssence,
+                    _stage.TargetEssence,
+                    cleared,
+                    rankLabel);
+
             GameSession.Instance.SubmitStageResult(
                 new StageResultSummary
                 {
@@ -210,10 +202,11 @@ namespace ProjectTheta.UI
                     TotalScore =
                         _breakdown.Total,
                     RankLabel =
-                        cleared
-                            ? StageRankLogic.GetLabel(
-                                _rank)
-                            : "-"
+                        rankLabel,
+                    ContractEssence =
+                        _contractEssence,
+                    TargetEssence =
+                        _stage.TargetEssence
                 });
         }
 
@@ -229,8 +222,8 @@ namespace ProjectTheta.UI
             {
                 _playedRowTicks++;
 
-                PlayClip(
-                    _tickClip);
+                GameAudio.Play(
+                    GameSfx.UiTick);
             }
 
             if (_playedStamp)
@@ -250,22 +243,9 @@ namespace ProjectTheta.UI
             {
                 _playedStamp = true;
 
-                PlayClip(
-                    _stampClip);
+                GameAudio.Play(
+                    GameSfx.UiStamp);
             }
-        }
-
-        private void PlayClip(
-            AudioClip clip)
-        {
-            if (_audioSource == null ||
-                clip == null)
-            {
-                return;
-            }
-
-            _audioSource.PlayOneShot(
-                clip);
         }
 
         private void OnGUI()
@@ -285,7 +265,7 @@ namespace ProjectTheta.UI
                     Screen.width *
                     0.72f);
 
-            const float height = 396f;
+            const float height = 428f;
 
             float x =
                 (Screen.width -
@@ -387,7 +367,7 @@ namespace ProjectTheta.UI
                         rowRect.center.y));
 
                 bool isTotalRow =
-                    i == RowCount - 1;
+                    i >= RowCount - 2;
 
                 GUIStyle labelStyle =
                     isTotalRow
@@ -552,8 +532,11 @@ namespace ProjectTheta.UI
                 case 5:
                     return "남은 시간";
 
-                default:
+                case 6:
                     return "총점";
+
+                default:
+                    return "계약 정기";
             }
         }
 
@@ -586,8 +569,11 @@ namespace ProjectTheta.UI
                     return FormatTime(
                         _stage.RemainingTime);
 
-                default:
+                case 6:
                     return $"{_breakdown.Total:N0}";
+
+                default:
+                    return $"+{_contractEssence:N0}";
             }
         }
 
@@ -716,19 +702,5 @@ namespace ProjectTheta.UI
                 };
         }
 
-        private void OnDestroy()
-        {
-            if (_tickClip != null)
-            {
-                Destroy(
-                    _tickClip);
-            }
-
-            if (_stampClip != null)
-            {
-                Destroy(
-                    _stampClip);
-            }
-        }
     }
 }

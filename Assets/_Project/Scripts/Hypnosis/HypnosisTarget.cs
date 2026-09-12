@@ -3,6 +3,7 @@ using ProjectTheta.Companion;
 using ProjectTheta.Core;
 using ProjectTheta.NPC;
 using ProjectTheta.Ownership;
+using ProjectTheta.Player;
 using ProjectTheta.Rival;
 
 namespace ProjectTheta.Hypnosis
@@ -66,11 +67,12 @@ namespace ProjectTheta.Hypnosis
             OwnershipContestLogic.CanPlayerContest(
                 Owner);
 
-        /// <summary>등급·특성이 반영된 최종 최면 상승 속도다.</summary>
+        /// <summary>등급·특성·플레이어 성장·난이도가 모두 반영된 최종 최면 상승 속도다.</summary>
         public float BuildPerSecond =>
-            Profile == null
+            (Profile == null
                 ? _buildPerSecond
-                : Profile.HypnosisBuildPerSecond;
+                : Profile.HypnosisBuildPerSecond) *
+            PlayerUpgradeMultipliers.HypnosisSpeed;
 
         /// <summary>시선 회피형 NPC가 지금 최면 연결을 끊고 있는지 여부다.</summary>
         public bool IsGazeBlocked

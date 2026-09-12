@@ -1,4 +1,4 @@
-namespace ProjectTheta.Items
+﻿namespace ProjectTheta.Items
 {
     /// <summary>
     /// 기획서 A.8절 소비 아이템이다.
@@ -52,6 +52,15 @@ namespace ProjectTheta.Items
 
     public static class ConsumableItemTable
     {
+        /// <summary>자산에서 읽은 아이템 표다. null이면 아래 기본 표를 쓴다.</summary>
+        public static ConsumableItemProfile[] Override { get; set; }
+
+        private static ConsumableItemProfile[] Active =>
+            Override != null &&
+            Override.Length > 0
+                ? Override
+                : Profiles;
+
         private static readonly ConsumableItemProfile[] Profiles =
         {
             new ConsumableItemProfile(
@@ -100,23 +109,26 @@ namespace ProjectTheta.Items
         };
 
         public static int Count =>
-            Profiles.Length;
+            Active.Length;
 
         public static ConsumableItemProfile Get(
             ConsumableItem item)
         {
+            ConsumableItemProfile[] table =
+                Active;
+
             for (int i = 0;
-                 i < Profiles.Length;
+                 i < table.Length;
                  i++)
             {
-                if (Profiles[i].Item ==
+                if (table[i].Item ==
                     item)
                 {
-                    return Profiles[i];
+                    return table[i];
                 }
             }
 
-            return Profiles[0];
+            return table[0];
         }
     }
 }

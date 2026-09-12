@@ -174,6 +174,9 @@ namespace ProjectTheta.Player
                     _sprintSpeedMultiplier;
             }
 
+            speed *=
+                PlayerUpgradeMultipliers.MoveSpeed;
+
             _rigidbody.linearVelocity =
                 direction *
                 speed;
@@ -194,7 +197,8 @@ namespace ProjectTheta.Player
             }
 
             return _focus.TrySpend(
-                _focus.DashCost);
+                _focus.DashCost *
+                PlayerUpgradeMultipliers.DashCost);
         }
 
         public void SetInputLocked(
