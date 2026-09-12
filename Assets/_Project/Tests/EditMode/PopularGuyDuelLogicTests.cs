@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using ProjectTheta.Ownership;
 using ProjectTheta.Rival;
 
@@ -13,8 +13,8 @@ namespace ProjectTheta.Tests.EditMode
                 PopularGuyDuelLogic.CanStart(
                     false,
                     0f,
-                    PopularGuyState.Approach,
-                    PopularGuyTargetMode.NeutralClaim,
+                    OpponentState.Approach,
+                    OpponentTargetMode.NeutralClaim,
                     true,
                     NpcOwner.Neutral));
         }
@@ -26,8 +26,8 @@ namespace ProjectTheta.Tests.EditMode
                 PopularGuyDuelLogic.CanStart(
                     false,
                     0f,
-                    PopularGuyState.Claiming,
-                    PopularGuyTargetMode.NeutralClaim,
+                    OpponentState.Claiming,
+                    OpponentTargetMode.NeutralClaim,
                     true,
                     NpcOwner.Neutral));
         }
@@ -39,8 +39,8 @@ namespace ProjectTheta.Tests.EditMode
                 PopularGuyDuelLogic.CanStart(
                     false,
                     0f,
-                    PopularGuyState.Approach,
-                    PopularGuyTargetMode.Contest,
+                    OpponentState.Approach,
+                    OpponentTargetMode.Contest,
                     true,
                     NpcOwner.Player));
         }
@@ -52,8 +52,8 @@ namespace ProjectTheta.Tests.EditMode
                 PopularGuyDuelLogic.CanStart(
                     false,
                     0f,
-                    PopularGuyState.Contest,
-                    PopularGuyTargetMode.Contest,
+                    OpponentState.Contest,
+                    OpponentTargetMode.Contest,
                     true,
                     NpcOwner.Player));
         }
@@ -65,8 +65,8 @@ namespace ProjectTheta.Tests.EditMode
                 PopularGuyDuelLogic.CanStart(
                     false,
                     0f,
-                    PopularGuyState.Contest,
-                    PopularGuyTargetMode.Contest,
+                    OpponentState.Contest,
+                    OpponentTargetMode.Contest,
                     true,
                     NpcOwner.Geumtaeyang));
         }
@@ -78,8 +78,8 @@ namespace ProjectTheta.Tests.EditMode
                 PopularGuyDuelLogic.CanStart(
                     false,
                     0f,
-                    PopularGuyState.Idle,
-                    PopularGuyTargetMode.NeutralClaim,
+                    OpponentState.Idle,
+                    OpponentTargetMode.NeutralClaim,
                     true,
                     NpcOwner.Neutral));
 
@@ -87,8 +87,8 @@ namespace ProjectTheta.Tests.EditMode
                 PopularGuyDuelLogic.CanStart(
                     true,
                     0f,
-                    PopularGuyState.Claiming,
-                    PopularGuyTargetMode.NeutralClaim,
+                    OpponentState.Claiming,
+                    OpponentTargetMode.NeutralClaim,
                     true,
                     NpcOwner.Neutral));
 
@@ -96,8 +96,8 @@ namespace ProjectTheta.Tests.EditMode
                 PopularGuyDuelLogic.CanStart(
                     false,
                     0f,
-                    PopularGuyState.Contest,
-                    PopularGuyTargetMode.Contest,
+                    OpponentState.Contest,
+                    OpponentTargetMode.Contest,
                     true,
                     NpcOwner.PopularGuy));
         }

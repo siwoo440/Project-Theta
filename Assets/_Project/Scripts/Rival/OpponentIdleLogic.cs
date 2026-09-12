@@ -2,7 +2,7 @@ using System;
 
 namespace ProjectTheta.Rival
 {
-    public static class RivalIdleLogic
+    public static class OpponentIdleLogic
     {
         public static float ResolveDuration(
             float minimum,

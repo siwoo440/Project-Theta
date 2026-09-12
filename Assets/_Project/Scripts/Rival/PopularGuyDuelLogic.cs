@@ -1,4 +1,4 @@
-using ProjectTheta.Ownership;
+﻿using ProjectTheta.Ownership;
 
 namespace ProjectTheta.Rival
 {
@@ -7,8 +7,8 @@ namespace ProjectTheta.Rival
         public static bool CanStart(
             bool duelLocked,
             float stunRemaining,
-            PopularGuyState state,
-            PopularGuyTargetMode mode,
+            OpponentState state,
+            OpponentTargetMode mode,
             bool hasTarget,
             NpcOwner targetOwner)
         {
@@ -22,16 +22,16 @@ namespace ProjectTheta.Rival
 
             switch (mode)
             {
-                case PopularGuyTargetMode.NeutralClaim:
+                case OpponentTargetMode.NeutralClaim:
                     return
                         targetOwner ==
                             NpcOwner.Neutral &&
                         (state ==
-                             PopularGuyState.Approach ||
+                             OpponentState.Approach ||
                          state ==
-                             PopularGuyState.Claiming);
+                             OpponentState.Claiming);
 
-                case PopularGuyTargetMode.Contest:
+                case OpponentTargetMode.Contest:
                     if (!PopularGuyLogic.CanContest(
                             targetOwner))
                     {
@@ -40,11 +40,11 @@ namespace ProjectTheta.Rival
 
                     return
                         state ==
-                            PopularGuyState.Approach ||
+                            OpponentState.Approach ||
                         state ==
-                            PopularGuyState.Contest;
+                            OpponentState.Contest;
 
-                case PopularGuyTargetMode.None:
+                case OpponentTargetMode.None:
                 default:
                     return false;
             }

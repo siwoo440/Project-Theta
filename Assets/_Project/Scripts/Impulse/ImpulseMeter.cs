@@ -1,8 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Capture;
 using ProjectTheta.Companion;
 using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
+using ProjectTheta.NPC;
 using ProjectTheta.Stage;
 
 namespace ProjectTheta.Impulse
@@ -41,6 +42,24 @@ namespace ProjectTheta.Impulse
 
         private float _buildRateMultiplier = 1f;
         private float _phaseRemaining;
+        private NpcProfile _profile;
+
+        /// <summary>등급이 높은 NPC일수록 충동이 빠르게 오른다.</summary>
+        private float GradeImpulseMultiplier
+        {
+            get
+            {
+                if (_profile == null)
+                {
+                    _profile =
+                        GetComponent<NpcProfile>();
+                }
+
+                return _profile == null
+                    ? 1f
+                    : _profile.ImpulseBuildMultiplier;
+            }
+        }
 
         public float CurrentImpulse { get; private set; }
 
@@ -151,7 +170,8 @@ namespace ProjectTheta.Impulse
                     CurrentImpulse,
                     _maximumImpulse,
                     _buildPerSecond *
-                    _buildRateMultiplier,
+                    _buildRateMultiplier *
+                    GradeImpulseMultiplier,
                     Time.deltaTime);
 
             State =

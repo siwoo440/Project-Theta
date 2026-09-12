@@ -1,16 +1,16 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using ProjectTheta.Rival;
 
 namespace ProjectTheta.Tests.EditMode
 {
-    public sealed class RivalIdleLogicTests
+    public sealed class OpponentIdleLogicTests
     {
         [Test]
         public void ResolveDuration_ZeroRandom_ReturnsMinimum()
         {
             Assert.AreEqual(
                 1.2f,
-                RivalIdleLogic.ResolveDuration(
+                OpponentIdleLogic.ResolveDuration(
                     1.2f,
                     3.0f,
                     0f),
@@ -22,7 +22,7 @@ namespace ProjectTheta.Tests.EditMode
         {
             Assert.AreEqual(
                 3.0f,
-                RivalIdleLogic.ResolveDuration(
+                OpponentIdleLogic.ResolveDuration(
                     1.2f,
                     3.0f,
                     1f),
@@ -34,7 +34,7 @@ namespace ProjectTheta.Tests.EditMode
         {
             Assert.AreEqual(
                 3.0f,
-                RivalIdleLogic.ResolveDuration(
+                OpponentIdleLogic.ResolveDuration(
                     1.2f,
                     3.0f,
                     4f),

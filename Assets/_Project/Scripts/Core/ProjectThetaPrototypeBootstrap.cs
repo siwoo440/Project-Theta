@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using ProjectTheta.Capture;
 using ProjectTheta.Duel;
@@ -259,6 +259,21 @@ namespace ProjectTheta.Core
                 new Vector2(15.0f, -0.70f)
             };
 
+            // 프로토타입 스테이지 등급 구성: 일반 5 / 숙련 3 / 희귀 1 / 각성 1
+            NpcGrade[] grades =
+            {
+                NpcGrade.Common,
+                NpcGrade.Common,
+                NpcGrade.Skilled,
+                NpcGrade.Common,
+                NpcGrade.Rare,
+                NpcGrade.Common,
+                NpcGrade.Skilled,
+                NpcGrade.Common,
+                NpcGrade.Awakened,
+                NpcGrade.Skilled
+            };
+
             for (int i = 0;
                  i < positions.Length;
                  i++)
@@ -318,6 +333,12 @@ namespace ProjectTheta.Core
 
                 NpcAgent agent =
                     npc.AddComponent<NpcAgent>();
+
+                NpcProfile profile =
+                    npc.AddComponent<NpcProfile>();
+
+                profile.Configure(
+                    grades[i % grades.Length]);
 
                 npc.AddComponent<HypnosisTarget>();
                 npc.AddComponent<FollowerController>();
@@ -398,23 +419,19 @@ namespace ProjectTheta.Core
                 DepthSortByY>();
 
             rival.AddComponent<
-                RivalFollowerManager>();
+                OpponentFollowerManager>();
 
-            RivalController controller =
+            GeumtaeyangController controller =
                 rival.AddComponent<
-                    RivalController>();
+                    GeumtaeyangController>();
 
             controller.Configure(
                 stage,
                 playerFollowers,
                 animator);
 
-            OpponentDuelTarget duelTarget =
-                rival.AddComponent<
-                    OpponentDuelTarget>();
-
-            duelTarget.Configure(
-                OpponentDuelKind.Geumtaeyang);
+            rival.AddComponent<
+                OpponentDuelTarget>();
         }
 
         private void CreatePopularGuy(
@@ -484,7 +501,7 @@ namespace ProjectTheta.Core
                 DepthSortByY>();
 
             popularGuy.AddComponent<
-                PopularGuyFollowerManager>();
+                OpponentFollowerManager>();
 
             PopularGuyController controller =
                 popularGuy.AddComponent<
@@ -495,12 +512,8 @@ namespace ProjectTheta.Core
                 playerFollowers,
                 animator);
 
-            OpponentDuelTarget duelTarget =
-                popularGuy.AddComponent<
-                    OpponentDuelTarget>();
-
-            duelTarget.Configure(
-                OpponentDuelKind.PopularGuy);
+            popularGuy.AddComponent<
+                OpponentDuelTarget>();
         }
 
         private void CreateRecoveryPoint(

@@ -1,30 +1,39 @@
 using UnityEngine;
 using ProjectTheta.Hypnosis;
-using ProjectTheta.Ownership;
 using ProjectTheta.Rival;
 
 namespace ProjectTheta.Duel
 {
-    public enum OpponentDuelKind
-    {
-        Geumtaeyang,
-        PopularGuy
-    }
-
+    /// <summary>
+    /// 힘겨루기에서 플레이어의 상대가 되는 경쟁자 측 창구다.
+    /// 경쟁자 종류별 분기 없이 <see cref="OpponentControllerBase"/> 하나만 다룬다.
+    /// </summary>
     public sealed class OpponentDuelTarget : MonoBehaviour
     {
-        [SerializeField] private OpponentDuelKind _kind;
         [SerializeField] private int _maximumDefeats = 3;
 
-        private RivalController _geumtaeyang;
-        private PopularGuyController _popularGuy;
+        private OpponentControllerBase _opponent;
         private int _lossCount;
 
+        private OpponentControllerBase Opponent
+        {
+            get
+            {
+                if (_opponent == null)
+                {
+                    _opponent =
+                        GetComponent<
+                            OpponentControllerBase>();
+                }
+
+                return _opponent;
+            }
+        }
+
         public string DisplayName =>
-            _kind ==
-            OpponentDuelKind.Geumtaeyang
-                ? "금태양"
-                : "인기남";
+            Opponent == null
+                ? "-"
+                : Opponent.DisplayName;
 
         public int LossCount =>
             _lossCount;
@@ -40,53 +49,19 @@ namespace ProjectTheta.Duel
                 MaximumDefeats -
                 _lossCount);
 
-        public bool CanStartDuel
-        {
-            get
-            {
-                switch (_kind)
-                {
-                    case OpponentDuelKind.Geumtaeyang:
-                        return
-                            _geumtaeyang != null &&
-                            _geumtaeyang.
-                                CanStartPlayerDuel;
-
-                    case OpponentDuelKind.PopularGuy:
-                        return
-                            _popularGuy != null &&
-                            _popularGuy.
-                                CanStartPlayerDuel;
-
-                    default:
-                        return false;
-                }
-            }
-        }
-
-        private void Awake()
-        {
-            CacheControllers();
-        }
-
-        public void Configure(
-            OpponentDuelKind kind)
-        {
-            _kind =
-                kind;
-
-            CacheControllers();
-        }
+        public bool CanStartDuel =>
+            Opponent != null &&
+            Opponent.CanStartPlayerDuel;
 
         public void BeginDuel()
         {
-            SetControllerDuelLock(
+            Opponent?.SetDuelLocked(
                 true);
         }
 
         public void EndDuelWithoutStun()
         {
-            SetControllerDuelLock(
+            Opponent?.SetDuelLocked(
                 false);
         }
 
@@ -110,7 +85,7 @@ namespace ProjectTheta.Duel
                         _lossCount,
                         MaximumDefeats))
             {
-                SetControllerDuelLock(
+                Opponent?.SetDuelLocked(
                     false);
 
                 ReleaseAllOwnedFollowers();
@@ -121,59 +96,10 @@ namespace ProjectTheta.Duel
                 return true;
             }
 
-            ApplyControllerStun(
+            Opponent?.ApplyDuelStun(
                 stunDuration);
 
             return false;
-        }
-
-        private void CacheControllers()
-        {
-            _geumtaeyang =
-                GetComponent<
-                    RivalController>();
-
-            _popularGuy =
-                GetComponent<
-                    PopularGuyController>();
-        }
-
-        private void SetControllerDuelLock(
-            bool locked)
-        {
-            if (_kind ==
-                    OpponentDuelKind.Geumtaeyang &&
-                _geumtaeyang != null)
-            {
-                _geumtaeyang.SetDuelLocked(
-                    locked);
-            }
-            else if (_kind ==
-                        OpponentDuelKind.PopularGuy &&
-                     _popularGuy != null)
-            {
-                _popularGuy.SetDuelLocked(
-                    locked);
-            }
-        }
-
-        private void ApplyControllerStun(
-            float duration)
-        {
-            if (_kind ==
-                    OpponentDuelKind.Geumtaeyang &&
-                _geumtaeyang != null)
-            {
-                _geumtaeyang.ApplyDuelStun(
-                    duration);
-            }
-            else if (_kind ==
-                        OpponentDuelKind.PopularGuy &&
-                     _popularGuy != null)
-            {
-                _popularGuy.ApplyDuelStun(
-                    duration);
-            }
         }
 
         private void KnockAwayFrom(
@@ -211,6 +137,11 @@ namespace ProjectTheta.Duel
 
         private void ReleaseAllOwnedFollowers()
         {
+            if (Opponent == null)
+            {
+                return;
+            }
+
             HypnosisTarget[] targets =
                 FindObjectsByType<HypnosisTarget>(
                     FindObjectsSortMode.None);
@@ -222,37 +153,17 @@ namespace ProjectTheta.Duel
                 HypnosisTarget target =
                     targets[i];
 
-                if (target == null)
+                if (target == null ||
+                    target.OpponentOwner !=
+                    Opponent)
                 {
                     continue;
                 }
 
-                if (_kind ==
-                        OpponentDuelKind.Geumtaeyang &&
-                    target.Owner ==
-                        NpcOwner.Geumtaeyang &&
-                    target.GeumtaeyangOwner ==
-                        _geumtaeyang)
-                {
-                    _geumtaeyang?.
-                        ReleaseOwnedTarget(
-                            target);
+                Opponent.ReleaseOwnedTarget(
+                    target);
 
-                    target.ResetHypnosis();
-                }
-                else if (_kind ==
-                             OpponentDuelKind.PopularGuy &&
-                         target.Owner ==
-                             NpcOwner.PopularGuy &&
-                         target.PopularGuyOwner ==
-                             _popularGuy)
-                {
-                    _popularGuy?.
-                        ReleaseOwnedTarget(
-                            target);
-
-                    target.ResetHypnosis();
-                }
+                target.ResetHypnosis();
             }
         }
     }

@@ -50,6 +50,37 @@ namespace ProjectTheta.Stage
                 safeDelta);
         }
 
+        /// <summary>
+        /// 기준 보상에 NPC 등급 정기 배율을 적용한다.
+        /// 기준 보상이 0보다 크면 결과는 최소 1을 보장해 고등급이 아닌 NPC도 보상이 사라지지 않는다.
+        /// </summary>
+        public static int ScaleEssenceReward(
+            int baseAmount,
+            float valueMultiplier)
+        {
+            int safeBase =
+                Math.Max(
+                    0,
+                    baseAmount);
+
+            if (safeBase == 0)
+            {
+                return 0;
+            }
+
+            float safeMultiplier =
+                Math.Max(
+                    0f,
+                    valueMultiplier);
+
+            return Math.Max(
+                1,
+                (int)Math.Round(
+                    safeBase *
+                    (double)safeMultiplier,
+                    MidpointRounding.AwayFromZero));
+        }
+
         public static int ComputeProductionPerSecond(
             int followerCount,
             int essencePerFollower)

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.NPC;
 
@@ -11,20 +11,17 @@ namespace ProjectTheta.Companion
     public sealed class FollowerController : MonoBehaviour
     {
         [Header("Follow")]
-        [SerializeField] private float _followSpeed = 5.0f;
+        [SerializeField] private float _followSpeed = 3.33f;
         [SerializeField] private float _catchUpDistance = 4.0f;
-        [SerializeField] private float _catchUpSpeed = 7.0f;
+        [SerializeField] private float _catchUpSpeed = 4.67f;
         [SerializeField] private float _stopDistance = 0.14f;
 
         [Header("Loose Formation")]
-        [SerializeField] private float _horizontalJitter = 0.38f;
-        [SerializeField] private float _verticalJitter = 0.42f;
-        [SerializeField] private float _wanderHorizontal = 0.08f;
-        [SerializeField] private float _wanderVertical = 0.11f;
-        [SerializeField] private float _wanderSpeedMin = 0.55f;
-        [SerializeField] private float _wanderSpeedMax = 0.95f;
-        [SerializeField] private float _followSpeedVariation = 0.10f;
-        [SerializeField] private float _stopDistanceVariation = 0.10f;
+        [SerializeField] private float _horizontalJitter = 0.62f;
+        [SerializeField] private float _verticalJitter = 0.58f;
+        [SerializeField] private float _wanderAmplitudeScale = 1.0f;
+        [SerializeField] private float _followSpeedVariation = 0.18f;
+        [SerializeField] private float _stopDistanceVariation = 0.22f;
 
         [Header("Stability")]
         [SerializeField] private float _maximumStability = 100f;
@@ -44,9 +41,8 @@ namespace ProjectTheta.Companion
         private bool _isFollowing;
         private bool _isUnderExternalControl;
 
+        private NpcWanderMotion _wander;
         private Vector2 _personalFormationOffset;
-        private float _wanderPhase;
-        private float _wanderSpeed;
         private float _personalSpeedMultiplier = 1f;
         private float _personalStopDistance;
 
@@ -70,6 +66,9 @@ namespace ProjectTheta.Companion
 
             _separation =
                 GetComponent<NpcSoftSeparation>();
+
+            _wander =
+                GetComponent<NpcWanderMotion>();
 
             _stability =
                 _maximumStability;
@@ -256,15 +255,7 @@ namespace ProjectTheta.Companion
                         -_verticalJitter,
                         _verticalJitter));
 
-            _wanderPhase =
-                Random.Range(
-                    0f,
-                    Mathf.PI * 2f);
-
-            _wanderSpeed =
-                Random.Range(
-                    _wanderSpeedMin,
-                    _wanderSpeedMax);
+            _wander?.Reseed();
 
             _personalSpeedMultiplier =
                 Random.Range(
@@ -280,19 +271,10 @@ namespace ProjectTheta.Companion
 
         private Vector2 GetWanderOffset()
         {
-            float time =
-                Time.fixedTime *
-                _wanderSpeed;
-
-            return new Vector2(
-                Mathf.Sin(
-                    time +
-                    _wanderPhase) *
-                _wanderHorizontal,
-                Mathf.Cos(
-                    (time * 0.83f) +
-                    _wanderPhase) *
-                _wanderVertical);
+            return _wander == null
+                ? Vector2.zero
+                : _wander.GetOffset(
+                    _wanderAmplitudeScale);
         }
 
         private void OnDisable()
