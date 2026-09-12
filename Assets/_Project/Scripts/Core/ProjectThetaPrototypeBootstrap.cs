@@ -16,21 +16,27 @@ namespace ProjectTheta.Core
 {
     public sealed class ProjectThetaPrototypeBootstrap : MonoBehaviour
     {
-        [RuntimeInitializeOnLoadMethod(
-            RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void AutoCreatePrototype()
+        /// <summary>
+        /// 씬 로드마다 <see cref="SceneBootstrapRouter"/>가 호출한다.
+        /// 이미 구성되어 있으면 아무것도 하지 않는다.
+        /// </summary>
+        public static void CreateForScene()
         {
             string sceneName =
                 SceneManager.GetActiveScene().name;
 
-            if (sceneName != "Test" &&
-                sceneName != "TestStage")
+            if (!SceneFlowLogic.IsStageScene(
+                    sceneName))
             {
                 return;
             }
 
+            // 허브에서 재출격하면 씬이 새로 로드되므로 이전 오브젝트는 이미 사라져 있다.
+            // 그래도 중복 생성만은 확실히 막는다.
             if (FindFirstObjectByType<
-                    ProjectThetaPrototypeBootstrap>() != null)
+                    ProjectThetaPrototypeBootstrap>() != null ||
+                FindFirstObjectByType<
+                    PlayerSideViewController>() != null)
             {
                 return;
             }

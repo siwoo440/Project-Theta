@@ -2,6 +2,8 @@
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
+using ProjectTheta.Core;
+using ProjectTheta.Save;
 using ProjectTheta.Stage;
 
 namespace ProjectTheta.UI
@@ -51,6 +53,7 @@ namespace ProjectTheta.UI
         private GUIStyle _totalValueStyle;
         private GUIStyle _rankStyle;
         private GUIStyle _hintStyle;
+        private GUIStyle _buttonStyle;
 
         public void Configure(
             StageSessionController stage,
@@ -182,6 +185,36 @@ namespace ProjectTheta.UI
                 StageRankLogic.Resolve(
                     _breakdown.Total,
                     _tracker.IsSConditionMet);
+
+            SubmitResultToSession();
+        }
+
+        /// <summary>이번 판의 결과를 허브로 넘긴다. 세이브 반영은 허브가 한다.</summary>
+        private void SubmitResultToSession()
+        {
+            if (GameSession.Instance == null)
+            {
+                return;
+            }
+
+            bool cleared =
+                _stage.State ==
+                StageState.Cleared;
+
+            GameSession.Instance.SubmitStageResult(
+                new StageResultSummary
+                {
+                    Cleared = cleared,
+                    RecoveredEssence =
+                        _tracker.RecoveredEssence,
+                    TotalScore =
+                        _breakdown.Total,
+                    RankLabel =
+                        cleared
+                            ? StageRankLogic.GetLabel(
+                                _rank)
+                            : "-"
+                });
         }
 
         private void PlayPendingSounds()
@@ -467,16 +500,33 @@ namespace ProjectTheta.UI
                     _rankDelay,
                     _rankDuration);
 
-            GUI.Label(
-                new Rect(
-                    x,
-                    y + height - 30f,
-                    width,
-                    22f),
-                complete
-                    ? "스테이지 종료 - 입력 및 NPC 진행 정지"
-                    : "클릭하면 건너뜁니다",
-                _hintStyle);
+            if (!complete)
+            {
+                GUI.Label(
+                    new Rect(
+                        x,
+                        y + height - 30f,
+                        width,
+                        22f),
+                    "클릭하면 건너뜁니다",
+                    _hintStyle);
+
+                return;
+            }
+
+            // 연출이 끝난 뒤에만 허브로 돌아갈 수 있다.
+            if (GUI.Button(
+                    new Rect(
+                        x + (width * 0.3f),
+                        y + height - 46f,
+                        width * 0.4f,
+                        36f),
+                    "허브로",
+                    _buttonStyle))
+            {
+                GameSession.Instance?.GoTo(
+                    SceneDestination.Hub);
+            }
         }
 
         private string GetRowLabel(
@@ -654,6 +704,15 @@ namespace ProjectTheta.UI
                     alignment =
                         TextAnchor.MiddleCenter,
                     fontSize = 13
+                };
+
+            _buttonStyle =
+                new GUIStyle(
+                    GUI.skin.button)
+                {
+                    fontSize = 16,
+                    fontStyle =
+                        FontStyle.Bold
                 };
         }
 
