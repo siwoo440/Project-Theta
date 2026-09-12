@@ -8,38 +8,39 @@ using ProjectTheta.NPC;
 using ProjectTheta.Player;
 using ProjectTheta.Stage;
 using ProjectTheta.Rival;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace ProjectTheta.UI
 {
+    /// <summary>
+    /// 개발용 디버그 HUD다.
+    ///
+    /// 15일차에 플레이어에게 보여야 할 정보는 <see cref="StageHudView"/>로 옮겼다.
+    /// 여기에는 개발 중 확인용 수치만 남기고, 기본적으로 숨긴 뒤 F1로 켠다.
+    /// </summary>
     public sealed class PrototypeHud : MonoBehaviour
     {
+        private bool _visible;
+
         private HypnosisCaster _caster;
         private FollowerManager _followers;
         private RampageCoordinator _coordinator;
         private StageSessionController _stage;
-        private PlayerHealth _health;
         private PlayerCaptureController _capture;
         private StageTelemetry _telemetry;
         private StageScoreTracker _scoreTracker;
-        private PlayerFocus _focus;
-        private HypnosisWaveCaster _wave;
-        private PlayerConsumables _consumables;
         private GeumtaeyangController _geumtaeyang;
         private PopularGuyController _popularGuy;
-
-        private GUIStyle _centerLabelStyle;
-        private GUIStyle _centerTitleStyle;
-        private GUIStyle _leftLabelStyle;
 
         public void Configure(
             HypnosisCaster caster,
             StageSessionController stage,
-            PlayerHealth health,
             PlayerCaptureController capture)
         {
             _caster = caster;
             _stage = stage;
-            _health = health;
             _capture = capture;
 
             _telemetry =
@@ -48,23 +49,6 @@ namespace ProjectTheta.UI
             _scoreTracker =
                 FindFirstObjectByType<
                     StageScoreTracker>();
-
-            _focus =
-                caster == null
-                    ? null
-                    : caster.GetComponent<PlayerFocus>();
-
-            _wave =
-                caster == null
-                    ? null
-                    : caster.GetComponent<
-                        HypnosisWaveCaster>();
-
-            _consumables =
-                caster == null
-                    ? null
-                    : caster.GetComponent<
-                        PlayerConsumables>();
 
             _geumtaeyang =
                 FindFirstObjectByType<GeumtaeyangController>();
@@ -85,254 +69,26 @@ namespace ProjectTheta.UI
                         RampageCoordinator>();
         }
 
+        /// <summary>F1로 켜고 끈다. 기본은 꺼짐이다.</summary>
+        private void Update()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null &&
+                Keyboard.current.f1Key.wasPressedThisFrame)
+            {
+                _visible = !_visible;
+            }
+#endif
+        }
+
         private void OnGUI()
         {
-            EnsureStyles();
+            if (!_visible)
+            {
+                return;
+            }
 
-            DrawHealthHud();
-            DrawStageHud();
             DrawDebugHud();
-        }
-
-        private void DrawHealthHud()
-        {
-            if (_health == null ||
-                _stage == null)
-            {
-                return;
-            }
-
-            const float x = 20f;
-            const float y = 18f;
-            const float width = 280f;
-            const float barHeight = 22f;
-
-            GUI.Label(
-                new Rect(
-                    x,
-                    y,
-                    width,
-                    24f),
-                $"HP  {_health.CurrentHealth} / {_health.MaximumHealth}",
-                _leftLabelStyle);
-
-            DrawProgressBar(
-                new Rect(
-                    x,
-                    y + 27f,
-                    width,
-                    barHeight),
-                _health.HealthNormalized,
-                new Color(
-                    0.88f,
-                    0.20f,
-                    0.27f,
-                    1f),
-                new Color(
-                    0.14f,
-                    0.06f,
-                    0.07f,
-                    0.92f));
-
-            DrawFocusHud(
-                x,
-                y + 56f,
-                width,
-                barHeight);
-
-            GUI.Label(
-                new Rect(
-                    x,
-                    y + 164f,
-                    width + 80f,
-                    20f),
-                $"폭주 피격: 정기 +{_stage.RampageCaughtReward} / 포획 중 HP -{_stage.CaptureTickDamage} 누적 {_stage.CaptureMaxDamage}",
-                _leftLabelStyle);
-        }
-
-        /// <summary>집중력 게이지와 파동 · 소비 아이템 상태를 그린다.</summary>
-        private void DrawFocusHud(
-            float x,
-            float y,
-            float width,
-            float barHeight)
-        {
-            if (_focus == null)
-            {
-                return;
-            }
-
-            string focusText =
-                _focus.IsExhausted
-                    ? $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}  (고갈 - {_focus.ResumeThreshold:0} 회복 필요)"
-                    : $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}";
-
-            GUI.Label(
-                new Rect(
-                    x,
-                    y,
-                    width + 140f,
-                    24f),
-                focusText,
-                _leftLabelStyle);
-
-            DrawProgressBar(
-                new Rect(
-                    x,
-                    y + 27f,
-                    width,
-                    barHeight),
-                _focus.FocusNormalized,
-                _focus.IsExhausted
-                    ? new Color(
-                        0.55f,
-                        0.48f,
-                        0.22f,
-                        1f)
-                    : new Color(
-                        0.30f,
-                        0.78f,
-                        0.96f,
-                        1f),
-                new Color(
-                    0.06f,
-                    0.10f,
-                    0.14f,
-                    0.92f));
-
-            if (_wave != null)
-            {
-                string waveText =
-                    _wave.CooldownRemaining > 0f
-                        ? $"파동(우클릭 유지)  재사용 {_wave.CooldownRemaining:0.0}초"
-                        : _wave.IsCharging
-                            ? $"파동 충전  {_wave.ChargeNormalized * 100f:0}%"
-                            : $"파동(우클릭 유지)  준비됨  집중력 -{_wave.FocusCost:0}";
-
-                GUI.Label(
-                    new Rect(
-                        x,
-                        y + 54f,
-                        width + 140f,
-                        22f),
-                    waveText,
-                    _leftLabelStyle);
-            }
-
-            if (_consumables != null)
-            {
-                GUI.Label(
-                    new Rect(
-                        x,
-                        y + 76f,
-                        width + 140f,
-                        22f),
-                    $"[1] {_consumables.GetSlotLabel(0)} - {_consumables.GetSlotDescription(0)}",
-                    _leftLabelStyle);
-
-                GUI.Label(
-                    new Rect(
-                        x,
-                        y + 98f,
-                        width + 140f,
-                        22f),
-                    $"[2] {_consumables.GetSlotLabel(1)} - {_consumables.GetSlotDescription(1)}",
-                    _leftLabelStyle);
-            }
-
-            if (_followers != null &&
-                _followers.IsContestWarded)
-            {
-                GUI.Label(
-                    new Rect(
-                        x,
-                        y + 120f,
-                        width + 140f,
-                        22f),
-                    $"차단 부적 활성  {_followers.ContestWardRemaining:0.0}초",
-                    _leftLabelStyle);
-            }
-        }
-
-        private void DrawStageHud()
-        {
-            if (_stage == null)
-            {
-                return;
-            }
-
-            float width =
-                Mathf.Min(
-                    520f,
-                    Screen.width * 0.42f);
-
-            float x =
-                (Screen.width - width) *
-                0.5f;
-
-            float y = 12f;
-
-            GUI.Label(
-                new Rect(
-                    x,
-                    y,
-                    width,
-                    28f),
-                $"남은 시간  {FormatTime(_stage.RemainingTime)}",
-                _centerTitleStyle);
-
-            GUI.Label(
-                new Rect(
-                    x,
-                    y + 31f,
-                    width,
-                    24f),
-                $"정기  {_stage.CurrentEssence} / {_stage.TargetEssence}",
-                _centerLabelStyle);
-
-            DrawProgressBar(
-                new Rect(
-                    x,
-                    y + 57f,
-                    width,
-                    24f),
-                _stage.EssenceNormalized,
-                new Color(
-                    0.70f,
-                    0.25f,
-                    1.00f,
-                    1f),
-                new Color(
-                    0.11f,
-                    0.06f,
-                    0.16f,
-                    0.94f));
-
-            int followerCount =
-                _followers == null
-                    ? 0
-                    : _followers.Count;
-
-            string recoveryText =
-                _stage.HasPendingRecovery
-                    ? $"회수 정산 중 {_stage.PendingRecoveryCount}명  ×{_stage.PendingRecoveryMultiplier:0.0}"
-                    : "회수 지점에 도착해야 정기가 확정됩니다";
-
-            string comboText =
-                _scoreTracker == null ||
-                _scoreTracker.CurrentCombo <= 0
-                    ? string.Empty
-                    : $"   |   콤보 ×{_scoreTracker.CurrentComboMultiplier:0.0}";
-
-            GUI.Label(
-                new Rect(
-                    x,
-                    y + 84f,
-                    width,
-                    22f),
-                recoveryText +
-                comboText,
-                _centerLabelStyle);
         }
 
         private void DrawDebugHud()
@@ -353,7 +109,7 @@ namespace ProjectTheta.UI
                     y,
                     width,
                     424f),
-                "Day 12 Debug");
+                "디버그 (F1)");
 
             if (_followers != null)
             {
@@ -710,48 +466,6 @@ namespace ProjectTheta.UI
                     width - 28f,
                     22f),
                 $"폭주 피격: {_stage.RampageCaptureCount} / 회수: {_stage.RecoveredFollowerCount}");
-        }
-
-        private void EnsureStyles()
-        {
-            if (_centerLabelStyle != null)
-            {
-                return;
-            }
-
-            _centerTitleStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleCenter,
-                    fontSize = 19,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-
-            _centerLabelStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleCenter,
-                    fontSize = 15,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-
-            _leftLabelStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleLeft,
-                    fontSize = 14,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-
         }
 
         private static void DrawProgressBar(
