@@ -3,6 +3,7 @@ using ProjectTheta.Capture;
 using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
+using ProjectTheta.Items;
 using ProjectTheta.NPC;
 using ProjectTheta.Player;
 using ProjectTheta.Stage;
@@ -20,6 +21,9 @@ namespace ProjectTheta.UI
         private PlayerCaptureController _capture;
         private StageTelemetry _telemetry;
         private StageScoreTracker _scoreTracker;
+        private PlayerFocus _focus;
+        private HypnosisWaveCaster _wave;
+        private PlayerConsumables _consumables;
         private GeumtaeyangController _geumtaeyang;
         private PopularGuyController _popularGuy;
 
@@ -44,6 +48,23 @@ namespace ProjectTheta.UI
             _scoreTracker =
                 FindFirstObjectByType<
                     StageScoreTracker>();
+
+            _focus =
+                caster == null
+                    ? null
+                    : caster.GetComponent<PlayerFocus>();
+
+            _wave =
+                caster == null
+                    ? null
+                    : caster.GetComponent<
+                        HypnosisWaveCaster>();
+
+            _consumables =
+                caster == null
+                    ? null
+                    : caster.GetComponent<
+                        PlayerConsumables>();
 
             _geumtaeyang =
                 FindFirstObjectByType<GeumtaeyangController>();
@@ -113,14 +134,124 @@ namespace ProjectTheta.UI
                     0.07f,
                     0.92f));
 
+            DrawFocusHud(
+                x,
+                y + 56f,
+                width,
+                barHeight);
+
             GUI.Label(
                 new Rect(
                     x,
-                    y + 54f,
+                    y + 164f,
                     width + 80f,
                     20f),
                 $"폭주 피격: 정기 +{_stage.RampageCaughtReward} / 포획 중 HP -{_stage.CaptureTickDamage} 누적 {_stage.CaptureMaxDamage}",
                 _leftLabelStyle);
+        }
+
+        /// <summary>집중력 게이지와 파동 · 소비 아이템 상태를 그린다.</summary>
+        private void DrawFocusHud(
+            float x,
+            float y,
+            float width,
+            float barHeight)
+        {
+            if (_focus == null)
+            {
+                return;
+            }
+
+            string focusText =
+                _focus.IsExhausted
+                    ? $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}  (고갈 - {_focus.ResumeThreshold:0} 회복 필요)"
+                    : $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}";
+
+            GUI.Label(
+                new Rect(
+                    x,
+                    y,
+                    width + 140f,
+                    24f),
+                focusText,
+                _leftLabelStyle);
+
+            DrawProgressBar(
+                new Rect(
+                    x,
+                    y + 27f,
+                    width,
+                    barHeight),
+                _focus.FocusNormalized,
+                _focus.IsExhausted
+                    ? new Color(
+                        0.55f,
+                        0.48f,
+                        0.22f,
+                        1f)
+                    : new Color(
+                        0.30f,
+                        0.78f,
+                        0.96f,
+                        1f),
+                new Color(
+                    0.06f,
+                    0.10f,
+                    0.14f,
+                    0.92f));
+
+            if (_wave != null)
+            {
+                string waveText =
+                    _wave.CooldownRemaining > 0f
+                        ? $"파동(우클릭 유지)  재사용 {_wave.CooldownRemaining:0.0}초"
+                        : _wave.IsCharging
+                            ? $"파동 충전  {_wave.ChargeNormalized * 100f:0}%"
+                            : $"파동(우클릭 유지)  준비됨  집중력 -{_wave.FocusCost:0}";
+
+                GUI.Label(
+                    new Rect(
+                        x,
+                        y + 54f,
+                        width + 140f,
+                        22f),
+                    waveText,
+                    _leftLabelStyle);
+            }
+
+            if (_consumables != null)
+            {
+                GUI.Label(
+                    new Rect(
+                        x,
+                        y + 76f,
+                        width + 140f,
+                        22f),
+                    $"[1] {_consumables.GetSlotLabel(0)} - {_consumables.GetSlotDescription(0)}",
+                    _leftLabelStyle);
+
+                GUI.Label(
+                    new Rect(
+                        x,
+                        y + 98f,
+                        width + 140f,
+                        22f),
+                    $"[2] {_consumables.GetSlotLabel(1)} - {_consumables.GetSlotDescription(1)}",
+                    _leftLabelStyle);
+            }
+
+            if (_followers != null &&
+                _followers.IsContestWarded)
+            {
+                GUI.Label(
+                    new Rect(
+                        x,
+                        y + 120f,
+                        width + 140f,
+                        22f),
+                    $"차단 부적 활성  {_followers.ContestWardRemaining:0.0}초",
+                    _leftLabelStyle);
+            }
         }
 
         private void DrawStageHud()
@@ -222,7 +353,7 @@ namespace ProjectTheta.UI
                     y,
                     width,
                     424f),
-                "Day 10 Debug");
+                "Day 12 Debug");
 
             if (_followers != null)
             {

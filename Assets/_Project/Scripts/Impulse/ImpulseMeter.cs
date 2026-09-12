@@ -334,6 +334,37 @@ namespace ProjectTheta.Impulse
             BeginRecovering();
         }
 
+        /// <summary>
+        /// 최면 파동이나 진정제가 충동을 낮춘다.
+        /// 폭주 진행 중인 NPC는 이미 통제를 벗어났으므로 영향을 주지 않는다.
+        /// </summary>
+        public void RelieveImpulse(
+            float amount)
+        {
+            switch (State)
+            {
+                case ImpulseState.Preparing:
+                case ImpulseState.Rampaging:
+                case ImpulseState.Capturing:
+                case ImpulseState.Recovering:
+                    return;
+            }
+
+            CurrentImpulse =
+                Mathf.Max(
+                    0f,
+                    CurrentImpulse -
+                    Mathf.Max(
+                        0f,
+                        amount));
+
+            State =
+                ImpulseLogic.ClassifyBand(
+                    CurrentImpulse,
+                    _warningThreshold,
+                    _dangerThreshold);
+        }
+
         public void CancelForRecovery()
         {
             if (_captureController != null)

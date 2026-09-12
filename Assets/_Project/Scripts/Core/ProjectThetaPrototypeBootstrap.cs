@@ -5,6 +5,7 @@ using ProjectTheta.Duel;
 using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
+using ProjectTheta.Items;
 using ProjectTheta.NPC;
 using ProjectTheta.Player;
 using ProjectTheta.Stage;
@@ -181,6 +182,7 @@ namespace ProjectTheta.Core
 
             player.AddComponent<FollowerManager>();
             player.AddComponent<RampageCoordinator>();
+            player.AddComponent<PlayerFocus>();
             player.AddComponent<HypnosisCaster>();
 
             PlayerHealth health =
@@ -202,6 +204,12 @@ namespace ProjectTheta.Core
 
             player.AddComponent<
                 OpponentDuelController>();
+
+            player.AddComponent<
+                HypnosisWaveCaster>();
+
+            player.AddComponent<
+                PlayerConsumables>();
 
             return controller;
         }
