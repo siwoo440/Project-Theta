@@ -157,21 +157,6 @@ namespace ProjectTheta.Stage
                 }
             }
 
-            FollowerEssenceProducer[] producers =
-                FindObjectsByType<FollowerEssenceProducer>(
-                    FindObjectsSortMode.None);
-
-            for (int i = 0;
-                 i < producers.Length;
-                 i++)
-            {
-                if (producers[i] != null)
-                {
-                    producers[i].enabled =
-                        false;
-                }
-            }
-
             Rigidbody2D[] bodies =
                 FindObjectsByType<Rigidbody2D>(
                     FindObjectsSortMode.None);

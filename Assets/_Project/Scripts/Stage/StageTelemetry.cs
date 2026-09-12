@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Companion;
 using ProjectTheta.Player;
 
@@ -64,14 +64,16 @@ namespace ProjectTheta.Stage
             }
 
             if (Essence100Time < 0f &&
-                _stage.CurrentEssence >= 100)
+                _stage.CurrentEssence >=
+                _stage.TargetEssence / 2)
             {
                 Essence100Time =
                     elapsed;
             }
 
             if (Essence200Time < 0f &&
-                _stage.CurrentEssence >= 200)
+                _stage.CurrentEssence >=
+                _stage.TargetEssence)
             {
                 Essence200Time =
                     elapsed;
