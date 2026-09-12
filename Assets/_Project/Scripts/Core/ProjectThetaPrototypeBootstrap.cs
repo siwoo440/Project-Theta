@@ -195,6 +195,9 @@ namespace ProjectTheta.Core
                 player.AddComponent<PlayerHealth>();
 
             player.AddComponent<
+                PlayerUpgrades>();
+
+            player.AddComponent<
                 StageScoreTracker>();
 
             StageSessionController stage =

@@ -1,3 +1,5 @@
+﻿using ProjectTheta.Balance;
+
 namespace ProjectTheta.Stage
 {
     /// <summary>기획서 16.2절 랭크다.</summary>
@@ -20,9 +22,18 @@ namespace ProjectTheta.Stage
     /// </summary>
     public static class StageRankLogic
     {
-        public const int BThreshold = 6000;
-        public const int AThreshold = 11000;
-        public const int SThreshold = 16000;
+        public const int DefaultBThreshold = 6000;
+        public const int DefaultAThreshold = 11000;
+        public const int DefaultSThreshold = 16000;
+
+        public static int BThreshold =>
+            BalanceOverrides.StageOrDefault.RankBThreshold;
+
+        public static int AThreshold =>
+            BalanceOverrides.StageOrDefault.RankAThreshold;
+
+        public static int SThreshold =>
+            BalanceOverrides.StageOrDefault.RankSThreshold;
 
         public static StageRank Resolve(
             int totalScore,

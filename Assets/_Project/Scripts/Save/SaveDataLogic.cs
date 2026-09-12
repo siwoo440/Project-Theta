@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace ProjectTheta.Save
 {
@@ -71,8 +71,7 @@ namespace ProjectTheta.Save
                  i++)
             {
                 data.UpgradeLevels[i] =
-                    Math.Max(
-                        0,
+                    UpgradeLogic.ClampLevel(
                         data.UpgradeLevels[i]);
             }
 
@@ -163,6 +162,65 @@ namespace ProjectTheta.Save
                        current);
         }
 
+        public static int GetUpgradeLevel(
+            SaveData data,
+            UpgradeTrack track)
+        {
+            SaveData target =
+                Normalize(
+                    data);
+
+            int index =
+                (int)track;
+
+            return index >= 0 &&
+                   index < target.UpgradeLevels.Length
+                ? target.UpgradeLevels[index]
+                : 0;
+        }
+
+        /// <summary>
+        /// 성장 한 단계를 구매한다. 정기가 모자라거나 만렙이면 아무것도 하지 않는다.
+        /// </summary>
+        public static bool TryPurchaseUpgrade(
+            SaveData data,
+            UpgradeTrack track)
+        {
+            SaveData target =
+                Normalize(
+                    data);
+
+            int index =
+                (int)track;
+
+            if (index < 0 ||
+                index >= target.UpgradeLevels.Length)
+            {
+                return false;
+            }
+
+            int level =
+                target.UpgradeLevels[index];
+
+            if (!UpgradeLogic.CanPurchase(
+                    level,
+                    target.ContractEssence))
+            {
+                return false;
+            }
+
+            target.ContractEssence =
+                UpgradeLogic.GetRemainingAfterPurchase(
+                    level,
+                    target.ContractEssence);
+
+            target.UpgradeLevels[index] =
+                UpgradeLogic.ClampLevel(
+                    level + 1);
+
+            return true;
+        }
+
         /// <summary>
         /// 한 판의 결과를 세이브에 반영한다.
         /// 최고 기록은 더 좋을 때만 갱신하고, 낮은 기록은 무시한다.
@@ -198,6 +256,11 @@ namespace ProjectTheta.Save
                 target.BestRankLabel =
                     result.RankLabel;
             }
+
+            target.ContractEssence +=
+                Math.Max(
+                    0,
+                    result.ContractEssence);
 
             return target;
         }

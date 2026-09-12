@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace ProjectTheta.Save
 {
@@ -12,13 +12,19 @@ namespace ProjectTheta.Save
         public int TotalScore;
         public string RankLabel;
 
+        /// <summary>이번 판에서 환산된 계약 정기다.</summary>
+        public int ContractEssence;
+        public int TargetEssence;
+
         public static StageResultSummary Empty =>
             new StageResultSummary
             {
                 Cleared = false,
                 RecoveredEssence = 0,
                 TotalScore = 0,
-                RankLabel = "-"
+                RankLabel = "-",
+                ContractEssence = 0,
+                TargetEssence = 0
             };
     }
 

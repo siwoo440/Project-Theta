@@ -4,6 +4,7 @@ using ProjectTheta.Companion;
 using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.NPC;
+using ProjectTheta.Player;
 using ProjectTheta.Stage;
 
 namespace ProjectTheta.Impulse
@@ -55,9 +56,10 @@ namespace ProjectTheta.Impulse
                         GetComponent<NpcProfile>();
                 }
 
-                return _profile == null
-                    ? 1f
-                    : _profile.ImpulseBuildMultiplier;
+                return (_profile == null
+                           ? 1f
+                           : _profile.ImpulseBuildMultiplier) *
+                       PlayerUpgradeMultipliers.ImpulseBuild;
             }
         }
 
