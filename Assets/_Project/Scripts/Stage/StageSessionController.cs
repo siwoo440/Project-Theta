@@ -10,13 +10,14 @@ namespace ProjectTheta.Stage
     {
         [Header("Stage")]
         [SerializeField] private float _timeLimitSeconds = 180f;
-        [SerializeField] private int _targetEssence = 200;
+        [SerializeField] private int _targetEssence = 140;
 
         [Header("Essence Rewards")]
-        [SerializeField] private int _recoveryReward = 5;
         [SerializeField] private int _rampageCaughtReward = 10;
-        [SerializeField] private int _passiveEssencePerFollower = 1;
-        [SerializeField] private float _passiveTickInterval = 1.0f;
+
+        [Header("Recovery Batch")]
+        [SerializeField] private float _recoveryBatchWindow =
+            EssenceRecoveryLogic.BatchWindowSeconds;
 
         [Header("Capture Damage")]
         [SerializeField] private int _captureTickDamage = 1;
@@ -24,7 +25,14 @@ namespace ProjectTheta.Stage
 
         private PlayerHealth _playerHealth;
         private FollowerManager _followers;
-        private float _passiveTickTimer;
+        private StageScoreTracker _scoreTracker;
+
+        private int _pendingEssence;
+        private int _pendingCount;
+        private int _pendingRiskyCount;
+        private int _pendingHighGradeCount;
+        private float _pendingElapsed;
+        private bool _hasPendingBatch;
 
         public StageState State { get; private set; } =
             StageState.Running;
@@ -42,15 +50,19 @@ namespace ProjectTheta.Stage
                 1,
                 _targetEssence);
 
-        public int PassiveEssencePerFollower =>
-            Mathf.Max(
-                0,
-                _passiveEssencePerFollower);
+        /// <summary>정산 대기 중인 회수 인원이다. HUD가 현재 배율을 미리 보여주는 데 사용한다.</summary>
+        public int PendingRecoveryCount =>
+            _pendingCount;
 
-        public int RecoveryReward =>
-            Mathf.Max(
-                0,
-                _recoveryReward);
+        public int PendingRecoveryEssence =>
+            _pendingEssence;
+
+        public float PendingRecoveryMultiplier =>
+            EssenceRecoveryLogic.GetSimultaneousMultiplier(
+                _pendingCount);
+
+        public bool HasPendingRecovery =>
+            _hasPendingBatch;
 
         public int RampageCaughtReward =>
             Mathf.Max(
@@ -81,13 +93,6 @@ namespace ProjectTheta.Stage
                 _timeLimitSeconds -
                 RemainingTime);
 
-        public int PassiveProductionPerSecond =>
-            StageRules.ComputeProductionPerSecond(
-                _followers == null
-                    ? 0
-                    : _followers.Count,
-                PassiveEssencePerFollower);
-
         private void Awake()
         {
             RemainingTime =
@@ -98,7 +103,7 @@ namespace ProjectTheta.Stage
             CurrentEssence = 0;
             RampageCaptureCount = 0;
             RecoveredFollowerCount = 0;
-            _passiveTickTimer = 0f;
+            ClearPendingBatch();
             State = StageState.Running;
 
             _playerHealth =
@@ -106,6 +111,9 @@ namespace ProjectTheta.Stage
 
             _followers =
                 GetComponent<FollowerManager>();
+
+            _scoreTracker =
+                GetComponent<StageScoreTracker>();
         }
 
         public void Configure(
@@ -117,6 +125,12 @@ namespace ProjectTheta.Stage
 
             _followers =
                 followers;
+
+            if (_scoreTracker == null)
+            {
+                _scoreTracker =
+                    GetComponent<StageScoreTracker>();
+            }
 
             EvaluateState();
         }
@@ -133,14 +147,15 @@ namespace ProjectTheta.Stage
                     RemainingTime,
                     Time.deltaTime);
 
-            EvaluateState();
+            UpdateRecoveryBatch();
 
-            if (!IsRunning)
+            if (RemainingTime <= 0f)
             {
-                return;
+                // 제한 시간이 끝나는 순간 남은 묶음을 먼저 확정한다.
+                FlushPendingBatch();
             }
 
-            UpdatePassiveProduction();
+            EvaluateState();
         }
 
         public void AddEssence(
@@ -169,6 +184,8 @@ namespace ProjectTheta.Stage
 
             RampageCaptureCount++;
 
+            _scoreTracker?.ReportCapture();
+
             AddEssence(
                 RampageCaughtReward);
         }
@@ -192,6 +209,12 @@ namespace ProjectTheta.Stage
             ImpulseMeter impulse =
                 follower.GetComponent<ImpulseMeter>();
 
+            // 폭주 직전까지 끌고 온 NPC를 무사히 회수하면 위험 보너스를 준다.
+            bool wasHighImpulse =
+                impulse != null &&
+                impulse.ImpulseNormalized >=
+                    0.70f;
+
             impulse?.CancelForRecovery();
 
             if (!followerManager.ConsumeFollower(
@@ -205,12 +228,14 @@ namespace ProjectTheta.Stage
             NpcProfile profile =
                 follower.GetComponent<NpcProfile>();
 
-            AddEssence(
-                StageRules.ScaleEssenceReward(
-                    RecoveryReward,
-                    profile == null
-                        ? 1f
-                        : profile.EssenceMultiplier));
+            AddToPendingBatch(
+                profile == null
+                    ? NpcGradeTable.ReferenceEssenceValue
+                    : profile.EssenceValue,
+                wasHighImpulse,
+                profile != null &&
+                IsHighGrade(
+                    profile.Grade));
 
             follower.gameObject.SetActive(
                 false);
@@ -218,6 +243,112 @@ namespace ProjectTheta.Stage
             EvaluateState();
 
             return true;
+        }
+
+        /// <summary>회수 지점에 들어온 NPC를 정산 묶음에 적립한다.</summary>
+        private void AddToPendingBatch(
+            int essenceValue,
+            bool wasHighImpulse,
+            bool isHighGrade)
+        {
+            if (!_hasPendingBatch)
+            {
+                _hasPendingBatch = true;
+                _pendingElapsed = 0f;
+            }
+
+            _pendingEssence +=
+                Mathf.Max(
+                    0,
+                    essenceValue);
+
+            _pendingCount++;
+
+            if (wasHighImpulse)
+            {
+                _pendingRiskyCount++;
+            }
+
+            if (isHighGrade)
+            {
+                _pendingHighGradeCount++;
+            }
+        }
+
+        private void UpdateRecoveryBatch()
+        {
+            if (!_hasPendingBatch)
+            {
+                return;
+            }
+
+            _pendingElapsed +=
+                Time.deltaTime;
+
+            if (EssenceRecoveryLogic.IsBatchWindowClosed(
+                    _pendingElapsed,
+                    _recoveryBatchWindow))
+            {
+                FlushPendingBatch();
+            }
+        }
+
+        /// <summary>정산 창을 닫고 동시 회수 배율을 적용해 정기를 확정한다.</summary>
+        public void FlushPendingBatch()
+        {
+            if (!_hasPendingBatch ||
+                _pendingCount <= 0)
+            {
+                ClearPendingBatch();
+
+                return;
+            }
+
+            int confirmed =
+                EssenceRecoveryLogic.ComputeBatchEssence(
+                    _pendingEssence,
+                    _pendingCount);
+
+            int count =
+                _pendingCount;
+
+            int risky =
+                _pendingRiskyCount;
+
+            int highGrade =
+                _pendingHighGradeCount;
+
+            ClearPendingBatch();
+
+            AddEssence(
+                confirmed);
+
+            if (_scoreTracker != null)
+            {
+                _scoreTracker.ReportRecovery(
+                    confirmed,
+                    count,
+                    risky,
+                    highGrade);
+            }
+        }
+
+        private void ClearPendingBatch()
+        {
+            _hasPendingBatch = false;
+            _pendingEssence = 0;
+            _pendingCount = 0;
+            _pendingRiskyCount = 0;
+            _pendingHighGradeCount = 0;
+            _pendingElapsed = 0f;
+        }
+
+        private static bool IsHighGrade(
+            NpcGrade grade)
+        {
+            return grade == NpcGrade.Rare ||
+                   grade == NpcGrade.Special ||
+                   grade == NpcGrade.Awakened;
         }
 
         public string GetStateLabel()
@@ -236,38 +367,6 @@ namespace ProjectTheta.Stage
                 case StageState.Running:
                 default:
                     return "RUNNING";
-            }
-        }
-
-        private void UpdatePassiveProduction()
-        {
-            float interval =
-                Mathf.Max(
-                    0.05f,
-                    _passiveTickInterval);
-
-            _passiveTickTimer +=
-                Time.deltaTime;
-
-            while (_passiveTickTimer >=
-                   interval)
-            {
-                _passiveTickTimer -=
-                    interval;
-
-                int production =
-                    PassiveProductionPerSecond;
-
-                if (production > 0)
-                {
-                    AddEssence(
-                        production);
-                }
-
-                if (!IsRunning)
-                {
-                    break;
-                }
             }
         }
 

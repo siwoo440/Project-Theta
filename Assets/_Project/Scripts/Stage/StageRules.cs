@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace ProjectTheta.Stage
 {
@@ -79,18 +79,6 @@ namespace ProjectTheta.Stage
                     safeBase *
                     (double)safeMultiplier,
                     MidpointRounding.AwayFromZero));
-        }
-
-        public static int ComputeProductionPerSecond(
-            int followerCount,
-            int essencePerFollower)
-        {
-            return Math.Max(
-                       0,
-                       followerCount) *
-                   Math.Max(
-                       0,
-                       essencePerFollower);
         }
 
         public static StageState ResolveState(

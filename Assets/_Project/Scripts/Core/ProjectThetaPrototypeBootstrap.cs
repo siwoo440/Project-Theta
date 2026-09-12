@@ -97,6 +97,18 @@ namespace ProjectTheta.Core
             CreateDuelHud(
                 duel);
 
+            StageScoreTracker scoreTracker =
+                player.GetComponent<
+                    StageScoreTracker>();
+
+            scoreTracker.Configure(
+                stage,
+                followers);
+
+            CreateStageResultPanel(
+                stage,
+                scoreTracker);
+
             CreateStageTelemetry(
                 stage,
                 followers,
@@ -173,6 +185,9 @@ namespace ProjectTheta.Core
 
             PlayerHealth health =
                 player.AddComponent<PlayerHealth>();
+
+            player.AddComponent<
+                StageScoreTracker>();
 
             StageSessionController stage =
                 player.AddComponent<
@@ -586,6 +601,23 @@ namespace ProjectTheta.Core
 
             view.Configure(
                 duel);
+        }
+
+        private void CreateStageResultPanel(
+            StageSessionController stage,
+            StageScoreTracker tracker)
+        {
+            GameObject panelObject =
+                new GameObject(
+                    "StageResultPanel");
+
+            StageResultPanel panel =
+                panelObject.AddComponent<
+                    StageResultPanel>();
+
+            panel.Configure(
+                stage,
+                tracker);
         }
 
         private void CreateStageTelemetry(
