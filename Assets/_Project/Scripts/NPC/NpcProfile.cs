@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace ProjectTheta.NPC
 {
@@ -152,6 +152,14 @@ namespace ProjectTheta.NPC
             {
                 gameObject.AddComponent<
                     NpcAwakeningAura>();
+            }
+
+            if (HasTrait(
+                    NpcTrait.Counter) &&
+                GetComponent<NpcCounterStrike>() == null)
+            {
+                gameObject.AddComponent<
+                    NpcCounterStrike>();
             }
         }
     }

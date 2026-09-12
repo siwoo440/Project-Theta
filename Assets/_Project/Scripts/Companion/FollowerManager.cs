@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
@@ -18,6 +18,40 @@ namespace ProjectTheta.Companion
             new List<FollowerController>();
 
         private PlayerSideViewController _playerController;
+
+        private float _contestWardRemaining;
+
+        /// <summary>차단 부적으로 플레이어 동행 NPC가 쟁탈 면역인 상태다.</summary>
+        public bool IsContestWarded =>
+            _contestWardRemaining > 0f;
+
+        public float ContestWardRemaining =>
+            Mathf.Max(
+                0f,
+                _contestWardRemaining);
+
+        public void ApplyContestWard(
+            float seconds)
+        {
+            _contestWardRemaining =
+                Mathf.Max(
+                    _contestWardRemaining,
+                    Mathf.Max(
+                        0f,
+                        seconds));
+        }
+
+        private void Update()
+        {
+            if (_contestWardRemaining > 0f)
+            {
+                _contestWardRemaining =
+                    Mathf.Max(
+                        0f,
+                        _contestWardRemaining -
+                        Time.deltaTime);
+            }
+        }
 
         public int Count =>
             _followers.Count;

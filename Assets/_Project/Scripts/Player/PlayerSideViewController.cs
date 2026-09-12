@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -16,6 +16,12 @@ namespace ProjectTheta.Player
         private Rigidbody2D _rigidbody;
         private Vector2 _moveInput;
         private Vector2 _lastMoveDirection = Vector2.right;
+        private PlayerFocus _focus;
+
+        private float _sprintRemaining;
+        private float _sprintSpeedMultiplier = 1f;
+        private float _sprintCooldownMultiplier = 1f;
+
         private Vector2 _dashDirection = Vector2.right;
         private float _dashRemaining;
         private float _dashCooldownRemaining;
@@ -23,6 +29,39 @@ namespace ProjectTheta.Player
 
         public int FacingDirection { get; private set; } = 1;
         public bool IsDashing => _dashRemaining > 0f;
+
+        /// <summary>질주약이 적용 중인 상태다.</summary>
+        public bool IsSprintBoosted => _sprintRemaining > 0f;
+
+        public float SprintRemaining =>
+            Mathf.Max(
+                0f,
+                _sprintRemaining);
+
+        /// <summary>질주약이 이동 속도와 대시 재사용 대기를 일정 시간 강화한다.</summary>
+        public void ApplySprintBoost(
+            float durationSeconds,
+            float speedMultiplier,
+            float cooldownMultiplier)
+        {
+            _sprintRemaining =
+                Mathf.Max(
+                    _sprintRemaining,
+                    Mathf.Max(
+                        0f,
+                        durationSeconds));
+
+            _sprintSpeedMultiplier =
+                Mathf.Max(
+                    1f,
+                    speedMultiplier);
+
+            _sprintCooldownMultiplier =
+                Mathf.Clamp(
+                    cooldownMultiplier,
+                    0.1f,
+                    1f);
+        }
         public Vector2 MoveInput => _moveInput;
         public bool IsInputLocked => _inputLocked;
 
@@ -83,8 +122,15 @@ namespace ProjectTheta.Player
                     _dashCooldownRemaining -
                     Time.deltaTime);
 
+            _sprintRemaining =
+                Mathf.Max(
+                    0f,
+                    _sprintRemaining -
+                    Time.deltaTime);
+
             if (ReadDashPressed() &&
-                _dashCooldownRemaining <= 0f)
+                _dashCooldownRemaining <= 0f &&
+                TrySpendDashFocus())
             {
                 _dashDirection =
                     PlayerMovementMath.ResolveDashDirection(
@@ -95,7 +141,10 @@ namespace ProjectTheta.Player
                     _dashDuration;
 
                 _dashCooldownRemaining =
-                    _dashCooldown;
+                    _dashCooldown *
+                    (IsSprintBoosted
+                        ? _sprintCooldownMultiplier
+                        : 1f);
             }
         }
 
@@ -119,9 +168,33 @@ namespace ProjectTheta.Player
                     ? _dashSpeed
                     : _moveSpeed;
 
+            if (IsSprintBoosted)
+            {
+                speed *=
+                    _sprintSpeedMultiplier;
+            }
+
             _rigidbody.linearVelocity =
                 direction *
                 speed;
+        }
+
+        /// <summary>대시는 집중력을 소모한다. 집중력이 모자라면 대시가 나가지 않는다.</summary>
+        private bool TrySpendDashFocus()
+        {
+            if (_focus == null)
+            {
+                _focus =
+                    GetComponent<PlayerFocus>();
+            }
+
+            if (_focus == null)
+            {
+                return true;
+            }
+
+            return _focus.TrySpend(
+                _focus.DashCost);
         }
 
         public void SetInputLocked(

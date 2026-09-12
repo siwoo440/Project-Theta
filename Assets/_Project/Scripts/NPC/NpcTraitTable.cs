@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace ProjectTheta.NPC
 {
@@ -67,7 +67,14 @@ namespace ProjectTheta.NPC
                 "각성 지원형",
                 0.85f,
                 1.30f,
-                new Color(1.00f, 0.38f, 0.46f, 1f))
+                new Color(1.00f, 0.38f, 0.46f, 1f)),
+
+            new NpcTraitProfile(
+                NpcTrait.Counter,
+                "반격형",
+                1.00f,
+                1.25f,
+                new Color(0.98f, 0.94f, 0.42f, 1f))
         };
 
         public static int Count =>

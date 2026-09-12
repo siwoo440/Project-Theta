@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace ProjectTheta.NPC
 {
@@ -26,7 +26,8 @@ namespace ProjectTheta.NPC
         {
             NpcTrait.Plain,
             NpcTrait.Fleer,
-            NpcTrait.Stubborn
+            NpcTrait.Stubborn,
+            NpcTrait.Counter
         };
 
         private static readonly NpcTrait[] RareFixed =
@@ -35,16 +36,18 @@ namespace ProjectTheta.NPC
         private static readonly NpcTrait[] RarePool =
         {
             NpcTrait.Plain,
-            NpcTrait.Fleer
+            NpcTrait.Fleer,
+            NpcTrait.Counter
         };
 
         private static readonly NpcTrait[] SpecialFixed =
-            { NpcTrait.Stubborn, NpcTrait.Fleer };
+            { NpcTrait.Stubborn, NpcTrait.Counter };
 
         private static readonly NpcTrait[] SpecialPool =
         {
             NpcTrait.Plain,
-            NpcTrait.GazeAverter
+            NpcTrait.GazeAverter,
+            NpcTrait.Fleer
         };
 
         private static readonly NpcTrait[] AwakenedFixed =

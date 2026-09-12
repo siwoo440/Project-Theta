@@ -1,4 +1,4 @@
-namespace ProjectTheta.NPC
+﻿namespace ProjectTheta.NPC
 {
     /// <summary>
     /// 기획서 5.4절 저항 패턴을 NPC 특성으로 옮긴 것이다.
@@ -19,6 +19,9 @@ namespace ProjectTheta.NPC
         Stubborn,
 
         /// <summary>각성 지원형 - 주변 플레이어 동행 NPC의 지배 수치를 깎는다.</summary>
-        AwakeningAura
+        AwakeningAura,
+
+        /// <summary>반격형 - 주기적으로 플레이어의 집중력을 깎고 최면 연결을 끊는다.</summary>
+        Counter
     }
 }

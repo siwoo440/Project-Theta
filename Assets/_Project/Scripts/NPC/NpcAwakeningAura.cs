@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Ownership;
@@ -24,6 +24,23 @@ namespace ProjectTheta.NPC
         private StageSessionController _stage;
         private FollowerManager _playerFollowers;
         private float _rescanTimer;
+        private float _suppressedRemaining;
+
+        /// <summary>최면 파동에 맞아 오라가 꺼져 있는 상태다.</summary>
+        public bool IsSuppressed =>
+            _suppressedRemaining > 0f;
+
+        /// <summary>최면 파동이 이 오라를 일정 시간 무력화한다.</summary>
+        public void Suppress(
+            float seconds)
+        {
+            _suppressedRemaining =
+                Mathf.Max(
+                    _suppressedRemaining,
+                    Mathf.Max(
+                        0f,
+                        seconds));
+        }
 
         public float Radius =>
             Mathf.Max(
@@ -43,6 +60,17 @@ namespace ProjectTheta.NPC
             if (_stage == null ||
                 !_stage.IsRunning)
             {
+                return;
+            }
+
+            if (_suppressedRemaining > 0f)
+            {
+                _suppressedRemaining =
+                    Mathf.Max(
+                        0f,
+                        _suppressedRemaining -
+                        Time.deltaTime);
+
                 return;
             }
 
