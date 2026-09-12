@@ -1,13 +1,26 @@
 using UnityEngine;
+using UnityEngine.UI;
+using ProjectTheta.UI.Framework;
 
 namespace ProjectTheta.Capture
 {
+    /// <summary>
+    /// 포획당했을 때 화면을 덮는 탈출 UI다.
+    ///
+    /// 15일차에 IMGUI를 걷어내고 Canvas(uGUI)로 다시 만들었다.
+    /// 포획 중에만 캔버스를 켜고, 평소에는 꺼 두어 그리기 비용을 없앤다.
+    /// </summary>
     public sealed class CaptureHudView : MonoBehaviour
     {
         private PlayerCaptureController _controller;
-        private Texture2D _overlayTexture;
-        private GUIStyle _titleStyle;
-        private GUIStyle _labelStyle;
+
+        private Canvas _canvas;
+        private RectTransform _overlayRect;
+        private RectTransform _panel;
+        private Text _expectedText;
+        private Text _escapeText;
+        private Text _damageText;
+        private UiBar _escapeBar;
 
         public void Configure(
             PlayerCaptureController controller)
@@ -16,271 +29,264 @@ namespace ProjectTheta.Capture
                 controller;
         }
 
-        private void Awake()
+        private void Start()
         {
-            _overlayTexture =
+            Build();
+
+            SetVisible(
+                false);
+        }
+
+        private void Update()
+        {
+            bool capturing =
+                _controller != null &&
+                _controller.IsCapturing;
+
+            SetVisible(
+                capturing);
+
+            if (!capturing)
+            {
+                return;
+            }
+
+            Refresh();
+        }
+
+        private void SetVisible(
+            bool value)
+        {
+            if (_canvas == null ||
+                _canvas.gameObject.activeSelf == value)
+            {
+                return;
+            }
+
+            _canvas.gameObject.SetActive(
+                value);
+        }
+
+        private void Refresh()
+        {
+            // 흔들림은 가로 위치로만 준다. 세로로 흔들면 글자가 읽기 어려워진다.
+            if (_overlayRect != null)
+            {
+                _overlayRect.anchoredPosition =
+                    new Vector2(
+                        _controller.VisualJoltOffsetX,
+                        _overlayRect.anchoredPosition.y);
+            }
+
+            _expectedText.text =
+                $"다음 입력   {_controller.ExpectedInputLabel}";
+
+            float escape =
+                _controller.EscapeNormalized;
+
+            _escapeBar.SetValue(
+                escape);
+
+            _escapeText.text =
+                $"탈출 게이지  {escape * 100f:0}%";
+
+            _damageText.text =
+                $"피해 진행  {_controller.DamageTaken} / {_controller.DamageCap}";
+
+            // 피해가 한계에 가까워지면 붉게 경고한다.
+            _damageText.color =
+                _controller.DamageCap > 0 &&
+                _controller.DamageTaken >=
+                _controller.DamageCap * 0.6f
+                    ? UiTheme.Danger
+                    : UiTheme.TextMuted;
+        }
+
+        // 화면 조립 ------------------------------------------------------
+
+        private void Build()
+        {
+            // 결과창(200)보다는 아래, 일반 HUD(50)보다는 위에 둔다.
+            _canvas =
+                UiFactory.CreateCanvas(
+                    "CaptureHudCanvas",
+                    120,
+                    transform);
+
+            Image dim =
+                UiFactory.CreateImage(
+                    _canvas.transform,
+                    "Dim",
+                    new Color(0f, 0f, 0f, 0.42f));
+
+            UiFactory.Stretch(
+                dim.rectTransform);
+
+            BuildOverlayImage();
+            BuildEscapePanel();
+        }
+
+        private void BuildOverlayImage()
+        {
+            Texture2D texture =
                 Resources.Load<Texture2D>(
                     "Capture/PlayerGrabOverlay");
-        }
 
-        private void OnGUI()
-        {
-            if (_controller == null ||
-                !_controller.IsCapturing)
+            if (texture == null)
             {
                 return;
             }
 
-            EnsureStyles();
+            Image overlay =
+                UiFactory.CreateImage(
+                    _canvas.transform,
+                    "Overlay",
+                    Color.white);
 
-            DrawBackdrop();
-            DrawOverlayImage();
-            DrawEscapeHud();
+            overlay.sprite =
+                Sprite.Create(
+                    texture,
+                    new Rect(
+                        0f,
+                        0f,
+                        texture.width,
+                        texture.height),
+                    new Vector2(0.5f, 0.5f));
+
+            overlay.preserveAspect = true;
+
+            _overlayRect =
+                overlay.rectTransform;
+
+            // 기준 해상도 기준으로 세로 절반 정도를 차지하게 둔다.
+            float height = 460f;
+
+            float width =
+                height *
+                texture.width /
+                Mathf.Max(
+                    1,
+                    texture.height);
+
+            UiFactory.Place(
+                _overlayRect,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 40f),
+                new Vector2(width, height));
         }
 
-        private void DrawBackdrop()
+        private void BuildEscapePanel()
         {
-            Color previousColor =
-                GUI.color;
+            _panel =
+                UiFactory.CreatePanel(
+                    _canvas.transform,
+                    "EscapePanel",
+                    UiTheme.PanelFill,
+                    UiTheme.Danger);
 
-            GUI.color =
-                new Color(
-                    0f,
-                    0f,
-                    0f,
-                    0.36f);
+            UiFactory.Place(
+                _panel,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -20f),
+                new Vector2(700f, 268f));
 
-            GUI.DrawTexture(
-                new Rect(
-                    0f,
-                    0f,
-                    Screen.width,
-                    Screen.height),
-                Texture2D.whiteTexture);
+            Text title =
+                UiFactory.CreateText(
+                    _panel,
+                    "Title",
+                    "붙잡힘 - 교대로 클릭해 탈출",
+                    UiTheme.FontHeading,
+                    UiTheme.Danger,
+                    TextAnchor.MiddleCenter,
+                    FontStyle.Bold);
 
-            GUI.color =
-                previousColor;
-        }
+            UiFactory.Place(
+                title.rectTransform,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -30f),
+                new Vector2(660f, 34f));
 
-        private void DrawOverlayImage()
-        {
-            if (_overlayTexture == null)
-            {
-                return;
-            }
+            _expectedText =
+                UiFactory.CreateText(
+                    _panel,
+                    "Expected",
+                    string.Empty,
+                    UiTheme.FontSubheading,
+                    UiTheme.Gold,
+                    TextAnchor.MiddleCenter,
+                    FontStyle.Bold);
 
-            float maxWidth =
-                Screen.width *
-                0.48f;
+            UiFactory.Place(
+                _expectedText.rectTransform,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -72f),
+                new Vector2(660f, 28f));
 
-            float maxHeight =
-                Screen.height *
-                0.48f;
+            _escapeBar =
+                UiFactory.CreateBar(
+                    _panel,
+                    "EscapeBar",
+                    new Color(0.93f, 0.68f, 0.21f, 1f),
+                    UiTheme.TrackFill);
 
-            float widthRatio =
-                maxWidth /
-                _overlayTexture.width;
+            UiFactory.Place(
+                _escapeBar.Root,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -112f),
+                new Vector2(620f, 28f));
 
-            float heightRatio =
-                maxHeight /
-                _overlayTexture.height;
+            _escapeText =
+                UiFactory.CreateText(
+                    _panel,
+                    "EscapeText",
+                    string.Empty,
+                    UiTheme.FontBody,
+                    UiTheme.TextPrimary,
+                    TextAnchor.MiddleCenter);
 
-            float scale =
-                Mathf.Min(
-                    widthRatio,
-                    heightRatio);
+            UiFactory.Place(
+                _escapeText.rectTransform,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -156f),
+                new Vector2(660f, 24f));
 
-            float drawWidth =
-                _overlayTexture.width *
-                scale;
+            _damageText =
+                UiFactory.CreateText(
+                    _panel,
+                    "DamageText",
+                    string.Empty,
+                    UiTheme.FontBody,
+                    UiTheme.TextMuted,
+                    TextAnchor.MiddleCenter);
 
-            float drawHeight =
-                _overlayTexture.height *
-                scale;
+            UiFactory.Place(
+                _damageText.rectTransform,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -186f),
+                new Vector2(660f, 24f));
 
-            float x =
-                ((Screen.width -
-                  drawWidth) *
-                 0.5f) +
-                _controller.VisualJoltOffsetX;
+            Text order =
+                UiFactory.CreateText(
+                    _panel,
+                    "Order",
+                    "입력 순서   좌클릭 → 우클릭 → 좌클릭 → 우클릭",
+                    UiTheme.FontSmall,
+                    UiTheme.TextDisabled,
+                    TextAnchor.MiddleCenter);
 
-            float y =
-                (Screen.height *
-                 0.5f) -
-                drawHeight -
-                22f;
-
-            GUI.DrawTexture(
-                new Rect(
-                    x,
-                    y,
-                    drawWidth,
-                    drawHeight),
-                _overlayTexture,
-                ScaleMode.ScaleToFit,
-                true);
-        }
-
-        private void DrawEscapeHud()
-        {
-            float panelWidth =
-                Mathf.Min(
-                    460f,
-                    Screen.width *
-                    0.54f);
-
-            float panelX =
-                (Screen.width -
-                 panelWidth) *
-                0.5f;
-
-            float panelY =
-                Screen.height *
-                0.63f;
-
-            GUI.Label(
-                new Rect(
-                    panelX,
-                    panelY,
-                    panelWidth,
-                    32f),
-                "붙잡힘 상태 - 교대로 클릭해 탈출",
-                _titleStyle);
-
-            GUI.Label(
-                new Rect(
-                    panelX,
-                    panelY + 34f,
-                    panelWidth,
-                    24f),
-                $"다음 입력: {_controller.ExpectedInputLabel}",
-                _labelStyle);
-
-            DrawProgressBar(
-                new Rect(
-                    panelX,
-                    panelY + 68f,
-                    panelWidth,
-                    24f),
-                _controller.EscapeNormalized,
-                new Color(
-                    0.93f,
-                    0.68f,
-                    0.21f,
-                    1f),
-                new Color(
-                    0.19f,
-                    0.13f,
-                    0.07f,
-                    0.94f));
-
-            GUI.Label(
-                new Rect(
-                    panelX,
-                    panelY + 95f,
-                    panelWidth,
-                    22f),
-                $"탈출 게이지: {_controller.EscapeNormalized * 100f:0}%",
-                _labelStyle);
-
-            GUI.Label(
-                new Rect(
-                    panelX,
-                    panelY + 119f,
-                    panelWidth,
-                    22f),
-                $"피해 진행: {_controller.DamageTaken} / {_controller.DamageCap}",
-                _labelStyle);
-
-            GUI.Label(
-                new Rect(
-                    panelX,
-                    panelY + 143f,
-                    panelWidth,
-                    22f),
-                "입력 순서: 좌클릭 → 우클릭 → 좌클릭 → 우클릭",
-                _labelStyle);
-        }
-
-        private void EnsureStyles()
-        {
-            if (_titleStyle != null)
-            {
-                return;
-            }
-
-            _titleStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleCenter,
-                    fontSize = 22,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-
-            _labelStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleCenter,
-                    fontSize = 15,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-        }
-
-        private static void DrawProgressBar(
-            Rect rect,
-            float normalized,
-            Color fillColor,
-            Color backgroundColor)
-        {
-            float value =
-                Mathf.Clamp01(
-                    normalized);
-
-            Color previousColor =
-                GUI.color;
-
-            GUI.color =
-                new Color(
-                    0f,
-                    0f,
-                    0f,
-                    0.82f);
-
-            GUI.DrawTexture(
-                new Rect(
-                    rect.x - 2f,
-                    rect.y - 2f,
-                    rect.width + 4f,
-                    rect.height + 4f),
-                Texture2D.whiteTexture);
-
-            GUI.color =
-                backgroundColor;
-
-            GUI.DrawTexture(
-                rect,
-                Texture2D.whiteTexture);
-
-            GUI.color =
-                fillColor;
-
-            GUI.DrawTexture(
-                new Rect(
-                    rect.x,
-                    rect.y,
-                    rect.width *
-                    value,
-                    rect.height),
-                Texture2D.whiteTexture);
-
-            GUI.color =
-                previousColor;
+            UiFactory.Place(
+                order.rectTransform,
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 22f),
+                new Vector2(660f, 22f));
         }
     }
 }

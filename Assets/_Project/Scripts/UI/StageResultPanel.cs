@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using UnityEngine;
+using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -6,6 +7,7 @@ using ProjectTheta.Core;
 using ProjectTheta.Presentation;
 using ProjectTheta.Save;
 using ProjectTheta.Stage;
+using ProjectTheta.UI.Framework;
 
 namespace ProjectTheta.UI
 {
@@ -15,10 +17,17 @@ namespace ProjectTheta.UI
     /// 회수 정기부터 남은 시간까지의 항목이 하나씩 "딱" 하고 튀어나오고,
     /// 총점이 나온 뒤 위쪽에 랭크가 도장처럼 찍힌다.
     /// 마우스를 클릭하면 연출을 건너뛰고 전부 즉시 표시한다.
+    ///
+    /// 15일차에 IMGUI를 걷어내고 Canvas(uGUI)로 다시 만들었다.
+    /// 타이밍 계산은 그대로 <see cref="StageResultRevealLogic"/>이 맡고,
+    /// 여기서는 그 값을 RectTransform 크기와 색에 적용하기만 한다.
     /// </summary>
     public sealed class StageResultPanel : MonoBehaviour
     {
         private const int RowCount = 8;
+
+        /// <summary>총점부터는 글자를 키워 구분한다.</summary>
+        private const int EmphasisRowStart = RowCount - 2;
 
         [SerializeField] private float _rowInterval =
             StageResultRevealLogic.DefaultRowInterval;
@@ -44,14 +53,20 @@ namespace ProjectTheta.UI
         private int _playedRowTicks;
         private bool _playedStamp;
 
-        private GUIStyle _rowLabelStyle;
-        private GUIStyle _rowValueStyle;
-        private GUIStyle _titleStyle;
-        private GUIStyle _totalStyle;
-        private GUIStyle _totalValueStyle;
-        private GUIStyle _rankStyle;
-        private GUIStyle _hintStyle;
-        private GUIStyle _buttonStyle;
+        private Canvas _canvas;
+        private Text _titleText;
+        private Text _rankText;
+        private Text _hintText;
+        private UiButton _hubButton;
+
+        private readonly RectTransform[] _rowRects =
+            new RectTransform[RowCount];
+
+        private readonly Text[] _rowLabels =
+            new Text[RowCount];
+
+        private readonly Text[] _rowValues =
+            new Text[RowCount];
 
         public void Configure(
             StageSessionController stage,
@@ -74,20 +89,20 @@ namespace ProjectTheta.UI
                 TakeSnapshot();
             }
 
-            if (_skipped)
+            if (!_skipped)
             {
-                return;
+                _elapsed +=
+                    Time.unscaledDeltaTime;
+
+                PlayPendingSounds();
+
+                if (ReadSkipPressed())
+                {
+                    Skip();
+                }
             }
 
-            _elapsed +=
-                Time.unscaledDeltaTime;
-
-            PlayPendingSounds();
-
-            if (ReadSkipPressed())
-            {
-                Skip();
-            }
+            ApplyReveal();
         }
 
         /// <summary>
@@ -141,6 +156,8 @@ namespace ProjectTheta.UI
 
             _playedRowTicks =
                 RowCount;
+
+            ApplyReveal();
         }
 
         private void TakeSnapshot()
@@ -166,6 +183,9 @@ namespace ProjectTheta.UI
                     _tracker.IsSConditionMet);
 
             SubmitResultToSession();
+
+            Build();
+            FillTexts();
         }
 
         /// <summary>이번 판의 결과를 허브로 넘긴다. 세이브 반영은 허브가 한다.</summary>
@@ -248,92 +268,295 @@ namespace ProjectTheta.UI
             }
         }
 
-        private void OnGUI()
+        // 화면 조립 ------------------------------------------------------
+
+        private void Build()
         {
-            if (_stage == null ||
-                _stage.IsRunning ||
-                !_snapshotTaken)
+            if (_canvas != null)
             {
                 return;
             }
 
-            EnsureStyles();
+            // 결과창은 HUD 위에 떠야 하므로 정렬 순서를 높게 준다.
+            _canvas =
+                UiFactory.CreateCanvas(
+                    "StageResultCanvas",
+                    200,
+                    transform);
 
-            float width =
-                Mathf.Min(
-                    560f,
-                    Screen.width *
-                    0.72f);
+            Image dim =
+                UiFactory.CreateImage(
+                    _canvas.transform,
+                    "Dim",
+                    new Color(0f, 0f, 0f, 0.74f));
 
-            const float height = 428f;
+            UiFactory.Stretch(
+                dim.rectTransform);
 
-            float x =
-                (Screen.width -
-                 width) *
-                0.5f;
+            // 클릭으로 건너뛰기를 하므로 뒤쪽 클릭은 막아 둔다.
+            dim.raycastTarget = true;
 
-            float y =
-                (Screen.height -
-                 height) *
-                0.5f;
+            RectTransform panel =
+                UiFactory.CreatePanel(
+                    _canvas.transform,
+                    "Panel",
+                    UiTheme.PanelFill,
+                    UiTheme.PanelEdge,
+                    3f);
 
-            GUI.Box(
-                new Rect(
-                    x,
-                    y,
-                    width,
-                    height),
-                string.Empty);
+            UiFactory.Place(
+                panel,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -20f),
+                new Vector2(760f, 620f));
 
-            DrawTitle(
-                x,
-                y,
-                width);
+            _titleText =
+                UiFactory.CreateText(
+                    panel,
+                    "Title",
+                    string.Empty,
+                    UiTheme.FontSubheading,
+                    UiTheme.TextMuted,
+                    TextAnchor.MiddleCenter,
+                    FontStyle.Bold);
 
-            DrawRows(
-                x,
-                y,
-                width);
+            UiFactory.Place(
+                _titleText.rectTransform,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -28f),
+                new Vector2(700f, 30f));
 
-            DrawRank(
-                x,
-                y,
-                width);
+            // 랭크 도장은 패널 위쪽 바깥으로 살짝 걸치게 둔다.
+            _rankText =
+                UiFactory.CreateText(
+                    _canvas.transform,
+                    "Rank",
+                    string.Empty,
+                    UiTheme.FontTitle + 14,
+                    UiTheme.TextPrimary,
+                    TextAnchor.MiddleCenter,
+                    FontStyle.Bold);
 
-            DrawHint(
-                x,
-                y,
-                width,
-                height);
+            UiFactory.Place(
+                _rankText.rectTransform,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 318f),
+                new Vector2(700f, 90f));
+
+            BuildRows(
+                panel);
+
+            _hintText =
+                UiFactory.CreateText(
+                    panel,
+                    "Hint",
+                    "클릭하면 건너뜁니다",
+                    UiTheme.FontSmall,
+                    UiTheme.TextDisabled,
+                    TextAnchor.MiddleCenter);
+
+            UiFactory.Place(
+                _hintText.rectTransform,
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 34f),
+                new Vector2(600f, 24f));
+
+            _hubButton =
+                UiFactory.CreateButton(
+                    panel,
+                    "HubButton",
+                    "허브로",
+                    UiTheme.FontSubheading,
+                    true);
+
+            UiFactory.Place(
+                _hubButton.Background.rectTransform,
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 30f),
+                new Vector2(280f, 52f));
+
+            _hubButton.Button.onClick.AddListener(
+                () =>
+                {
+                    GameSession.Instance?.GoTo(
+                        SceneDestination.Hub);
+                });
+
+            _hubButton.Button.gameObject.SetActive(
+                false);
         }
 
-        private void DrawTitle(
-            float x,
-            float y,
-            float width)
+        private void BuildRows(
+            RectTransform panel)
         {
-            GUI.Label(
-                new Rect(
-                    x,
-                    y + 14f,
-                    width,
-                    26f),
-                _stage.GetStateLabel(),
-                _titleStyle);
-        }
-
-        private void DrawRows(
-            float x,
-            float y,
-            float width)
-        {
-            const float firstRowY = 104f;
-            const float rowHeight = 30f;
+            const float firstRowTop = 82f;
+            const float rowHeight = 46f;
 
             for (int i = 0;
                  i < RowCount;
                  i++)
             {
+                bool emphasis =
+                    i >= EmphasisRowStart;
+
+                RectTransform row =
+                    UiFactory.CreateRect(
+                        panel,
+                        $"Row{i}");
+
+                UiFactory.PlaceRow(
+                    row,
+                    firstRowTop +
+                    (rowHeight * i),
+                    rowHeight,
+                    40f);
+
+                // 총점 · 계약 정기 줄은 배경을 깔아 눈에 띄게 한다.
+                if (emphasis)
+                {
+                    Image highlight =
+                        UiFactory.CreateImage(
+                            row,
+                            "Highlight",
+                            new Color(
+                                UiTheme.Accent.r * 0.28f,
+                                UiTheme.Accent.g * 0.18f,
+                                UiTheme.Accent.b * 0.32f,
+                                0.85f));
+
+                    UiFactory.Stretch(
+                        highlight.rectTransform,
+                        2f);
+                }
+                else
+                {
+                    // 일반 줄은 아래쪽에 가는 선만 둔다.
+                    Image underline =
+                        UiFactory.CreateImage(
+                            row,
+                            "Underline",
+                            new Color(
+                                UiTheme.TextMuted.r,
+                                UiTheme.TextMuted.g,
+                                UiTheme.TextMuted.b,
+                                0.16f));
+
+                    RectTransform underlineRect =
+                        underline.rectTransform;
+
+                    underlineRect.anchorMin = new Vector2(0f, 0f);
+                    underlineRect.anchorMax = new Vector2(1f, 0f);
+                    underlineRect.pivot = new Vector2(0.5f, 0f);
+                    underlineRect.offsetMin = Vector2.zero;
+                    underlineRect.offsetMax = Vector2.zero;
+                    underlineRect.sizeDelta = new Vector2(0f, 1f);
+                }
+
+                int fontSize =
+                    emphasis
+                        ? UiTheme.FontHeading
+                        : UiTheme.FontBody + 2;
+
+                Text label =
+                    UiFactory.CreateText(
+                        row,
+                        "Label",
+                        GetRowLabel(i),
+                        fontSize,
+                        emphasis
+                            ? UiTheme.TextPrimary
+                            : UiTheme.TextMuted,
+                        TextAnchor.MiddleLeft,
+                        FontStyle.Bold);
+
+                UiFactory.Stretch(
+                    label.rectTransform,
+                    14f);
+
+                Text value =
+                    UiFactory.CreateText(
+                        row,
+                        "Value",
+                        string.Empty,
+                        fontSize,
+                        emphasis
+                            ? UiTheme.Gold
+                            : UiTheme.TextPrimary,
+                        TextAnchor.MiddleRight,
+                        FontStyle.Bold);
+
+                UiFactory.Stretch(
+                    value.rectTransform,
+                    14f);
+
+                row.localScale = Vector3.zero;
+
+                _rowRects[i] = row;
+                _rowLabels[i] = label;
+                _rowValues[i] = value;
+            }
+        }
+
+        private void FillTexts()
+        {
+            if (_titleText != null)
+            {
+                _titleText.text =
+                    _stage.GetStateLabel();
+            }
+
+            for (int i = 0;
+                 i < RowCount;
+                 i++)
+            {
+                if (_rowLabels[i] != null)
+                {
+                    _rowLabels[i].text =
+                        GetRowLabel(i);
+                }
+
+                if (_rowValues[i] != null)
+                {
+                    _rowValues[i].text =
+                        GetRowValue(i);
+                }
+            }
+
+            if (_rankText != null)
+            {
+                _rankText.text =
+                    "RANK  " +
+                    StageRankLogic.GetLabel(
+                        _rank);
+            }
+        }
+
+        // 연출 적용 ------------------------------------------------------
+
+        private void ApplyReveal()
+        {
+            if (_canvas == null)
+            {
+                return;
+            }
+
+            for (int i = 0;
+                 i < RowCount;
+                 i++)
+            {
+                RectTransform row =
+                    _rowRects[i];
+
+                if (row == null)
+                {
+                    continue;
+                }
+
                 float scale =
                     StageResultRevealLogic.GetRowScale(
                         i,
@@ -341,67 +564,64 @@ namespace ProjectTheta.UI
                         _rowInterval,
                         _popDuration);
 
-                if (scale <= 0f)
+                // 스케일 0인 동안은 아예 꺼 두어 그리기 비용도 없앤다.
+                bool visible =
+                    scale > 0f;
+
+                if (row.gameObject.activeSelf != visible)
                 {
-                    continue;
+                    row.gameObject.SetActive(
+                        visible);
                 }
 
-                Rect rowRect =
-                    new Rect(
-                        x + 32f,
-                        y +
-                        firstRowY +
-                        (rowHeight * i),
-                        width - 64f,
-                        rowHeight);
+                if (visible)
+                {
+                    row.localScale =
+                        new Vector3(
+                            scale,
+                            scale,
+                            1f);
+                }
+            }
 
-                Matrix4x4 previousMatrix =
-                    GUI.matrix;
+            ApplyRankReveal();
 
-                GUIUtility.ScaleAroundPivot(
-                    new Vector2(
-                        scale,
-                        scale),
-                    new Vector2(
-                        rowRect.center.x,
-                        rowRect.center.y));
+            bool complete =
+                StageResultRevealLogic.IsComplete(
+                    _elapsed,
+                    RowCount,
+                    _rowInterval,
+                    _rankDelay,
+                    _rankDuration);
 
-                bool isTotalRow =
-                    i >= RowCount - 2;
+            if (_hintText != null)
+            {
+                _hintText.gameObject.SetActive(
+                    !complete);
+            }
 
-                GUIStyle labelStyle =
-                    isTotalRow
-                        ? _totalStyle
-                        : _rowLabelStyle;
-
-                GUIStyle valueStyle =
-                    isTotalRow
-                        ? _totalValueStyle
-                        : _rowValueStyle;
-
-                GUI.Label(
-                    rowRect,
-                    GetRowLabel(i),
-                    labelStyle);
-
-                GUI.Label(
-                    rowRect,
-                    GetRowValue(i),
-                    valueStyle);
-
-                GUI.matrix =
-                    previousMatrix;
+            // 연출이 끝난 뒤에만 허브로 돌아갈 수 있다.
+            if (_hubButton.Button != null &&
+                _hubButton.Button.gameObject.activeSelf != complete)
+            {
+                _hubButton.Button.gameObject.SetActive(
+                    complete);
             }
         }
 
-        private void DrawRank(
-            float x,
-            float y,
-            float width)
+        private void ApplyRankReveal()
         {
+            if (_rankText == null)
+            {
+                return;
+            }
+
             if (_stage.State !=
                 StageState.Cleared)
             {
+                _rankText.gameObject.SetActive(
+                    false);
+
                 return;
             }
 
@@ -413,7 +633,16 @@ namespace ProjectTheta.UI
                     _rankDelay,
                     _rankDuration);
 
-            if (progress <= 0f)
+            bool visible =
+                progress > 0f;
+
+            if (_rankText.gameObject.activeSelf != visible)
+            {
+                _rankText.gameObject.SetActive(
+                    visible);
+            }
+
+            if (!visible)
             {
                 return;
             }
@@ -422,92 +651,20 @@ namespace ProjectTheta.UI
                 StageResultRevealLogic.GetRankScale(
                     progress);
 
-            float alpha =
-                StageResultRevealLogic.GetRankAlpha(
-                    progress);
-
-            Rect rankRect =
-                new Rect(
-                    x,
-                    y + 40f,
-                    width,
-                    58f);
-
-            Matrix4x4 previousMatrix =
-                GUI.matrix;
-
-            Color previousColor =
-                GUI.color;
-
-            GUIUtility.ScaleAroundPivot(
-                new Vector2(
+            _rankText.rectTransform.localScale =
+                new Vector3(
                     scale,
-                    scale),
-                new Vector2(
-                    rankRect.center.x,
-                    rankRect.center.y));
+                    scale,
+                    1f);
 
-            GUI.color =
+            _rankText.color =
                 GetRankColor(
                     _rank,
-                    alpha);
-
-            GUI.Label(
-                rankRect,
-                "RANK  " +
-                StageRankLogic.GetLabel(
-                    _rank),
-                _rankStyle);
-
-            GUI.color =
-                previousColor;
-
-            GUI.matrix =
-                previousMatrix;
+                    StageResultRevealLogic.GetRankAlpha(
+                        progress));
         }
 
-        private void DrawHint(
-            float x,
-            float y,
-            float width,
-            float height)
-        {
-            bool complete =
-                StageResultRevealLogic.IsComplete(
-                    _elapsed,
-                    RowCount,
-                    _rowInterval,
-                    _rankDelay,
-                    _rankDuration);
-
-            if (!complete)
-            {
-                GUI.Label(
-                    new Rect(
-                        x,
-                        y + height - 30f,
-                        width,
-                        22f),
-                    "클릭하면 건너뜁니다",
-                    _hintStyle);
-
-                return;
-            }
-
-            // 연출이 끝난 뒤에만 허브로 돌아갈 수 있다.
-            if (GUI.Button(
-                    new Rect(
-                        x + (width * 0.3f),
-                        y + height - 46f,
-                        width * 0.4f,
-                        36f),
-                    "허브로",
-                    _buttonStyle))
-            {
-                GameSession.Instance?.GoTo(
-                    SceneDestination.Hub);
-            }
-        }
+        // 내용 ----------------------------------------------------------
 
         private string GetRowLabel(
             int index)
@@ -609,98 +766,5 @@ namespace ProjectTheta.UI
 
             return $"{totalSeconds / 60:00}:{totalSeconds % 60:00}";
         }
-
-        private void EnsureStyles()
-        {
-            if (_rowLabelStyle != null)
-            {
-                return;
-            }
-
-            _titleStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleCenter,
-                    fontSize = 18,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-
-            _rankStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleCenter,
-                    fontSize = 40,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-
-            _rowLabelStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleLeft,
-                    fontSize = 16,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-
-            _rowValueStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleRight,
-                    fontSize = 16,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-
-            _totalStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleLeft,
-                    fontSize = 19,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-
-            _totalValueStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleRight,
-                    fontSize = 19,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-
-            _hintStyle =
-                new GUIStyle(
-                    GUI.skin.label)
-                {
-                    alignment =
-                        TextAnchor.MiddleCenter,
-                    fontSize = 13
-                };
-
-            _buttonStyle =
-                new GUIStyle(
-                    GUI.skin.button)
-                {
-                    fontSize = 16,
-                    fontStyle =
-                        FontStyle.Bold
-                };
-        }
-
     }
 }
