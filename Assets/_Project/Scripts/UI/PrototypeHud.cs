@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Capture;
 using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
@@ -19,7 +19,7 @@ namespace ProjectTheta.UI
         private PlayerHealth _health;
         private PlayerCaptureController _capture;
         private StageTelemetry _telemetry;
-        private RivalController _geumtaeyang;
+        private GeumtaeyangController _geumtaeyang;
         private PopularGuyController _popularGuy;
 
         private GUIStyle _centerLabelStyle;
@@ -42,7 +42,7 @@ namespace ProjectTheta.UI
                 FindFirstObjectByType<StageTelemetry>();
 
             _geumtaeyang =
-                FindFirstObjectByType<RivalController>();
+                FindFirstObjectByType<GeumtaeyangController>();
 
             _popularGuy =
                 FindFirstObjectByType<
@@ -224,7 +224,7 @@ namespace ProjectTheta.UI
                     y,
                     width,
                     424f),
-                "Day 09 Debug");
+                "Day 10 Debug");
 
             if (_followers != null)
             {
@@ -302,7 +302,7 @@ namespace ProjectTheta.UI
             {
                 _geumtaeyang =
                     FindFirstObjectByType<
-                        RivalController>();
+                        GeumtaeyangController>();
             }
 
             if (_popularGuy == null)
@@ -396,10 +396,36 @@ namespace ProjectTheta.UI
             NpcAgent agent =
                 target.GetComponent<NpcAgent>();
 
+            NpcProfile profile =
+                target.GetComponent<NpcProfile>();
+
             string stateText =
                 agent == null
                     ? "-"
                     : agent.State.ToString();
+
+            if (agent != null &&
+                agent.IsFleeing)
+            {
+                stateText +=
+                    "(도주)";
+            }
+
+            if (target.IsGazeBlocked)
+            {
+                stateText +=
+                    "(시선 끊김)";
+            }
+
+            string gradeText =
+                profile == null
+                    ? "-"
+                    : profile.GradeDisplayName;
+
+            string traitText =
+                profile == null
+                    ? "-"
+                    : profile.GetTraitSummary();
 
             GUI.Label(
                 new Rect(
@@ -407,7 +433,7 @@ namespace ProjectTheta.UI
                     y + 82f,
                     width - 28f,
                     22f),
-                $"최면 대상: {target.name}");
+                $"최면 대상: {target.name} [{gradeText}]");
 
             GUI.Label(
                 new Rect(
@@ -415,7 +441,7 @@ namespace ProjectTheta.UI
                     y + 104f,
                     width - 28f,
                     22f),
-                $"NPC 상태: {stateText} / 최면 {target.HypnosisNormalized * 100f:0}%");
+                $"{stateText} / 최면 {target.HypnosisNormalized * 100f:0}% / {traitText}");
         }
 
         private void DrawImpulseDebug(

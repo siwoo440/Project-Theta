@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Core;
 using ProjectTheta.NPC;
 using ProjectTheta.Ownership;
@@ -14,9 +14,11 @@ namespace ProjectTheta.Hypnosis
         [SerializeField] private float _playerReclaimPerSecond = 24f;
 
         private RuntimeCharacterSpriteAnimator _animator;
+        private NpcProfile _profile;
+        private NpcGazeAverter _gazeAverter;
         private bool _geumtaeyangTargeted;
         private bool _popularGuyTargeted;
-        private float _popularGuyClaimNormalized;
+        private float _opponentClaimNormalized;
 
         public float CurrentHypnosis { get; private set; }
 
@@ -33,9 +35,8 @@ namespace ProjectTheta.Hypnosis
         public NpcOwner Owner { get; private set; } =
             NpcOwner.Neutral;
 
-        public RivalController GeumtaeyangOwner { get; private set; }
-
-        public PopularGuyController PopularGuyOwner { get; private set; }
+        /// <summary>현재 이 NPC를 소유한 경쟁자다. 플레이어·중립 소유일 때는 null이다.</summary>
+        public OpponentControllerBase OpponentOwner { get; private set; }
 
         public bool IsHypnotized =>
             Owner !=
@@ -49,9 +50,9 @@ namespace ProjectTheta.Hypnosis
             _geumtaeyangTargeted ||
             _popularGuyTargeted;
 
-        public float PopularGuyClaimNormalized =>
+        public float OpponentClaimNormalized =>
             Mathf.Clamp01(
-                _popularGuyClaimNormalized);
+                _opponentClaimNormalized);
 
         public NpcOwner PrimaryThreatOwner =>
             _popularGuyTargeted
@@ -63,6 +64,44 @@ namespace ProjectTheta.Hypnosis
         public bool CanPlayerFocus =>
             OwnershipContestLogic.CanPlayerContest(
                 Owner);
+
+        /// <summary>등급·특성이 반영된 최종 최면 상승 속도다.</summary>
+        public float BuildPerSecond =>
+            Profile == null
+                ? _buildPerSecond
+                : Profile.HypnosisBuildPerSecond;
+
+        /// <summary>시선 회피형 NPC가 지금 최면 연결을 끊고 있는지 여부다.</summary>
+        public bool IsGazeBlocked
+        {
+            get
+            {
+                // 시선 회피형 컴포넌트는 특성이 결정된 뒤 Start에서 붙으므로
+                // 한 번 null이었다고 확정하지 않고 필요할 때마다 다시 찾는다.
+                if (_gazeAverter == null)
+                {
+                    _gazeAverter =
+                        GetComponent<NpcGazeAverter>();
+                }
+
+                return _gazeAverter != null &&
+                       _gazeAverter.IsBlocking;
+            }
+        }
+
+        private NpcProfile Profile
+        {
+            get
+            {
+                if (_profile == null)
+                {
+                    _profile =
+                        GetComponent<NpcProfile>();
+                }
+
+                return _profile;
+            }
+        }
 
         private void Awake()
         {
@@ -101,23 +140,23 @@ namespace ProjectTheta.Hypnosis
                         Owner ==
                         NpcOwner.Neutral)
                     {
-                        ClearPopularGuyClaimProgress();
+                        ClearOpponentClaimProgress();
                     }
                     break;
             }
         }
 
-        public void SetPopularGuyClaimProgress(
+        public void SetOpponentClaimProgress(
             float normalized)
         {
-            _popularGuyClaimNormalized =
+            _opponentClaimNormalized =
                 Mathf.Clamp01(
                     normalized);
         }
 
-        public void ClearPopularGuyClaimProgress()
+        public void ClearOpponentClaimProgress()
         {
-            _popularGuyClaimNormalized =
+            _opponentClaimNormalized =
                 0f;
         }
 
@@ -139,11 +178,17 @@ namespace ProjectTheta.Hypnosis
             if (Owner ==
                 NpcOwner.Neutral)
             {
+                // 시선 회피형은 고개를 돌리는 동안 최면 게이지가 오르지 않는다.
+                if (IsGazeBlocked)
+                {
+                    return false;
+                }
+
                 CurrentHypnosis =
                     HypnosisTargetingLogic.BuildProgress(
                         CurrentHypnosis,
                         MaximumHypnosis,
-                        _buildPerSecond,
+                        BuildPerSecond,
                         deltaTime);
 
                 return CurrentHypnosis >=
@@ -160,33 +205,17 @@ namespace ProjectTheta.Hypnosis
                 CurrentHypnosis);
         }
 
-        public bool ApplyGeumtaeyangPressure(
+        /// <summary>
+        /// 경쟁자가 이 NPC의 지배 수치를 깎는다.
+        /// 지배 수치가 0이 되면 true를 반환한다.
+        /// </summary>
+        public bool ApplyOpponentPressure(
+            NpcOwner attacker,
             float drainPerSecond,
             float deltaTime)
         {
-            if (!OwnershipContestLogic.
-                    CanGeumtaeyangContest(
-                        Owner) ||
-                !IsFollowing)
-            {
-                return false;
-            }
-
-            CurrentHypnosis =
-                OwnershipContestLogic.Drain(
-                    CurrentHypnosis,
-                    drainPerSecond,
-                    deltaTime);
-
-            return OwnershipContestLogic.IsDepleted(
-                CurrentHypnosis);
-        }
-
-        public bool ApplyPopularGuyPressure(
-            float drainPerSecond,
-            float deltaTime)
-        {
-            if (!PopularGuyLogic.CanContest(
+            if (!OwnershipContestLogic.CanContest(
+                    attacker,
                     Owner))
             {
                 return false;
@@ -209,83 +238,49 @@ namespace ProjectTheta.Hypnosis
                 CurrentHypnosis);
         }
 
+        /// <summary>
+        /// 각성 지원형 NPC의 오라가 플레이어 동행 NPC의 지배 수치를 깎는다.
+        /// 지배 수치가 0이 되면 true를 반환한다.
+        /// </summary>
+        public bool ApplyAwakeningDrain(
+            float drainPerSecond,
+            float deltaTime)
+        {
+            if (Owner !=
+                    NpcOwner.Player ||
+                !IsFollowing)
+            {
+                return false;
+            }
+
+            CurrentHypnosis =
+                OwnershipContestLogic.Drain(
+                    CurrentHypnosis,
+                    drainPerSecond,
+                    deltaTime);
+
+            return OwnershipContestLogic.IsDepleted(
+                CurrentHypnosis);
+        }
+
         public void ClaimByPlayer()
         {
-            Owner =
-                NpcOwner.Player;
-
-            GeumtaeyangOwner = null;
-            PopularGuyOwner = null;
-
-            CurrentHypnosis =
-                MaximumHypnosis;
-
-            ClearPopularGuyClaimProgress();
-
-            IsFollowing = false;
-
-            ClearOpponentTargeting();
-
-            SetTargeted(
-                false);
+            ApplyClaim(
+                NpcOwner.Player,
+                null);
         }
 
-        public void ClaimByGeumtaeyang(
-            RivalController geumtaeyang)
+        public void ClaimByOpponent(
+            OpponentControllerBase opponent)
         {
-            if (geumtaeyang == null)
+            if (opponent == null)
             {
                 return;
             }
 
-            Owner =
-                NpcOwner.Geumtaeyang;
-
-            GeumtaeyangOwner =
-                geumtaeyang;
-
-            PopularGuyOwner = null;
-
-            CurrentHypnosis =
-                MaximumHypnosis;
-
-            ClearPopularGuyClaimProgress();
-
-            IsFollowing = false;
-
-            ClearOpponentTargeting();
-
-            SetTargeted(
-                false);
-        }
-
-        public void ClaimByPopularGuy(
-            PopularGuyController popularGuy)
-        {
-            if (popularGuy == null)
-            {
-                return;
-            }
-
-            Owner =
-                NpcOwner.PopularGuy;
-
-            PopularGuyOwner =
-                popularGuy;
-
-            GeumtaeyangOwner = null;
-
-            CurrentHypnosis =
-                MaximumHypnosis;
-
-            ClearPopularGuyClaimProgress();
-
-            IsFollowing = false;
-
-            ClearOpponentTargeting();
-
-            SetTargeted(
-                false);
+            ApplyClaim(
+                opponent.OwnerTag,
+                opponent);
         }
 
         public void BeginFollowing()
@@ -318,6 +313,29 @@ namespace ProjectTheta.Hypnosis
             ResetToNeutral();
         }
 
+        private void ApplyClaim(
+            NpcOwner owner,
+            OpponentControllerBase opponent)
+        {
+            Owner =
+                owner;
+
+            OpponentOwner =
+                opponent;
+
+            CurrentHypnosis =
+                MaximumHypnosis;
+
+            ClearOpponentClaimProgress();
+
+            IsFollowing = false;
+
+            ClearOpponentTargeting();
+
+            SetTargeted(
+                false);
+        }
+
         private void ClearOpponentTargeting()
         {
             _geumtaeyangTargeted = false;
@@ -329,12 +347,11 @@ namespace ProjectTheta.Hypnosis
             Owner =
                 NpcOwner.Neutral;
 
-            GeumtaeyangOwner = null;
-            PopularGuyOwner = null;
+            OpponentOwner = null;
 
             CurrentHypnosis = 0f;
 
-            ClearPopularGuyClaimProgress();
+            ClearOpponentClaimProgress();
 
             ClearOpponentTargeting();
 

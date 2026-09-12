@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
@@ -6,21 +6,31 @@ using ProjectTheta.Ownership;
 
 namespace ProjectTheta.Rival
 {
-    public sealed class PopularGuyFollowerManager : MonoBehaviour
+    /// <summary>
+    /// 경쟁자 한 명이 확보한 NPC 대열을 관리한다.
+    /// 소유자 구분은 같은 오브젝트의 <see cref="OpponentControllerBase.OwnerTag"/>를 사용하므로
+    /// 금태양과 인기남이 같은 구현을 공유한다.
+    /// </summary>
+    public sealed class OpponentFollowerManager : MonoBehaviour
     {
         [SerializeField] private float _horizontalSpacing = 0.78f;
         [SerializeField] private float _rowSpacing = 0.46f;
         [SerializeField] private int _rowsPerColumn = 3;
 
-        private readonly List<PopularGuyFollowerController> _followers =
-            new List<PopularGuyFollowerController>();
+        private readonly List<OpponentFollowerController> _followers =
+            new List<OpponentFollowerController>();
 
-        private PopularGuyController _controller;
+        private OpponentControllerBase _controller;
 
         public int Count =>
             _followers.Count;
 
-        private PopularGuyController Controller
+        public NpcOwner OwnerTag =>
+            Controller == null
+                ? NpcOwner.Neutral
+                : Controller.OwnerTag;
+
+        private OpponentControllerBase Controller
         {
             get
             {
@@ -28,7 +38,7 @@ namespace ProjectTheta.Rival
                 {
                     _controller =
                         GetComponent<
-                            PopularGuyController>();
+                            OpponentControllerBase>();
                 }
 
                 return _controller;
@@ -40,20 +50,20 @@ namespace ProjectTheta.Rival
         {
             if (target == null ||
                 target.Owner !=
-                NpcOwner.PopularGuy)
+                OwnerTag)
             {
                 return false;
             }
 
-            PopularGuyFollowerController follower =
+            OpponentFollowerController follower =
                 target.GetComponent<
-                    PopularGuyFollowerController>();
+                    OpponentFollowerController>();
 
             if (follower == null)
             {
                 follower =
                     target.gameObject.AddComponent<
-                        PopularGuyFollowerController>();
+                        OpponentFollowerController>();
             }
 
             if (_followers.Contains(
@@ -81,9 +91,9 @@ namespace ProjectTheta.Rival
                 return false;
             }
 
-            PopularGuyFollowerController follower =
+            OpponentFollowerController follower =
                 target.GetComponent<
-                    PopularGuyFollowerController>();
+                    OpponentFollowerController>();
 
             if (follower == null)
             {
@@ -110,6 +120,15 @@ namespace ProjectTheta.Rival
         public Vector2 GetSlotWorldPosition(
             int slotIndex)
         {
+            return GetSlotWorldPosition(
+                slotIndex,
+                Vector2.zero);
+        }
+
+        public Vector2 GetSlotWorldPosition(
+            int slotIndex,
+            Vector2 personalOffset)
+        {
             int rows =
                 Mathf.Max(
                     1,
@@ -133,8 +152,11 @@ namespace ProjectTheta.Rival
                 0.5f;
 
             float horizontalDistance =
-                (column + 1) *
-                _horizontalSpacing;
+                Mathf.Max(
+                    0.45f,
+                    ((column + 1) *
+                     _horizontalSpacing) +
+                    personalOffset.x);
 
             float verticalOffset =
                 (row - center) *
@@ -153,7 +175,8 @@ namespace ProjectTheta.Rival
             float y =
                 Mathf.Clamp(
                     transform.position.y +
-                    verticalOffset,
+                    verticalOffset +
+                    personalOffset.y,
                     SchoolHallwayPrototypeBuilder.WalkMinY + 0.35f,
                     SchoolHallwayPrototypeBuilder.WalkMaxY - 0.25f);
 

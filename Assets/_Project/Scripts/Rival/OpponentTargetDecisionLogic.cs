@@ -1,29 +1,29 @@
 namespace ProjectTheta.Rival
 {
-    public enum RivalTargetDecision
+    public enum OpponentTargetDecision
     {
         Search,
         Wait,
         Continue
     }
 
-    public static class RivalTargetDecisionLogic
+    public static class OpponentTargetDecisionLogic
     {
-        public static RivalTargetDecision Resolve(
+        public static OpponentTargetDecision Resolve(
             bool hasTarget,
             bool targetIsValid)
         {
             if (!hasTarget)
             {
-                return RivalTargetDecision.Search;
+                return OpponentTargetDecision.Search;
             }
 
             if (!targetIsValid)
             {
-                return RivalTargetDecision.Wait;
+                return OpponentTargetDecision.Wait;
             }
 
-            return RivalTargetDecision.Continue;
+            return OpponentTargetDecision.Continue;
         }
     }
 }

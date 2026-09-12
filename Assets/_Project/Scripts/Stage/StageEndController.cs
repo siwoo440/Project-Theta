@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Capture;
 using ProjectTheta.Duel;
 using ProjectTheta.Companion;
@@ -127,62 +127,32 @@ namespace ProjectTheta.Stage
                 }
             }
 
-            RivalController[] rivals =
-                FindObjectsByType<RivalController>(
+            OpponentControllerBase[] opponents =
+                FindObjectsByType<OpponentControllerBase>(
                     FindObjectsSortMode.None);
 
             for (int i = 0;
-                 i < rivals.Length;
+                 i < opponents.Length;
                  i++)
             {
-                if (rivals[i] != null)
+                if (opponents[i] != null)
                 {
-                    rivals[i].enabled =
+                    opponents[i].enabled =
                         false;
                 }
             }
 
-            RivalFollowerController[] rivalFollowers =
-                FindObjectsByType<RivalFollowerController>(
+            OpponentFollowerController[] opponentFollowers =
+                FindObjectsByType<OpponentFollowerController>(
                     FindObjectsSortMode.None);
 
             for (int i = 0;
-                 i < rivalFollowers.Length;
+                 i < opponentFollowers.Length;
                  i++)
             {
-                if (rivalFollowers[i] != null)
+                if (opponentFollowers[i] != null)
                 {
-                    rivalFollowers[i].enabled =
-                        false;
-                }
-            }
-
-            PopularGuyController[] popularGuys =
-                FindObjectsByType<PopularGuyController>(
-                    FindObjectsSortMode.None);
-
-            for (int i = 0;
-                 i < popularGuys.Length;
-                 i++)
-            {
-                if (popularGuys[i] != null)
-                {
-                    popularGuys[i].enabled =
-                        false;
-                }
-            }
-
-            PopularGuyFollowerController[] popularGuyFollowers =
-                FindObjectsByType<PopularGuyFollowerController>(
-                    FindObjectsSortMode.None);
-
-            for (int i = 0;
-                 i < popularGuyFollowers.Length;
-                 i++)
-            {
-                if (popularGuyFollowers[i] != null)
-                {
-                    popularGuyFollowers[i].enabled =
+                    opponentFollowers[i].enabled =
                         false;
                 }
             }
