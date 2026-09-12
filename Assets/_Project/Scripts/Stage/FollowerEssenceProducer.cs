@@ -1,5 +1,6 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Hypnosis;
+using ProjectTheta.NPC;
 
 namespace ProjectTheta.Stage
 {
@@ -9,6 +10,7 @@ namespace ProjectTheta.Stage
         [SerializeField] private float _productionInterval = 1.0f;
 
         private HypnosisTarget _target;
+        private NpcProfile _profile;
         private StageSessionController _stage;
         private float _timer;
 
@@ -16,6 +18,9 @@ namespace ProjectTheta.Stage
         {
             _target =
                 GetComponent<HypnosisTarget>();
+
+            _profile =
+                GetComponent<NpcProfile>();
         }
 
         private void Start()
@@ -49,7 +54,11 @@ namespace ProjectTheta.Stage
                 _timer -= interval;
 
                 _stage.AddEssence(
-                    _stage.PassiveEssencePerFollower);
+                    StageRules.ScaleEssenceReward(
+                        _stage.PassiveEssencePerFollower,
+                        _profile == null
+                            ? 1f
+                            : _profile.EssenceMultiplier));
 
                 if (!_stage.IsRunning)
                 {

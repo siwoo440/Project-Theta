@@ -1,6 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
+using ProjectTheta.NPC;
 using ProjectTheta.Ownership;
 
 namespace ProjectTheta.UI
@@ -20,8 +21,19 @@ namespace ProjectTheta.UI
         [SerializeField] private Vector2 _iconOffset =
             new Vector2(0.43f, 1.67f);
 
+        [SerializeField] private Vector2 _gradeMarkerOffset =
+            new Vector2(-0.43f, 1.67f);
+
+        [SerializeField] private float _gradeMarkerSize = 0.17f;
+
+        [SerializeField] private float _traitPipSize = 0.11f;
+        [SerializeField] private float _traitPipSpacing = 0.15f;
+
         private HypnosisTarget _target;
         private ImpulseMeter _impulse;
+        private NpcProfile _profile;
+
+        private SpriteRenderer _gradeMarkerRenderer;
 
         private GameObject _gaugeRoot;
         private Transform _fillTransform;
@@ -46,8 +58,12 @@ namespace ProjectTheta.UI
             _impulse =
                 GetComponent<ImpulseMeter>();
 
+            _profile =
+                GetComponent<NpcProfile>();
+
             CreatePrimaryGauge();
             CreateOwnershipGauge();
+            CreateGradeMarker();
             CreateIcons();
             MatchIconVisualSize();
             UpdateVisuals();
@@ -147,6 +163,65 @@ namespace ProjectTheta.UI
             fillRenderer =
                 fill.GetComponent<
                     SpriteRenderer>();
+        }
+
+        /// <summary>NPC 머리 위에 등급 색상 표식을 만든다.</summary>
+        private void CreateGradeMarker()
+        {
+            if (_profile == null)
+            {
+                return;
+            }
+
+            GameObject marker =
+                CreateBar(
+                    transform,
+                    "GradeMarker",
+                    _gradeMarkerOffset,
+                    new Vector2(
+                        _gradeMarkerSize,
+                        _gradeMarkerSize),
+                    _profile.GradeMarkerColor,
+                    12);
+
+            _gradeMarkerRenderer =
+                marker.GetComponent<
+                    SpriteRenderer>();
+
+            CreateTraitPips();
+        }
+
+        /// <summary>등급 표식 아래에 보유 특성 개수만큼 작은 색상 핍을 만든다.</summary>
+        private void CreateTraitPips()
+        {
+            NpcTrait[] traits =
+                _profile.Traits;
+
+            if (traits == null ||
+                _profile.IsPlain)
+            {
+                return;
+            }
+
+            for (int i = 0;
+                 i < traits.Length;
+                 i++)
+            {
+                CreateBar(
+                    transform,
+                    "TraitPip_" + traits[i],
+                    new Vector2(
+                        _gradeMarkerOffset.x,
+                        _gradeMarkerOffset.y -
+                        (_traitPipSpacing *
+                         (i + 1))),
+                    new Vector2(
+                        _traitPipSize,
+                        _traitPipSize),
+                    NpcTraitTable.Get(
+                        traits[i]).MarkerColor,
+                    12);
+            }
         }
 
         private void CreateIcons()
@@ -285,7 +360,7 @@ namespace ProjectTheta.UI
             bool popularGuyNeutralClaim =
                 _target.Owner ==
                     NpcOwner.Neutral &&
-                _target.PopularGuyClaimNormalized >
+                _target.OpponentClaimNormalized >
                     0f;
 
             bool hasImpulse =
@@ -346,7 +421,7 @@ namespace ProjectTheta.UI
                 SetGaugeProgress(
                     _ownershipFillTransform,
                     popularGuyNeutralClaim
-                        ? _target.PopularGuyClaimNormalized
+                        ? _target.OpponentClaimNormalized
                         : _target.HypnosisNormalized);
 
                 if (_ownershipFillRenderer != null)
@@ -358,6 +433,13 @@ namespace ProjectTheta.UI
                             : GetOwnershipColor(
                                 _target.Owner);
                 }
+            }
+
+            if (_gradeMarkerRenderer != null &&
+                _profile != null)
+            {
+                _gradeMarkerRenderer.color =
+                    _profile.GradeMarkerColor;
             }
 
             if (_heartRenderer != null)

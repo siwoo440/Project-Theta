@@ -1,6 +1,6 @@
 namespace ProjectTheta.Rival
 {
-    public enum PopularGuyState
+    public enum OpponentState
     {
         Idle,
         Search,
@@ -10,7 +10,7 @@ namespace ProjectTheta.Rival
         Stunned
     }
 
-    public enum PopularGuyTargetMode
+    public enum OpponentTargetMode
     {
         None,
         NeutralClaim,

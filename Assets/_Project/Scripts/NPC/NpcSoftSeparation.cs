@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProjectTheta.NPC
@@ -6,8 +6,8 @@ namespace ProjectTheta.NPC
     [RequireComponent(typeof(Collider2D))]
     public sealed class NpcSoftSeparation : MonoBehaviour
     {
-        [SerializeField] private float _desiredDistance = 0.65f;
-        [SerializeField] private float _maximumPushSpeed = 0.9f;
+        [SerializeField] private float _desiredDistance = 0.88f;
+        [SerializeField] private float _maximumPushSpeed = 1.20f;
 
         private static readonly List<NpcSoftSeparation> Active =
             new List<NpcSoftSeparation>();

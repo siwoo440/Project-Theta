@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -85,20 +85,9 @@ namespace ProjectTheta.Hypnosis
                 return;
             }
 
-            if (target.Owner ==
-                NpcOwner.Geumtaeyang)
-            {
-                target.GeumtaeyangOwner?.
-                    ReleaseOwnedTarget(
-                        target);
-            }
-            else if (target.Owner ==
-                     NpcOwner.PopularGuy)
-            {
-                target.PopularGuyOwner?.
-                    ReleaseOwnedTarget(
-                        target);
-            }
+            target.OpponentOwner?.
+                ReleaseOwnedTarget(
+                    target);
 
             target.ClaimByPlayer();
 

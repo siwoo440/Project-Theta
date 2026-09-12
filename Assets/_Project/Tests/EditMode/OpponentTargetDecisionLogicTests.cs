@@ -1,16 +1,16 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using ProjectTheta.Rival;
 
 namespace ProjectTheta.Tests.EditMode
 {
-    public sealed class RivalTargetDecisionLogicTests
+    public sealed class OpponentTargetDecisionLogicTests
     {
         [Test]
         public void Resolve_NoTarget_SearchesInsteadOfWaitingAgain()
         {
             Assert.AreEqual(
-                RivalTargetDecision.Search,
-                RivalTargetDecisionLogic.Resolve(
+                OpponentTargetDecision.Search,
+                OpponentTargetDecisionLogic.Resolve(
                     false,
                     false));
         }
@@ -19,8 +19,8 @@ namespace ProjectTheta.Tests.EditMode
         public void Resolve_InvalidExistingTarget_Waits()
         {
             Assert.AreEqual(
-                RivalTargetDecision.Wait,
-                RivalTargetDecisionLogic.Resolve(
+                OpponentTargetDecision.Wait,
+                OpponentTargetDecisionLogic.Resolve(
                     true,
                     false));
         }
@@ -29,8 +29,8 @@ namespace ProjectTheta.Tests.EditMode
         public void Resolve_ValidTarget_Continues()
         {
             Assert.AreEqual(
-                RivalTargetDecision.Continue,
-                RivalTargetDecisionLogic.Resolve(
+                OpponentTargetDecision.Continue,
+                OpponentTargetDecisionLogic.Resolve(
                     true,
                     true));
         }

@@ -1,6 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Companion;
 using ProjectTheta.Impulse;
+using ProjectTheta.NPC;
 using ProjectTheta.Player;
 
 namespace ProjectTheta.Stage
@@ -201,8 +202,15 @@ namespace ProjectTheta.Stage
 
             RecoveredFollowerCount++;
 
+            NpcProfile profile =
+                follower.GetComponent<NpcProfile>();
+
             AddEssence(
-                RecoveryReward);
+                StageRules.ScaleEssenceReward(
+                    RecoveryReward,
+                    profile == null
+                        ? 1f
+                        : profile.EssenceMultiplier));
 
             follower.gameObject.SetActive(
                 false);

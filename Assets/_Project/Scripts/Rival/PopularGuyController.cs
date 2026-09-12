@@ -1,128 +1,66 @@
 using UnityEngine;
-using ProjectTheta.Companion;
-using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
-using ProjectTheta.Impulse;
 using ProjectTheta.Ownership;
-using ProjectTheta.Stage;
 
 namespace ProjectTheta.Rival
 {
-    [RequireComponent(typeof(Rigidbody2D))]
-    [RequireComponent(typeof(PopularGuyFollowerManager))]
-    public sealed class PopularGuyController : MonoBehaviour
+    /// <summary>
+    /// 인기남. 중립 NPC를 3단계에 걸쳐 선점하는 것을 최우선으로 하고,
+    /// 중립이 없으면 플레이어·금태양 소유 NPC를 쟁탈한다. 금태양보다 느리고 여유 있다.
+    /// </summary>
+    public sealed class PopularGuyController : OpponentControllerBase
     {
-        [Header("Movement")]
-        [SerializeField] private float _moveSpeed = 2.1f;
-        [SerializeField] private float _stopDistance = 0.92f;
-
-        [Header("Targeting")]
-        [SerializeField] private float _reacquireInterval = 0.90f;
-        [SerializeField] private float _abandonDistance = 13f;
-        [SerializeField] private float _maximumPursuitDuration = 7.5f;
-
-        [Header("Idle - Geumtaeyang x1.5")]
-        [SerializeField] private float _minimumIdleDuration = 1.8f;
-        [SerializeField] private float _maximumIdleDuration = 4.5f;
-        [SerializeField] private float _lostTargetIdleMinimum = 1.2f;
-        [SerializeField] private float _lostTargetIdleMaximum = 2.7f;
-        [SerializeField] private float _postCaptureIdleMinimum = 1.5f;
-        [SerializeField] private float _postCaptureIdleMaximum = 3.6f;
-
-        [Header("Action")]
-        [SerializeField] private float _actionDistance = 1.20f;
-        [SerializeField] private float _contestDrainPerSecond = 12f;
         [SerializeField] private float _neutralClaimStepInterval = 0.75f;
 
-        private Rigidbody2D _body;
-        private RuntimeCharacterSpriteAnimator _animator;
-        private StageSessionController _stage;
-        private FollowerManager _playerFollowers;
-        private PopularGuyFollowerManager _ownedFollowers;
-
-        private HypnosisTarget _target;
-        private PopularGuyTargetMode _targetMode;
-        private float _reacquireTimer;
-        private float _idleRemaining;
-        private float _pursuitElapsed;
         private int _neutralClaimStep;
         private float _neutralClaimTimer;
-        private bool _duelLocked;
-        private float _duelStunRemaining;
         private AudioSource _claimTickSource;
         private AudioClip _claimTickClip;
 
-        public PopularGuyState State { get; private set; } =
-            PopularGuyState.Idle;
+        public override NpcOwner OwnerTag =>
+            NpcOwner.PopularGuy;
 
-        public int FacingDirection { get; private set; } =
-            -1;
+        public override string DisplayName =>
+            "인기남";
 
-        public int OwnedFollowerCount =>
-            _ownedFollowers == null
-                ? 0
-                : _ownedFollowers.Count;
-
-        public string CurrentTargetName =>
-            _target == null
-                ? "-"
-                : _target.name;
-
-        public float CurrentTargetControlNormalized =>
-            _target == null
-                ? 0f
-                : _target.HypnosisNormalized;
-
-        public bool CanStartPlayerDuel =>
+        public override bool CanStartPlayerDuel =>
             PopularGuyDuelLogic.CanStart(
-                _duelLocked,
-                _duelStunRemaining,
+                IsDuelLocked,
+                DuelStunRemaining,
                 State,
-                _targetMode,
-                _target != null,
-                _target == null
+                TargetMode,
+                Target != null,
+                Target == null
                     ? NpcOwner.PopularGuy
-                    : _target.Owner);
+                    : Target.Owner);
 
-        public string CurrentModeLabel
+        protected override OpponentTuning CreateDefaultTuning()
         {
-            get
+            return new OpponentTuning
             {
-                switch (_targetMode)
-                {
-                    case PopularGuyTargetMode.NeutralClaim:
-                        return "중립 선점";
+                MoveSpeed = 2.1f,
+                StopDistance = 0.92f,
 
-                    case PopularGuyTargetMode.Contest:
-                        return "쟁탈";
+                SearchRange = 999f,
+                ReacquireInterval = 0.90f,
+                AbandonDistance = 13f,
+                MaximumPursuitDuration = 7.5f,
 
-                    case PopularGuyTargetMode.None:
-                    default:
-                        return "-";
-                }
-            }
+                MinimumIdleDuration = 1.8f,
+                MaximumIdleDuration = 4.5f,
+                LostTargetIdleMinimum = 1.2f,
+                LostTargetIdleMaximum = 2.7f,
+                PostCaptureIdleMinimum = 1.5f,
+                PostCaptureIdleMaximum = 3.6f,
+
+                ActionDistance = 1.20f,
+                ContestDrainPerSecond = 12f
+            };
         }
 
-        private void Awake()
+        protected override void Awake()
         {
-            _body =
-                GetComponent<Rigidbody2D>();
-
-            _ownedFollowers =
-                GetComponent<
-                    PopularGuyFollowerManager>();
-
-            _body.gravityScale =
-                0f;
-
-            _body.freezeRotation =
-                true;
-
-            _body.collisionDetectionMode =
-                CollisionDetectionMode2D.Continuous;
-
-            _body.interpolation =
-                RigidbodyInterpolation2D.Interpolate;
+            base.Awake();
 
             _claimTickSource =
                 gameObject.AddComponent<
@@ -141,398 +79,36 @@ namespace ProjectTheta.Rival
                 CreateClaimTickClip();
         }
 
-        public void Configure(
-            StageSessionController stage,
-            FollowerManager playerFollowers,
-            RuntimeCharacterSpriteAnimator animator)
+        protected override void SearchForTarget()
         {
-            _stage =
-                stage;
-
-            _playerFollowers =
-                playerFollowers;
-
-            _animator =
-                animator;
-
-            EnterIdle(
-                _minimumIdleDuration,
-                _maximumIdleDuration);
-        }
-
-        private void Update()
-        {
-            if (_stage == null ||
-                !_stage.IsRunning)
-            {
-                StopMovement();
-
-                State =
-                    PopularGuyState.Idle;
-
-                return;
-            }
-
-            if (_duelLocked)
-            {
-                StopMovement();
-
-                return;
-            }
-
-            if (_duelStunRemaining >
-                0f)
-            {
-                _duelStunRemaining =
-                    Mathf.Max(
-                        0f,
-                        _duelStunRemaining -
-                        Time.deltaTime);
-
-                State =
-                    PopularGuyState.Stunned;
-
-                StopMovement();
-
-                if (_duelStunRemaining <=
-                    0f)
-                {
-                    EnterIdle(
-                        _lostTargetIdleMinimum,
-                        _lostTargetIdleMaximum);
-                }
-
-                return;
-            }
-
-            if (State ==
-                PopularGuyState.Idle)
-            {
-                UpdateIdle();
-
-                return;
-            }
-
-            if (_target == null)
-            {
-                UpdateTargetSearch();
-
-                return;
-            }
-
-            if (!IsTargetValid(
-                    _target,
-                    _targetMode))
-            {
-                ClearTarget();
-
-                return;
-            }
-
-            Vector2 delta =
-                (Vector2)_target.transform.position -
-                (Vector2)transform.position;
-
-            FaceHorizontal(
-                delta.x);
-
-            float distance =
-                delta.magnitude;
-
-            if (distance >
-                _actionDistance)
-            {
-                _pursuitElapsed +=
-                    Time.deltaTime;
-
-                if (OpponentTargetingLogic.
-                        ShouldAbandon(
-                            distance,
-                            _pursuitElapsed,
-                            _abandonDistance,
-                            _maximumPursuitDuration))
-                {
-                    ClearTarget();
-
-                    return;
-                }
-
-                State =
-                    PopularGuyState.Approach;
-
-                return;
-            }
-
-            _pursuitElapsed = 0f;
-
-            if (_targetMode ==
-                PopularGuyTargetMode.NeutralClaim)
-            {
-                State =
-                    PopularGuyState.Claiming;
-
-                StopMovement();
-
-                ProcessNeutralClaimSteps();
-
-                return;
-            }
-
-            State =
-                PopularGuyState.Contest;
-
-            StopMovement();
-
-            bool depleted =
-                _target.ApplyPopularGuyPressure(
-                    _contestDrainPerSecond,
-                    Time.deltaTime);
-
-            if (depleted)
-            {
-                CaptureContestedTarget(
-                    _target);
-            }
-        }
-
-        private void FixedUpdate()
-        {
-            if (_stage == null ||
-                !_stage.IsRunning ||
-                _duelLocked ||
-                _duelStunRemaining >
-                    0f ||
-                State !=
-                PopularGuyState.Approach ||
-                _target == null)
-            {
-                if (State !=
-                    PopularGuyState.Approach)
-                {
-                    StopMovement();
-                }
-
-                return;
-            }
-
-            Vector2 delta =
-                (Vector2)_target.transform.position -
-                (Vector2)transform.position;
-
-            float distance =
-                delta.magnitude;
-
-            if (distance <=
-                _stopDistance)
-            {
-                StopMovement();
-
-                return;
-            }
-
-            _body.linearVelocity =
-                delta.normalized *
-                _moveSpeed;
-        }
-
-        public void SetDuelLocked(
-            bool locked)
-        {
-            _duelLocked =
-                locked;
-
-            if (locked)
-            {
-                StopMovement();
-            }
-        }
-
-        public void ApplyDuelStun(
-            float duration)
-        {
-            ClearCurrentTargetVisuals();
-
-            _target =
-                null;
-
-            _targetMode =
-                PopularGuyTargetMode.None;
-
-            _neutralClaimStep =
-                0;
-
-            _neutralClaimTimer =
-                0f;
-
-            _duelLocked =
-                false;
-
-            _duelStunRemaining =
-                Mathf.Max(
-                    0f,
-                    duration);
-
-            State =
-                PopularGuyState.Stunned;
-
-            StopMovement();
-        }
-
-        public void ReleaseOwnedTarget(
-            HypnosisTarget target)
-        {
-            if (target == null ||
-                _ownedFollowers == null)
-            {
-                return;
-            }
-
-            _ownedFollowers.RemoveTarget(
-                target);
-        }
-
-        private void UpdateTargetSearch()
-        {
-            _reacquireTimer -=
-                Time.deltaTime;
-
-            if (_reacquireTimer >
-                0f)
-            {
-                return;
-            }
-
-            _reacquireTimer =
-                Mathf.Max(
-                    0.05f,
-                    _reacquireInterval);
-
             HypnosisTarget neutral =
-                FindNearestNeutralTarget();
+                FindNearestTarget(
+                    OpponentTargetMode.NeutralClaim);
 
             if (neutral != null)
             {
                 AssignTarget(
                     neutral,
-                    PopularGuyTargetMode.NeutralClaim);
+                    OpponentTargetMode.NeutralClaim);
 
                 return;
             }
 
             HypnosisTarget contested =
-                FindNearestContestTarget();
+                FindNearestTarget(
+                    OpponentTargetMode.Contest);
 
             if (contested != null)
             {
                 AssignTarget(
                     contested,
-                    PopularGuyTargetMode.Contest);
-
-                return;
+                    OpponentTargetMode.Contest);
             }
-
-            State =
-                PopularGuyState.Search;
         }
 
-        private HypnosisTarget FindNearestNeutralTarget()
-        {
-            HypnosisTarget[] targets =
-                FindObjectsByType<HypnosisTarget>(
-                    FindObjectsSortMode.None);
-
-            HypnosisTarget best =
-                null;
-
-            float bestDistanceSquared =
-                float.MaxValue;
-
-            for (int i = 0;
-                 i < targets.Length;
-                 i++)
-            {
-                HypnosisTarget candidate =
-                    targets[i];
-
-                if (candidate == null ||
-                    !candidate.isActiveAndEnabled ||
-                    candidate.Owner !=
-                    NpcOwner.Neutral)
-                {
-                    continue;
-                }
-
-                float distanceSquared =
-                    ((Vector2)candidate.transform.position -
-                     (Vector2)transform.position).
-                    sqrMagnitude;
-
-                if (distanceSquared >=
-                    bestDistanceSquared)
-                {
-                    continue;
-                }
-
-                best =
-                    candidate;
-
-                bestDistanceSquared =
-                    distanceSquared;
-            }
-
-            return best;
-        }
-
-        private HypnosisTarget FindNearestContestTarget()
-        {
-            HypnosisTarget[] targets =
-                FindObjectsByType<HypnosisTarget>(
-                    FindObjectsSortMode.None);
-
-            HypnosisTarget best =
-                null;
-
-            float bestDistanceSquared =
-                float.MaxValue;
-
-            for (int i = 0;
-                 i < targets.Length;
-                 i++)
-            {
-                HypnosisTarget candidate =
-                    targets[i];
-
-                if (!IsTargetValid(
-                        candidate,
-                        PopularGuyTargetMode.Contest))
-                {
-                    continue;
-                }
-
-                float distanceSquared =
-                    ((Vector2)candidate.transform.position -
-                     (Vector2)transform.position).
-                    sqrMagnitude;
-
-                if (distanceSquared >=
-                    bestDistanceSquared)
-                {
-                    continue;
-                }
-
-                best =
-                    candidate;
-
-                bestDistanceSquared =
-                    distanceSquared;
-            }
-
-            return best;
-        }
-
-        private bool IsTargetValid(
+        protected override bool IsTargetValid(
             HypnosisTarget target,
-            PopularGuyTargetMode mode)
+            OpponentTargetMode mode)
         {
             if (target == null ||
                 !target.isActiveAndEnabled)
@@ -541,14 +117,14 @@ namespace ProjectTheta.Rival
             }
 
             if (mode ==
-                PopularGuyTargetMode.NeutralClaim)
+                OpponentTargetMode.NeutralClaim)
             {
                 return target.Owner ==
                        NpcOwner.Neutral;
             }
 
             if (mode !=
-                PopularGuyTargetMode.Contest ||
+                    OpponentTargetMode.Contest ||
                 !PopularGuyLogic.CanContest(
                     target.Owner))
             {
@@ -558,71 +134,79 @@ namespace ProjectTheta.Rival
             if (target.Owner ==
                 NpcOwner.Player)
             {
-                if (!target.IsFollowing)
-                {
-                    return false;
-                }
-
-                ImpulseMeter impulse =
-                    target.GetComponent<
-                        ImpulseMeter>();
-
-                if (impulse == null)
-                {
-                    return true;
-                }
-
-                switch (impulse.State)
-                {
-                    case ImpulseState.Preparing:
-                    case ImpulseState.Rampaging:
-                    case ImpulseState.Capturing:
-                    case ImpulseState.Recovering:
-                        return false;
-                }
+                return IsPlayerFollowerContestable(
+                    target);
             }
 
             return true;
         }
 
-        private void AssignTarget(
+        protected override void PerformAction(
             HypnosisTarget target,
-            PopularGuyTargetMode mode)
+            OpponentTargetMode mode)
         {
-            _target =
-                target;
-
-            _targetMode =
-                mode;
-
-            _pursuitElapsed =
-                0f;
-
-            _neutralClaimStep =
-                0;
-
-            _neutralClaimTimer =
-                0f;
-
-            if (_targetMode ==
-                PopularGuyTargetMode.NeutralClaim)
+            if (mode ==
+                OpponentTargetMode.NeutralClaim)
             {
-                _target.SetPopularGuyClaimProgress(
-                    0f);
+                State =
+                    OpponentState.Claiming;
+
+                ProcessNeutralClaimSteps(
+                    target);
+
+                return;
             }
 
-            _target.SetOpponentTargeted(
-                NpcOwner.PopularGuy,
-                true);
-
             State =
-                PopularGuyState.Approach;
+                OpponentState.Contest;
+
+            bool depleted =
+                target.ApplyOpponentPressure(
+                    OwnerTag,
+                    Tuning.ContestDrainPerSecond,
+                    Time.deltaTime);
+
+            if (depleted)
+            {
+                CaptureContestedTarget(
+                    target);
+            }
         }
 
-        private void ProcessNeutralClaimSteps()
+        protected override void OnTargetAssigned(
+            HypnosisTarget target,
+            OpponentTargetMode mode)
         {
-            if (_target == null ||
-                _target.Owner !=
+            ResetNeutralClaim();
+
+            if (mode ==
+                OpponentTargetMode.NeutralClaim)
+            {
+                target.SetOpponentClaimProgress(
+                    0f);
+            }
+        }
+
+        protected override void OnTargetVisualsCleared(
+            HypnosisTarget target,
+            OpponentTargetMode mode)
+        {
+            if (mode ==
+                OpponentTargetMode.NeutralClaim)
+            {
+                target.ClearOpponentClaimProgress();
+            }
+        }
+
+        protected override void OnTargetReleased()
+        {
+            ResetNeutralClaim();
+        }
+
+        private void ProcessNeutralClaimSteps(
+            HypnosisTarget target)
+        {
+            if (target.Owner !=
                 NpcOwner.Neutral)
             {
                 ClearTarget();
@@ -649,7 +233,7 @@ namespace ProjectTheta.Rival
                         NextStep(
                             _neutralClaimStep);
 
-                _target.SetPopularGuyClaimProgress(
+                target.SetOpponentClaimProgress(
                     PopularGuyNeutralClaimLogic.
                         Normalized(
                             _neutralClaimStep));
@@ -661,11 +245,138 @@ namespace ProjectTheta.Rival
                             _neutralClaimStep))
                 {
                     CaptureNeutralTarget(
-                        _target);
+                        target);
 
                     break;
                 }
             }
+        }
+
+        private void CaptureNeutralTarget(
+            HypnosisTarget target)
+        {
+            if (target == null ||
+                target.Owner !=
+                NpcOwner.Neutral)
+            {
+                ClearTarget();
+
+                return;
+            }
+
+            target.ClaimByOpponent(
+                this);
+
+            OwnedFollowers?.TryAdd(
+                target);
+
+            FinishSuccessfulCapture();
+        }
+
+        private void CaptureContestedTarget(
+            HypnosisTarget target)
+        {
+            if (target == null ||
+                !PopularGuyLogic.CanContest(
+                    target.Owner))
+            {
+                ClearTarget();
+
+                return;
+            }
+
+            if (target.Owner ==
+                NpcOwner.Player)
+            {
+                if (!TryDetachFromPlayer(
+                        target))
+                {
+                    ClearTarget();
+
+                    return;
+                }
+            }
+            else
+            {
+                target.OpponentOwner?.
+                    ReleaseOwnedTarget(
+                        target);
+            }
+
+            target.ClaimByOpponent(
+                this);
+
+            OwnedFollowers?.TryAdd(
+                target);
+
+            FinishSuccessfulCapture();
+        }
+
+        private HypnosisTarget FindNearestTarget(
+            OpponentTargetMode mode)
+        {
+            HypnosisTarget[] targets =
+                FindObjectsByType<HypnosisTarget>(
+                    FindObjectsSortMode.None);
+
+            HypnosisTarget best =
+                null;
+
+            float bestDistanceSquared =
+                float.MaxValue;
+
+            float range =
+                Mathf.Max(
+                    0f,
+                    Tuning.SearchRange);
+
+            float rangeSquared =
+                range * range;
+
+            for (int i = 0;
+                 i < targets.Length;
+                 i++)
+            {
+                HypnosisTarget candidate =
+                    targets[i];
+
+                if (!IsTargetValid(
+                        candidate,
+                        mode))
+                {
+                    continue;
+                }
+
+                float distanceSquared =
+                    ((Vector2)candidate.transform.position -
+                     (Vector2)transform.position).
+                    sqrMagnitude;
+
+                if (distanceSquared >
+                    rangeSquared ||
+                    distanceSquared >=
+                    bestDistanceSquared)
+                {
+                    continue;
+                }
+
+                best =
+                    candidate;
+
+                bestDistanceSquared =
+                    distanceSquared;
+            }
+
+            return best;
+        }
+
+        private void ResetNeutralClaim()
+        {
+            _neutralClaimStep =
+                0;
+
+            _neutralClaimTimer =
+                0f;
         }
 
         private void PlayClaimTick()
@@ -680,7 +391,7 @@ namespace ProjectTheta.Rival
                 _claimTickClip);
         }
 
-        private AudioClip CreateClaimTickClip()
+        private static AudioClip CreateClaimTickClip()
         {
             const int sampleRate =
                 44100;
@@ -738,217 +449,6 @@ namespace ProjectTheta.Rival
                 0);
 
             return clip;
-        }
-
-        private void CaptureNeutralTarget(
-            HypnosisTarget target)
-        {
-            if (target == null ||
-                target.Owner !=
-                NpcOwner.Neutral)
-            {
-                ClearTarget();
-
-                return;
-            }
-
-            target.ClaimByPopularGuy(
-                this);
-
-            _ownedFollowers?.TryAdd(
-                target);
-
-            FinishSuccessfulCapture();
-        }
-
-        private void CaptureContestedTarget(
-            HypnosisTarget target)
-        {
-            if (target == null ||
-                !PopularGuyLogic.CanContest(
-                    target.Owner))
-            {
-                ClearTarget();
-
-                return;
-            }
-
-            if (target.Owner ==
-                NpcOwner.Player)
-            {
-                ImpulseMeter impulse =
-                    target.GetComponent<
-                        ImpulseMeter>();
-
-                impulse?.CancelForRecovery();
-
-                FollowerController follower =
-                    target.GetComponent<
-                        FollowerController>();
-
-                if (_playerFollowers == null ||
-                    follower == null ||
-                    !_playerFollowers.TransferOutFollower(
-                        follower))
-                {
-                    ClearTarget();
-
-                    return;
-                }
-            }
-            else if (target.Owner ==
-                     NpcOwner.Geumtaeyang)
-            {
-                target.GeumtaeyangOwner?.
-                    ReleaseOwnedTarget(
-                        target);
-            }
-
-            target.ClaimByPopularGuy(
-                this);
-
-            _ownedFollowers?.TryAdd(
-                target);
-
-            FinishSuccessfulCapture();
-        }
-
-        private void FinishSuccessfulCapture()
-        {
-            _target =
-                null;
-
-            _targetMode =
-                PopularGuyTargetMode.None;
-
-            _pursuitElapsed =
-                0f;
-
-            _neutralClaimStep =
-                0;
-
-            _neutralClaimTimer =
-                0f;
-
-            EnterIdle(
-                _postCaptureIdleMinimum,
-                _postCaptureIdleMaximum);
-        }
-
-        private void ClearTarget()
-        {
-            EnterIdle(
-                _lostTargetIdleMinimum,
-                _lostTargetIdleMaximum);
-        }
-
-        private void UpdateIdle()
-        {
-            StopMovement();
-
-            _idleRemaining -=
-                Time.deltaTime;
-
-            if (_idleRemaining >
-                0f)
-            {
-                return;
-            }
-
-            State =
-                PopularGuyState.Search;
-
-            _reacquireTimer =
-                0f;
-        }
-
-        private void EnterIdle(
-            float minimum,
-            float maximum)
-        {
-            ClearCurrentTargetVisuals();
-
-            State =
-                PopularGuyState.Idle;
-
-            _target =
-                null;
-
-            _targetMode =
-                PopularGuyTargetMode.None;
-
-            _pursuitElapsed =
-                0f;
-
-            _neutralClaimStep =
-                0;
-
-            _neutralClaimTimer =
-                0f;
-
-            _idleRemaining =
-                RivalIdleLogic.ResolveDuration(
-                    minimum,
-                    maximum,
-                    Random.value);
-
-            _reacquireTimer =
-                0f;
-
-            StopMovement();
-        }
-
-        private void ClearCurrentTargetVisuals()
-        {
-            if (_target == null)
-            {
-                return;
-            }
-
-            if (_targetMode ==
-                PopularGuyTargetMode.NeutralClaim)
-            {
-                _target.ClearPopularGuyClaimProgress();
-            }
-
-            _target.SetOpponentTargeted(
-                NpcOwner.PopularGuy,
-                false);
-        }
-
-        private void FaceHorizontal(
-            float deltaX)
-        {
-            if (Mathf.Abs(
-                    deltaX) <=
-                0.001f)
-            {
-                return;
-            }
-
-            FacingDirection =
-                deltaX > 0f
-                    ? 1
-                    : -1;
-
-            _animator?.FaceHorizontal(
-                deltaX);
-        }
-
-        private void StopMovement()
-        {
-            if (_body != null)
-            {
-                _body.linearVelocity =
-                    Vector2.zero;
-            }
-        }
-
-        private void OnDisable()
-        {
-            ClearCurrentTargetVisuals();
-
-            StopMovement();
         }
 
         private void OnDestroy()
