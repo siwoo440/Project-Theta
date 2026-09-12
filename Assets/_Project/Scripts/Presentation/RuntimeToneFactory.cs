@@ -1,47 +1,18 @@
 using UnityEngine;
 
-namespace ProjectTheta.UI
+namespace ProjectTheta.Presentation
 {
     /// <summary>
-    /// 프로토타입 단계에서 오디오 파일 없이 간단한 UI 효과음을 런타임 생성한다.
-    /// 정식 사운드가 준비되면 호출 지점은 그대로 두고 클립만 교체하면 된다.
+    /// 오디오 파일 없이 간단한 단음을 만든다.
+    ///
+    /// 9일차 인기남 선점음과 11일차 결과 화면 효과음이 각각 갖고 있던
+    /// 거의 동일한 생성 코드를 하나로 합친 것이다.
     /// </summary>
-    public static class RuntimeUiSfx
+    public static class RuntimeToneFactory
     {
-        private const int SampleRate = 44100;
+        public const int SampleRate = 44100;
 
-        /// <summary>결과 화면 항목이 튀어나올 때의 짧은 "딱" 소리다.</summary>
-        public static AudioClip CreateTick(
-            string name = "UiTick",
-            float frequency = 1180f,
-            float duration = 0.045f,
-            float volume = 0.18f)
-        {
-            return CreateTone(
-                name,
-                frequency,
-                duration,
-                volume,
-                4f);
-        }
-
-        /// <summary>랭크 도장이 찍힐 때의 묵직한 소리다.</summary>
-        public static AudioClip CreateStamp(
-            string name = "UiStamp",
-            float frequency = 190f,
-            float duration = 0.22f,
-            float volume = 0.30f)
-        {
-            return CreateTone(
-                name,
-                frequency,
-                duration,
-                volume,
-                2.2f);
-        }
-
-        /// <summary>지수 감쇠를 적용한 단음 클립을 만든다.</summary>
-        private static AudioClip CreateTone(
+        public static AudioClip CreateTone(
             string name,
             float frequency,
             float duration,
@@ -69,11 +40,14 @@ namespace ProjectTheta.UI
                     i /
                     (float)SampleRate;
 
+                float progress =
+                    i /
+                    (float)samples.Length;
+
                 float envelope =
                     Mathf.Exp(
                         -decay *
-                        (i /
-                         (float)samples.Length) *
+                        progress *
                         4f);
 
                 samples[i] =

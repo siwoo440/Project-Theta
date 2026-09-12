@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using ProjectTheta.Balance;
 
 namespace ProjectTheta.Stage
 {
@@ -10,13 +11,31 @@ namespace ProjectTheta.Stage
     /// </summary>
     public static class ComboLogic
     {
-        public const float TimeoutSeconds = 6.0f;
-        public const float StepMultiplier = 0.1f;
-        public const float MinimumMultiplier = 1.0f;
-        public const float MaximumMultiplier = 3.0f;
+        public const float DefaultTimeoutSeconds = 6.0f;
+        public const float DefaultStepMultiplier = 0.1f;
+        public const float DefaultMaximumMultiplier = 3.0f;
 
-        /// <summary>배율 상한에 도달하는 콤보 수다.</summary>
-        public const int MaximumCombo = 20;
+        /// <summary>기본 배율이다. 구조적 기준값이므로 조정 대상이 아니다.</summary>
+        public const float MinimumMultiplier = 1.0f;
+
+        public static float TimeoutSeconds =>
+            BalanceOverrides.StageOrDefault.ComboTimeoutSeconds;
+
+        public static float StepMultiplier =>
+            BalanceOverrides.StageOrDefault.ComboStepMultiplier;
+
+        public static float MaximumMultiplier =>
+            BalanceOverrides.StageOrDefault.ComboMaximumMultiplier;
+
+        /// <summary>배율 상한에 도달하는 콤보 수다. 단계 배율과 상한에서 역산한다.</summary>
+        public static int MaximumCombo =>
+            StepMultiplier <= 0.0001f
+                ? 0
+                : (int)Math.Round(
+                    (MaximumMultiplier -
+                     MinimumMultiplier) /
+                    StepMultiplier,
+                    MidpointRounding.AwayFromZero);
 
         public static int AddCombo(
             int currentCombo)

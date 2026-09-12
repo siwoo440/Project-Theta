@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using ProjectTheta.Balance;
 
 namespace ProjectTheta.Stage
 {
@@ -9,8 +10,11 @@ namespace ProjectTheta.Stage
     /// </summary>
     public static class EssenceRecoveryLogic
     {
+        public const float DefaultBatchWindowSeconds = 1.5f;
+
         /// <summary>첫 회수 이후 이 시간 안에 들어온 NPC를 한 묶음으로 정산한다.</summary>
-        public const float BatchWindowSeconds = 1.5f;
+        public static float BatchWindowSeconds =>
+            BalanceOverrides.StageOrDefault.RecoveryBatchWindowSeconds;
 
         public static float GetSimultaneousMultiplier(
             int count)
@@ -20,20 +24,12 @@ namespace ProjectTheta.Stage
                 return 1.0f;
             }
 
-            switch (count)
-            {
-                case 2:
-                    return 1.2f;
-
-                case 3:
-                    return 1.4f;
-
-                case 4:
-                    return 1.7f;
-
-                default:
-                    return 2.0f;
-            }
+            // 배열 인덱스 0이 1명, 1이 2명... 마지막 값이 상한이다.
+            return StageBalanceValues.ReadClamped(
+                BalanceOverrides.StageOrDefault.
+                    SimultaneousMultipliers,
+                count - 1,
+                2.0f);
         }
 
         /// <summary>묶음 정기 합계에 동시 회수 배율을 적용한다.</summary>

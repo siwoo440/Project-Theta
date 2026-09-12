@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectTheta.Companion;
 using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
@@ -132,7 +132,10 @@ namespace ProjectTheta.Rival
         {
             // Unity는 직렬화된 사용자 클래스 필드를 기본 생성 인스턴스로 채울 수 있으므로
             // null 검사에 의존하지 않고 항상 파생 클래스의 수치로 초기화한다.
+            // 자산이 주입돼 있으면 그 값을 우선 사용한다.
             _tuning =
+                OpponentTuningOverrides.Get(
+                    OwnerTag) ??
                 CreateDefaultTuning();
 
             _body =

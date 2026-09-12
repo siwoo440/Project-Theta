@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using ProjectTheta.Balance;
 
 namespace ProjectTheta.Hypnosis
 {
@@ -10,20 +11,32 @@ namespace ProjectTheta.Hypnosis
     /// </summary>
     public static class HypnosisWaveLogic
     {
-        public const float ChargeSeconds = 0.40f;
-        public const float Radius = 3.5f;
+        public const float DefaultChargeSeconds = 0.40f;
+        public const float DefaultFocusCost = 30f;
+
+        public static float ChargeSeconds =>
+            BalanceOverrides.StageOrDefault.WaveChargeSeconds;
+
+        public static float Radius =>
+            BalanceOverrides.StageOrDefault.WaveRadius;
 
         /// <summary>내 동행 NPC의 충동을 이만큼 낮춘다.</summary>
-        public const float ImpulseRelief = 35f;
+        public static float ImpulseRelief =>
+            BalanceOverrides.StageOrDefault.WaveImpulseRelief;
 
         /// <summary>경쟁자를 이 시간만큼 정지시키고 진행 중인 선점·쟁탈을 초기화한다.</summary>
-        public const float OpponentStunSeconds = 1.2f;
+        public static float OpponentStunSeconds =>
+            BalanceOverrides.StageOrDefault.WaveOpponentStunSeconds;
 
         /// <summary>각성 지원형의 오라를 이 시간만큼 무력화한다.</summary>
-        public const float AuraSuppressSeconds = 2.5f;
+        public static float AuraSuppressSeconds =>
+            BalanceOverrides.StageOrDefault.WaveAuraSuppressSeconds;
 
-        public const float FocusCost = 30f;
-        public const float CooldownSeconds = 4.0f;
+        public static float FocusCost =>
+            BalanceOverrides.StageOrDefault.WaveFocusCost;
+
+        public static float CooldownSeconds =>
+            BalanceOverrides.StageOrDefault.WaveCooldownSeconds;
 
         public static bool IsInRadius(
             float distance,
