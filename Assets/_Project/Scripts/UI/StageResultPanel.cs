@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 #endif
 using ProjectTheta.Core;
 using ProjectTheta.Presentation;
+using ProjectTheta.Run;
 using ProjectTheta.Save;
 using ProjectTheta.Stage;
 using ProjectTheta.UI.Framework;
@@ -24,7 +25,7 @@ namespace ProjectTheta.UI
     /// </summary>
     public sealed class StageResultPanel : MonoBehaviour
     {
-        private const int RowCount = 9;
+        private const int RowCount = 11;
 
         /// <summary>총점부터는 글자를 키워 구분한다.</summary>
         private const int EmphasisRowStart = RowCount - 2;
@@ -44,6 +45,7 @@ namespace ProjectTheta.UI
         private StageSessionController _stage;
         private StageScoreTracker _tracker;
         private FloorTransitionController _floors;
+        private RunProgression _run;
 
         private StageScoreBreakdown _breakdown;
         private StageRank _rank;
@@ -179,6 +181,10 @@ namespace ProjectTheta.UI
                 FindFirstObjectByType<
                     FloorTransitionController>();
 
+            _run =
+                FindFirstObjectByType<
+                    RunProgression>();
+
             _breakdown =
                 _tracker.BuildBreakdown();
 
@@ -313,8 +319,8 @@ namespace ProjectTheta.UI
                 panel,
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -20f),
-                new Vector2(760f, 620f));
+                new Vector2(0f, -30f),
+                new Vector2(820f, 720f));
 
             _titleText =
                 UiFactory.CreateText(
@@ -348,7 +354,7 @@ namespace ProjectTheta.UI
                 _rankText.rectTransform,
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 318f),
+                new Vector2(0f, 366f),
                 new Vector2(700f, 90f));
 
             BuildRows(
@@ -399,8 +405,8 @@ namespace ProjectTheta.UI
         private void BuildRows(
             RectTransform panel)
         {
-            const float firstRowTop = 82f;
-            const float rowHeight = 46f;
+            const float firstRowTop = 76f;
+            const float rowHeight = 44f;
 
             for (int i = 0;
                  i < RowCount;
@@ -698,6 +704,12 @@ namespace ProjectTheta.UI
                     return "도달 층";
 
                 case 7:
+                    return "런 레벨";
+
+                case 8:
+                    return "강화";
+
+                case 9:
                     return "총점";
 
                 default:
@@ -741,11 +753,86 @@ namespace ProjectTheta.UI
                         : $"{FloorPlanLogic.GetLabel(_floors.Run.HighestReached)}   ({_floors.Run.VisitedCount}개 층)";
 
                 case 7:
+                    return _run == null
+                        ? "-"
+                        : $"Lv {_run.Level.Level}   ({_run.Level.TotalXp:N0} XP)";
+
+                case 8:
+                    return FormatUpgrades();
+
+                case 9:
                     return $"{_breakdown.Total:N0}";
 
                 default:
                     return $"+{_contractEssence:N0}";
             }
+        }
+
+        /// <summary>
+        /// 이번 판에 고른 카드를 "이름 ×스택"으로 줄인다.
+        /// 한 줄에 다 안 들어가면 앞의 셋만 쓰고 나머지는 개수로 보여준다.
+        /// </summary>
+        private string FormatUpgrades()
+        {
+            if (_run == null ||
+                _run.Upgrades.PickCount == 0)
+            {
+                return "없음";
+            }
+
+            System.Collections.Generic.List<RunUpgradeCard> distinct =
+                new System.Collections.Generic.List<RunUpgradeCard>();
+
+            System.Collections.Generic.IReadOnlyList<RunUpgradeCard> history =
+                _run.Upgrades.History;
+
+            for (int i = 0;
+                 i < history.Count;
+                 i++)
+            {
+                if (!distinct.Contains(history[i]))
+                {
+                    distinct.Add(history[i]);
+                }
+            }
+
+            const int shown = 3;
+
+            System.Text.StringBuilder builder =
+                new System.Text.StringBuilder();
+
+            for (int i = 0;
+                 i < distinct.Count &&
+                 i < shown;
+                 i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(" · ");
+                }
+
+                builder.Append(
+                    RunUpgradeTable.Get(
+                        distinct[i]).DisplayName);
+
+                int stacks =
+                    _run.Upgrades.GetStacks(
+                        distinct[i]);
+
+                if (stacks > 1)
+                {
+                    builder.Append(" ×");
+                    builder.Append(stacks);
+                }
+            }
+
+            if (distinct.Count > shown)
+            {
+                builder.Append(" 외 ");
+                builder.Append(distinct.Count - shown);
+            }
+
+            return builder.ToString();
         }
 
         private static Color GetRankColor(

@@ -6,18 +6,28 @@ namespace ProjectTheta.Stage
     /// </summary>
     public static class FloorLayout
     {
-        /// <summary>위층으로 가는 계단이다. 복도 왼쪽 끝 계단실에 둔다.</summary>
-        public const float UpStairX = -15.6f;
+        /// <summary>
+        /// 위층으로 가는 계단이다. 복도 오른쪽에 둔다.
+        /// 맨 오른쪽 끝은 회수 지점이 쓰므로, 회수 판정 구역과 겹치지 않게 조금 안쪽에 둔다.
+        /// </summary>
+        public const float UpStairX = 13.4f;
 
-        /// <summary>아래층으로 가는 계단이다. 위층 계단과 나란히 둔다.</summary>
-        public const float DownStairX = -12.4f;
+        /// <summary>아래층으로 가는 계단이다. 복도 왼쪽에 둔다.</summary>
+        public const float DownStairX = -13.8f;
+
+        /// <summary>이 거리 안에 들어오면 계단을 쓸 수 있다.</summary>
+        public const float StairInteractRadius = 1.4f;
+
+        /// <summary>회수 지점 판정 구역의 가로 폭이다.</summary>
+        public const float RecoveryWidth = 1.8f;
 
         /// <summary>계단 앞에 서는 지점의 세로 좌표다. 보행 구역 안쪽이다.</summary>
         public const float StairStandY = 0.35f;
 
         /// <summary>
-        /// 회수 지점은 계단 반대편 끝이다.
-        /// 계단과 회수 지점을 멀리 떼어 놓아야 "데리고 이동하는" 행위가 생긴다.
+        /// 회수 지점은 복도 오른쪽 끝이다.
+        /// 올라온 계단(왼쪽)에서 회수 지점까지 복도를 가로질러야 하므로
+        /// "데리고 이동하는" 행위가 층마다 생긴다.
         /// </summary>
         public const float RecoveryX = 16.2f;
 
