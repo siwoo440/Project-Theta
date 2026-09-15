@@ -128,10 +128,6 @@ namespace ProjectTheta.Core
                 floorIndex - 1,
                 FloorPlanLogic.HasDownStair(
                     floorIndex));
-
-            CreateFloorSign(
-                parent,
-                floorIndex);
         }
 
         private static void CreateFloorTiles(Transform parent)
@@ -162,7 +158,8 @@ namespace ProjectTheta.Core
 
         private static void CreateWindows(Transform parent)
         {
-            float[] xs = { -7.8f, 7.8f, 13.2f };
+            // 13.2 자리는 위층 계단이 쓴다.
+            float[] xs = { -7.8f, 7.8f };
 
             for (int i = 0; i < xs.Length; i++)
             {
@@ -259,7 +256,10 @@ namespace ProjectTheta.Core
 
         /// <summary>
         /// 벽면 계단이다. 갈 수 없는 방향이면 막힌 계단실로 그린다.
-        /// 막힌 쪽도 그려 두어야 "여기가 계단실"이라는 인상이 층마다 일정하다.
+        /// 막힌 쪽도 그려 두어야 층마다 계단 자리가 일정하게 보인다.
+        ///
+        /// 17일차에 크기를 절반으로 줄였다. 바닥선에 붙여 두어서
+        /// 복도 벽에 난 작은 계단 입구처럼 보이게 했다.
         /// </summary>
         private static void CreateStairway(
             Transform parent,
@@ -286,23 +286,24 @@ namespace ProjectTheta.Core
                     ? new Color(0.11f, 0.12f, 0.16f)
                     : new Color(0.34f, 0.33f, 0.31f);
 
-            CreateVisual(parent, name + "_Frame", new Vector2(x, 2.05f), new Vector2(2.95f, 4.35f), new Color(0.21f, 0.26f, 0.27f), -42);
-            CreateVisual(parent, name + "_Opening", new Vector2(x, 1.95f), new Vector2(2.55f, 3.95f), openingColor, -38);
+            // 문틀 아래 끝을 교실 문과 같은 높이(-0.12)에 맞춘다.
+            CreateVisual(parent, name + "_Frame", new Vector2(x, 0.97f), new Vector2(1.48f, 2.18f), new Color(0.21f, 0.26f, 0.27f), -42);
+            CreateVisual(parent, name + "_Opening", new Vector2(x, 0.92f), new Vector2(1.28f, 1.98f), openingColor, -38);
 
-            // 계단참을 층계 모양으로 쌓아 올라가는지 내려가는지 눈으로 알 수 있게 한다.
+            // 계단참을 층계 모양으로 쌓아 올라가는지 내려가는지 형태로 구분한다.
             for (int i = 0; i < 5; i++)
             {
-                float stepWidth = 2.25f - (i * 0.27f);
+                float stepWidth = 1.12f - (i * 0.135f);
 
                 float stepY =
                     up
-                        ? 0.5f + (i * 0.54f)
-                        : 3.16f - (i * 0.54f);
+                        ? 0.12f + (i * 0.27f)
+                        : 1.45f - (i * 0.27f);
 
                 float offsetX =
                     up
-                        ? -0.12f + (i * 0.08f)
-                        : 0.12f - (i * 0.08f);
+                        ? -0.06f + (i * 0.04f)
+                        : 0.06f - (i * 0.04f);
 
                 Color stepColor =
                     enabled
@@ -313,12 +314,12 @@ namespace ProjectTheta.Core
                     parent,
                     $"{name}_Step_{i}",
                     new Vector2(x + offsetX, stepY),
-                    new Vector2(stepWidth, 0.22f),
+                    new Vector2(stepWidth, 0.11f),
                     stepColor,
                     -36);
             }
 
-            CreateVisual(parent, name + "_SignPlate", new Vector2(x, 4.22f), new Vector2(1.95f, 0.46f), new Color(0.20f, 0.30f, 0.32f), -24);
+            CreateVisual(parent, name + "_SignPlate", new Vector2(x, 2.34f), new Vector2(0.98f, 0.24f), new Color(0.20f, 0.30f, 0.32f), -24);
 
             Color arrowColor =
                 enabled
@@ -328,21 +329,28 @@ namespace ProjectTheta.Core
             // 화살표는 사각형 세 개로 삼각형 느낌만 낸다.
             for (int i = 0; i < 3; i++)
             {
-                float width = 0.46f - (i * 0.15f);
+                float width = 0.23f - (i * 0.075f);
 
                 float y =
                     up
-                        ? 4.10f + (i * 0.09f)
-                        : 4.34f - (i * 0.09f);
+                        ? 2.29f + (i * 0.045f)
+                        : 2.39f - (i * 0.045f);
 
                 CreateVisual(
                     parent,
                     $"{name}_Arrow_{i}",
                     new Vector2(x, y),
-                    new Vector2(width, 0.09f),
+                    new Vector2(width, 0.045f),
                     arrowColor,
                     -22);
             }
+
+            // 계단이 좌우로 떨어져 있으므로 층 표지도 계단마다 붙인다.
+            CreateFloorSign(
+                parent,
+                name,
+                x,
+                sourceFloor);
 
             if (!enabled)
             {
@@ -369,17 +377,14 @@ namespace ProjectTheta.Core
                 targetFloor);
         }
 
-        /// <summary>벽에 붙은 층 표지다. 층수만큼 눈금을 긋는다.</summary>
+        /// <summary>계단 위에 붙는 층 표지다. 층수만큼 금색 눈금을 긋는다.</summary>
         private static void CreateFloorSign(
             Transform parent,
+            string owner,
+            float x,
             int floorIndex)
         {
-            float x =
-                (FloorLayout.UpStairX +
-                 FloorLayout.DownStairX) *
-                0.5f;
-
-            CreateVisual(parent, "FloorSign_Plate", new Vector2(x, 3.30f), new Vector2(1.62f, 0.95f), new Color(0.15f, 0.19f, 0.21f), -20);
+            CreateVisual(parent, owner + "_FloorSign_Plate", new Vector2(x, 2.78f), new Vector2(0.82f, 0.48f), new Color(0.15f, 0.19f, 0.21f), -20);
 
             int marks =
                 Mathf.Clamp(
@@ -388,15 +393,15 @@ namespace ProjectTheta.Core
                     6);
 
             float start =
-                -0.12f * (marks - 1);
+                -0.06f * (marks - 1);
 
             for (int i = 0; i < marks; i++)
             {
                 CreateVisual(
                     parent,
-                    $"FloorSign_Mark_{i}",
-                    new Vector2(x + start + (i * 0.24f), 3.30f),
-                    new Vector2(0.11f, 0.54f),
+                    $"{owner}_FloorSign_Mark_{i}",
+                    new Vector2(x + start + (i * 0.12f), 2.78f),
+                    new Vector2(0.055f, 0.27f),
                     new Color(0.98f, 0.86f, 0.42f),
                     -18);
             }

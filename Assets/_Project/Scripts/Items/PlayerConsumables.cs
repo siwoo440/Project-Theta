@@ -8,6 +8,7 @@ using ProjectTheta.Impulse;
 using ProjectTheta.Ownership;
 using ProjectTheta.Player;
 using ProjectTheta.Stage;
+using ProjectTheta.Core;
 
 namespace ProjectTheta.Items
 {
@@ -121,6 +122,12 @@ namespace ProjectTheta.Items
 
         private void Update()
         {
+            // 카드 선택 키(1·2·3)와 아이템 키(1·2)가 겹치므로 멈춘 동안에는 읽지 않는다.
+            if (GameplayPause.IsPaused)
+            {
+                return;
+            }
+
             if (ReadSlotPressed(
                     0))
             {

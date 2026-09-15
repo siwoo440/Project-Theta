@@ -11,6 +11,7 @@ using ProjectTheta.Ownership;
 using ProjectTheta.Player;
 using ProjectTheta.Rival;
 using ProjectTheta.Stage;
+using ProjectTheta.Core;
 
 namespace ProjectTheta.Hypnosis
 {
@@ -96,6 +97,11 @@ namespace ProjectTheta.Hypnosis
 
         private void Update()
         {
+            if (GameplayPause.IsPaused)
+            {
+                return;
+            }
+
             _cooldownRemaining =
                 Mathf.Max(
                     0f,

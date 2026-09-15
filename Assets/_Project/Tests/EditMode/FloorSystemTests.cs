@@ -231,6 +231,54 @@ namespace ProjectTheta.Tests.EditMode
         }
     }
 
+    public sealed class FloorLayoutTests
+    {
+        [Test]
+        public void Up_Stair_Is_On_The_Right_And_Down_Stair_On_The_Left()
+        {
+            Assert.Greater(FloorLayout.UpStairX, 0f);
+            Assert.Less(FloorLayout.DownStairX, 0f);
+        }
+
+        [Test]
+        public void Stairs_Sit_Inside_The_Walk_Area()
+        {
+            // 계단 앞에 설 수 없으면 이동할 방법이 없다.
+            Assert.GreaterOrEqual(FloorLayout.DownStairX, FloorSpace.WalkMinX);
+            Assert.LessOrEqual(FloorLayout.UpStairX, FloorSpace.WalkMaxX);
+
+            Assert.GreaterOrEqual(FloorLayout.StairStandY, FloorSpace.WalkMinY);
+            Assert.LessOrEqual(FloorLayout.StairStandY, FloorSpace.WalkMaxY);
+        }
+
+        [Test]
+        public void Up_Stair_Does_Not_Overlap_The_Recovery_Point()
+        {
+            // 위층 계단과 회수 지점이 둘 다 오른쪽에 있다.
+            // 겹치면 계단을 쓰려다 동행자가 회수되어 버린다.
+            float stairReach =
+                FloorLayout.UpStairX +
+                FloorLayout.StairInteractRadius;
+
+            float recoveryStart =
+                FloorLayout.RecoveryX -
+                FloorLayout.RecoveryWidth * 0.5f;
+
+            Assert.Less(
+                stairReach,
+                recoveryStart);
+        }
+
+        [Test]
+        public void Arrival_Lands_In_Front_Of_The_Return_Stair()
+        {
+            // 올라오면 위층의 아래층 계단(왼쪽) 앞, 내려오면 아래층의 위층 계단(오른쪽) 앞에 선다.
+            Assert.Less(
+                FloorLayout.DownStairX,
+                FloorLayout.UpStairX);
+        }
+    }
+
     public sealed class FloorRunStateTests
     {
         [Test]

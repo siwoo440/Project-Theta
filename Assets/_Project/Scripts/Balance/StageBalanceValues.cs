@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace ProjectTheta.Balance
 {
@@ -49,6 +49,23 @@ namespace ProjectTheta.Balance
         public int ContractRankBonusA = 50;
         public int ContractRankBonusS = 100;
 
+        // --- 런 경험치 (17일차) ---
+        // 행동마다 주는 경험치다. 모두 정수이며 줄어들지 않는다.
+        public int XpHypnosisSuccess = 10;
+        public int XpReclaimBonus = 15;
+        public int XpRecoveryPerFollower = 12;
+        public int XpBatchBonusPerExtra = 6;
+        public int XpRiskyRecovery = 10;
+        public int XpHighGradeRecovery = 15;
+        public int XpDuelWin = 30;
+        public int XpFloorFirstVisit = 25;
+
+        // --- 런 레벨 곡선 ---
+        // 1→2 필요 경험치 = LevelBaseXp, 이후 레벨마다 LevelXpGrowth씩 늘어난다.
+        public int LevelBaseXp = 60;
+        public int LevelXpGrowth = 35;
+        public int LevelMaximum = 10;
+
         public StageBalanceValues Clone()
         {
             return new StageBalanceValues
@@ -78,7 +95,18 @@ namespace ProjectTheta.Balance
                 ContractOverflowRatio = ContractOverflowRatio,
                 ContractRankBonusB = ContractRankBonusB,
                 ContractRankBonusA = ContractRankBonusA,
-                ContractRankBonusS = ContractRankBonusS
+                ContractRankBonusS = ContractRankBonusS,
+                XpHypnosisSuccess = XpHypnosisSuccess,
+                XpReclaimBonus = XpReclaimBonus,
+                XpRecoveryPerFollower = XpRecoveryPerFollower,
+                XpBatchBonusPerExtra = XpBatchBonusPerExtra,
+                XpRiskyRecovery = XpRiskyRecovery,
+                XpHighGradeRecovery = XpHighGradeRecovery,
+                XpDuelWin = XpDuelWin,
+                XpFloorFirstVisit = XpFloorFirstVisit,
+                LevelBaseXp = LevelBaseXp,
+                LevelXpGrowth = LevelXpGrowth,
+                LevelMaximum = LevelMaximum
             };
         }
 

@@ -12,7 +12,7 @@ namespace ProjectTheta.Hypnosis
     /// </summary>
     public static class ChainHypnosisLogic
     {
-        /// <summary>최대 연결 인원이다. 구조적 상한이므로 조정 대상이 아니다.</summary>
+        /// <summary>기본 최대 연결 인원이다. 런 강화 "연쇄 각인"으로만 늘어난다.</summary>
         public const int MaximumChain = 3;
 
         public const float DefaultChainRadius = 2.2f;
@@ -50,20 +50,53 @@ namespace ProjectTheta.Hypnosis
         public static bool CanChain(
             int chainIndex)
         {
+            return CanChain(
+                chainIndex,
+                0);
+        }
+
+        /// <summary>
+        /// 런 강화로 늘어난 대상 수를 반영해 판정한다.
+        /// 늘어난 단계의 속도·비용은 표의 마지막 값을 그대로 쓴다.
+        /// </summary>
+        public static bool CanChain(
+            int chainIndex,
+            int extraTargets)
+        {
             return Math.Max(
                        0,
                        chainIndex) <
-                   MaximumChain - 1;
+                   GetMaximumChain(
+                       extraTargets) - 1;
         }
 
         public static int Advance(
             int chainIndex)
         {
+            return Advance(
+                chainIndex,
+                0);
+        }
+
+        public static int Advance(
+            int chainIndex,
+            int extraTargets)
+        {
             return Math.Min(
-                MaximumChain - 1,
+                GetMaximumChain(
+                    extraTargets) - 1,
                 Math.Max(
                     0,
                     chainIndex) + 1);
+        }
+
+        public static int GetMaximumChain(
+            int extraTargets)
+        {
+            return MaximumChain +
+                   Math.Max(
+                       0,
+                       extraTargets);
         }
 
         public static bool IsInChainRadius(

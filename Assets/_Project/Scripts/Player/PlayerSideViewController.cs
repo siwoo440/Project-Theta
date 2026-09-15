@@ -2,6 +2,7 @@
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
+using ProjectTheta.Core;
 
 namespace ProjectTheta.Player
 {
@@ -80,7 +81,8 @@ namespace ProjectTheta.Player
 
         private void Update()
         {
-            if (_inputLocked)
+            if (_inputLocked ||
+                GameplayPause.IsPaused)
             {
                 _moveInput =
                     Vector2.zero;

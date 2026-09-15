@@ -16,8 +16,12 @@ namespace ProjectTheta.Stage
     /// 모든 층이 같은 씬에 세로로 쌓여 있으므로 이동은 "순간이동"이다.
     /// 씬 로드도, NPC 재생성도 없다. 그래서 동행 NPC가 자연스럽게 따라온다.
     ///
-    /// 계단 앞에 서면 안내가 뜨고, 위층은 W(또는 ↑), 아래층은 S(또는 ↓)로 이동한다.
+    /// 계단 앞에 서면 안내가 뜨고, 상호작용 키 F로 이동한다.
+    /// 위층 계단은 복도 오른쪽, 아래층 계단은 왼쪽에 있어 방향은 계단 위치가 정한다.
     /// 닿기만 해도 넘어가면 계단 앞을 지나칠 때마다 층이 바뀌어 조작이 불가능해진다.
+    ///
+    /// 17일차에 W/S에서 F로 바꿨다. W/S는 이동 키라서, 계단 앞에서 위아래로
+    /// 걷기만 해도 층이 바뀌는 문제가 있었다.
     /// </summary>
     public sealed class FloorTransitionController : MonoBehaviour
     {
@@ -96,6 +100,13 @@ namespace ProjectTheta.Stage
 
         private void Update()
         {
+            if (GameplayPause.IsPaused)
+            {
+                ActiveStairway = null;
+
+                return;
+            }
+
             if (_cooldownRemaining > 0f)
             {
                 _cooldownRemaining -=
@@ -113,8 +124,7 @@ namespace ProjectTheta.Stage
                 return;
             }
 
-            if (ReadUseInput(
-                    ActiveStairway.Direction))
+            if (ReadInteractPressed())
             {
                 Travel(
                     ActiveStairway);
@@ -173,29 +183,17 @@ namespace ProjectTheta.Stage
             return nearest;
         }
 
-        private static bool ReadUseInput(
-            FloorStairDirection direction)
+        /// <summary>상호작용 키 F다. 계단이 어느 방향인지는 선 자리의 계단이 정한다.</summary>
+        private static bool ReadInteractPressed()
         {
 #if ENABLE_INPUT_SYSTEM
             Keyboard keyboard =
                 Keyboard.current;
 
-            if (keyboard == null)
-            {
-                return false;
-            }
-
-            return direction == FloorStairDirection.Up
-                ? keyboard.wKey.wasPressedThisFrame ||
-                  keyboard.upArrowKey.wasPressedThisFrame
-                : keyboard.sKey.wasPressedThisFrame ||
-                  keyboard.downArrowKey.wasPressedThisFrame;
+            return keyboard != null &&
+                   keyboard.fKey.wasPressedThisFrame;
 #else
-            return direction == FloorStairDirection.Up
-                ? Input.GetKeyDown(KeyCode.W) ||
-                  Input.GetKeyDown(KeyCode.UpArrow)
-                : Input.GetKeyDown(KeyCode.S) ||
-                  Input.GetKeyDown(KeyCode.DownArrow);
+            return Input.GetKeyDown(KeyCode.F);
 #endif
         }
 

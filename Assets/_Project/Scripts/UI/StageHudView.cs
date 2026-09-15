@@ -5,6 +5,7 @@ using ProjectTheta.Hypnosis;
 using ProjectTheta.Items;
 using ProjectTheta.Player;
 using ProjectTheta.Presentation;
+using ProjectTheta.Run;
 using ProjectTheta.Stage;
 using ProjectTheta.UI.Framework;
 
@@ -34,6 +35,18 @@ namespace ProjectTheta.UI
         private FollowerManager _followers;
         private StageScoreTracker _tracker;
         private FloorTransitionController _floors;
+        private RunProgression _run;
+
+        // 레벨 (좌상단, 집중력 아래)
+        private Text _levelText;
+        private UiBar _xpBar;
+        private Text _xpGainText;
+        private float _xpGainRemaining;
+        private int _xpGainAccumulated;
+        private float _levelFlashRemaining;
+
+        private const float XpGainShowSeconds = 1.1f;
+        private const float LevelFlashSeconds = 0.9f;
 
         // 좌상단
         private UiBar _healthBar;
@@ -95,6 +108,12 @@ namespace ProjectTheta.UI
 
             if (caster != null)
             {
+                _run =
+                    caster.GetComponent<RunProgression>();
+            }
+
+            if (caster != null)
+            {
                 _focus =
                     caster.GetComponent<PlayerFocus>();
 
@@ -114,6 +133,41 @@ namespace ProjectTheta.UI
         private void Start()
         {
             Build();
+
+            if (_run != null)
+            {
+                _run.XpGained += HandleXpGained;
+                _run.LevelChanged += HandleLevelChanged;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_run != null)
+            {
+                _run.XpGained -= HandleXpGained;
+                _run.LevelChanged -= HandleLevelChanged;
+            }
+        }
+
+        /// <summary>짧은 시간에 연달아 얻으면 합쳐서 보여준다. 숫자가 깜빡이며 바뀌면 읽을 수 없다.</summary>
+        private void HandleXpGained(
+            int amount)
+        {
+            _xpGainAccumulated =
+                _xpGainRemaining > 0f
+                    ? _xpGainAccumulated + amount
+                    : amount;
+
+            _xpGainRemaining =
+                XpGainShowSeconds;
+        }
+
+        private void HandleLevelChanged(
+            int level)
+        {
+            _levelFlashRemaining =
+                LevelFlashSeconds;
         }
 
         private void Update()
@@ -125,6 +179,77 @@ namespace ProjectTheta.UI
             RefreshCombo();
             RefreshTutorial();
             RefreshFloor();
+            RefreshLevel();
+        }
+
+        private void RefreshLevel()
+        {
+            if (_run == null ||
+                _levelText == null)
+            {
+                return;
+            }
+
+            RunLevelState level =
+                _run.Level;
+
+            _levelText.text =
+                level.IsMaxLevel
+                    ? "MAX"
+                    : $"Lv {level.Level}";
+
+            _xpBar.SetValue(
+                level.Progress);
+
+            // 레벨이 오른 직후에는 게이지와 글자를 흰색으로 번쩍여 알린다.
+            // 카드 화면이 뜨면 시간이 멈추므로 unscaled로 흘린다.
+            if (_levelFlashRemaining > 0f)
+            {
+                _levelFlashRemaining -=
+                    Time.unscaledDeltaTime;
+
+                float t =
+                    Mathf.Clamp01(
+                        _levelFlashRemaining /
+                        LevelFlashSeconds);
+
+                Color flash =
+                    Color.Lerp(
+                        UiTheme.Gold,
+                        Color.white,
+                        t);
+
+                _levelText.color = flash;
+                _xpBar.SetColor(flash);
+            }
+            else
+            {
+                _levelText.color = UiTheme.Gold;
+                _xpBar.SetColor(UiTheme.Gold);
+            }
+
+            if (_xpGainRemaining > 0f)
+            {
+                _xpGainRemaining -=
+                    Time.unscaledDeltaTime;
+
+                Color color =
+                    UiTheme.Gold;
+
+                color.a =
+                    Mathf.Clamp01(
+                        _xpGainRemaining /
+                        (XpGainShowSeconds * 0.4f));
+
+                _xpGainText.color = color;
+
+                _xpGainText.text =
+                    $"+{_xpGainAccumulated}";
+            }
+            else if (_xpGainText.text.Length > 0)
+            {
+                _xpGainText.text = string.Empty;
+            }
         }
 
         // 화면 조립 ------------------------------------------------------
@@ -275,7 +400,7 @@ namespace ProjectTheta.UI
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(40f, -36f),
-                new Vector2(420f, 120f));
+                new Vector2(420f, 150f));
 
             _healthText =
                 UiFactory.CreateText(
@@ -336,6 +461,65 @@ namespace ProjectTheta.UI
                 new Vector2(0f, 1f),
                 new Vector2(0f, -76f),
                 new Vector2(400f, 22f));
+
+            BuildLevel(
+                group);
+        }
+
+        /// <summary>
+        /// 레벨과 경험치 게이지다.
+        /// 레벨 글자를 게이지 왼쪽에 크게 두고, 얻은 경험치는 오른쪽에 잠깐 띄운다.
+        /// </summary>
+        private void BuildLevel(
+            Transform group)
+        {
+            _levelText =
+                UiFactory.CreateText(
+                    group,
+                    "Level",
+                    "Lv 1",
+                    UiTheme.FontSubheading,
+                    UiTheme.Gold,
+                    TextAnchor.MiddleLeft,
+                    FontStyle.Bold);
+
+            UiFactory.Place(
+                _levelText.rectTransform,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, -106f),
+                new Vector2(80f, 28f));
+
+            _xpBar =
+                UiFactory.CreateBar(
+                    group,
+                    "XpBar",
+                    UiTheme.Gold,
+                    UiTheme.TrackFill);
+
+            UiFactory.Place(
+                _xpBar.Root,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(76f, -114f),
+                new Vector2(324f, 12f));
+
+            _xpGainText =
+                UiFactory.CreateText(
+                    group,
+                    "XpGain",
+                    string.Empty,
+                    UiTheme.FontSmall,
+                    UiTheme.Gold,
+                    TextAnchor.MiddleLeft,
+                    FontStyle.Bold);
+
+            UiFactory.Place(
+                _xpGainText.rectTransform,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(410f, -106f),
+                new Vector2(120f, 28f));
         }
 
         private void BuildObjective(

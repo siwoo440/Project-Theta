@@ -17,8 +17,9 @@ namespace ProjectTheta.Stage
 
         [SerializeField] private int _targetFloor = 1;
 
-        /// <summary>이 거리 안에 들어오면 계단을 쓸 수 있다.</summary>
-        [SerializeField] private float _interactRadius = 2.1f;
+        /// <summary>이 거리 안에 들어오면 계단을 쓸 수 있다. 계단이 작아진 만큼 줄였다.</summary>
+        [SerializeField] private float _interactRadius =
+            FloorLayout.StairInteractRadius;
 
         public FloorStairDirection Direction =>
             _direction;
@@ -76,8 +77,8 @@ namespace ProjectTheta.Stage
         public string GetPromptText()
         {
             return _direction == FloorStairDirection.Up
-                ? $"[W] {FloorPlanLogic.GetLabel(_targetFloor)}로 올라가기"
-                : $"[S] {FloorPlanLogic.GetLabel(_targetFloor)}로 내려가기";
+                ? $"[F] {FloorPlanLogic.GetLabel(_targetFloor)}로 올라가기"
+                : $"[F] {FloorPlanLogic.GetLabel(_targetFloor)}로 내려가기";
         }
     }
 }
