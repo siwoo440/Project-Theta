@@ -20,6 +20,12 @@ namespace ProjectTheta.Core
         private SpriteRenderer[] _renderers;
         private int[] _relativeOrders;
 
+        /// <summary>
+        /// 마지막으로 적용한 정렬 값이다.
+        /// 서 있는 NPC는 정렬 값이 안 바뀌는데도 매 프레임 렌더러마다 다시 쓰고 있었다.
+        /// </summary>
+        private int _appliedOrder = int.MinValue;
+
         private void Awake()
         {
             CacheRenderers();
@@ -34,6 +40,9 @@ namespace ProjectTheta.Core
         public void Refresh()
         {
             CacheRenderers();
+
+            _appliedOrder = int.MinValue;
+
             ApplySorting();
         }
 
@@ -81,6 +90,13 @@ namespace ProjectTheta.Core
                 CharacterSortingLogic.GetSortingOrder(
                     _layer,
                     localY);
+
+            if (depthOrder == _appliedOrder)
+            {
+                return;
+            }
+
+            _appliedOrder = depthOrder;
 
             for (int i = 0; i < _renderers.Length; i++)
             {

@@ -508,10 +508,18 @@ namespace ProjectTheta.Core
                 new GameObject(
                     "금태양_01");
 
+            // 1층은 연습 층이다. 금태양은 2층에서 처음 만난다.
+            Vector2 rivalStart =
+                FloorSpace.ToWorld(
+                    OpponentFloorPlan.GeumtaeyangStartFloor,
+                    new Vector2(
+                        -4.0f,
+                        -2.7f));
+
             rival.transform.position =
                 new Vector3(
-                    -4.0f,
-                    -2.7f,
+                    rivalStart.x,
+                    rivalStart.y,
                     0f);
 
             rival.AddComponent<
@@ -590,10 +598,18 @@ namespace ProjectTheta.Core
                 new GameObject(
                     "인기남_01");
 
+            // 인기남은 3층에서 처음 만난다. 위층일수록 경쟁자가 한 명씩 늘어난다.
+            Vector2 popularGuyStart =
+                FloorSpace.ToWorld(
+                    OpponentFloorPlan.PopularGuyStartFloor,
+                    new Vector2(
+                        8.2f,
+                        -2.8f));
+
             popularGuy.transform.position =
                 new Vector3(
-                    8.2f,
-                    -2.8f,
+                    popularGuyStart.x,
+                    popularGuyStart.y,
                     0f);
 
             popularGuy.AddComponent<

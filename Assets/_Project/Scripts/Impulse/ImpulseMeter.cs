@@ -288,8 +288,16 @@ namespace ProjectTheta.Impulse
                     _rampageSpeed;
             }
 
+            // 붙잡지 못한 채 폭주 시간이 끝났다 = 플레이어가 폭주를 피해냈다.
+            // 포획 실패(다른 NPC가 이미 붙잡은 경우 등)로 끝난 것은 생존으로 치지 않는다.
             if (_phaseRemaining <= 0f)
             {
+                if (_coordinator != null)
+                {
+                    _coordinator.NotifySurvived(
+                        this);
+                }
+
                 BeginRecovering();
             }
         }
@@ -500,8 +508,20 @@ namespace ProjectTheta.Impulse
                 transform.position.x);
         }
 
+        /// <summary>
+        /// 참조를 모두 찾았으면 다시 확인하지 않는다.
+        /// 이전에는 NPC마다 매 프레임 네 번씩 null 확인을 했다 (52명 × 4).
+        /// 플레이어·스테이지·폭주 조율·포획은 스테이지가 끝날 때까지 사라지지 않는다.
+        /// </summary>
+        private bool _referencesResolved;
+
         private void ResolveRuntimeReferences()
         {
+            if (_referencesResolved)
+            {
+                return;
+            }
+
             if (_player == null)
             {
                 FollowerManager manager =
@@ -535,6 +555,12 @@ namespace ProjectTheta.Impulse
                     FindFirstObjectByType<
                         PlayerCaptureController>();
             }
+
+            _referencesResolved =
+                _player != null &&
+                _coordinator != null &&
+                _stage != null &&
+                _captureController != null;
         }
 
         private void OnDisable()

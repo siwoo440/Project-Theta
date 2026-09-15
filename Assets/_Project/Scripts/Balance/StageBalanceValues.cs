@@ -59,6 +59,7 @@ namespace ProjectTheta.Balance
         public int XpHighGradeRecovery = 15;
         public int XpDuelWin = 30;
         public int XpFloorFirstVisit = 25;
+        public int XpRampageSurvived = 20;
 
         // --- 런 레벨 곡선 ---
         // 1→2 필요 경험치 = LevelBaseXp, 이후 레벨마다 LevelXpGrowth씩 늘어난다.
@@ -104,6 +105,7 @@ namespace ProjectTheta.Balance
                 XpHighGradeRecovery = XpHighGradeRecovery,
                 XpDuelWin = XpDuelWin,
                 XpFloorFirstVisit = XpFloorFirstVisit,
+                XpRampageSurvived = XpRampageSurvived,
                 LevelBaseXp = LevelBaseXp,
                 LevelXpGrowth = LevelXpGrowth,
                 LevelMaximum = LevelMaximum
