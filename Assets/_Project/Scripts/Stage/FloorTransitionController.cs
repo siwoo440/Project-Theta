@@ -223,8 +223,49 @@ namespace ProjectTheta.Stage
                 return;
             }
 
+            TravelTo(
+                stairway.TargetFloor,
+                stairway.GetArrivalPosition());
+        }
+
+        /// <summary>
+        /// 디버그 치트: 계단 없이 바로 그 층으로 간다 (20일차).
+        /// 올라가면 그 층의 아래층 계단 앞, 내려가면 위층 계단 앞에 선다. 계단으로 온 것과 같은 자리다.
+        /// 동행·경쟁자 조우·첫 방문 경험치도 계단 이동과 똑같이 처리된다.
+        /// </summary>
+        public bool DebugTravelTo(
+            int targetFloor)
+        {
+            if (_run == null ||
+                _player == null ||
+                !_run.CanMoveTo(
+                    targetFloor))
+            {
+                return false;
+            }
+
+            float x =
+                targetFloor > _run.CurrentFloor
+                    ? FloorLayout.DownStairX
+                    : FloorLayout.UpStairX;
+
+            TravelTo(
+                targetFloor,
+                FloorSpace.ToWorld(
+                    targetFloor,
+                    new Vector2(
+                        x,
+                        FloorLayout.StairStandY)));
+
+            return true;
+        }
+
+        private void TravelTo(
+            int targetFloor,
+            Vector2 arrival)
+        {
             if (!_run.CanMoveTo(
-                    stairway.TargetFloor))
+                    targetFloor))
             {
                 return;
             }
@@ -232,13 +273,10 @@ namespace ProjectTheta.Stage
             int previousFloor =
                 _run.CurrentFloor;
 
-            Vector2 arrival =
-                stairway.GetArrivalPosition();
-
             // MoveTo는 그 층에 처음 도달했을 때만 true를 돌려준다.
             bool firstVisit =
                 _run.MoveTo(
-                    stairway.TargetFloor);
+                    targetFloor);
 
             FloorVisibility.ViewFloor =
                 _run.CurrentFloor;

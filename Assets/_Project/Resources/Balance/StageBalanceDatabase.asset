@@ -65,6 +65,9 @@ MonoBehaviour:
     VfxRippleRadius: 1.3
     VfxFadeSeconds: 0.28
     FocusHypnosisSpeedBonus: 0.6
+    FocusHypnosisDrainPerSecond: 6
+    FocusRecoveryPerSecond: 14
+    ImpulseBuildScale: 1
     PlayerHypnosisSpeedScale: 1.3
     LevelBaseXp: 60
     LevelXpGrowth: 35

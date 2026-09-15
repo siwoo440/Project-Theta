@@ -12,9 +12,7 @@ namespace ProjectTheta.Player
     public sealed class PlayerFocus : MonoBehaviour
     {
         [SerializeField] private float _maximumFocus = 100f;
-        [SerializeField] private float _hypnosisDrainPerSecond = 6f;
         [SerializeField] private float _dashCost = 12f;
-        [SerializeField] private float _recoveryPerSecond = 14f;
         [SerializeField] private float _recoveryDelay = 0.8f;
 
         private float _secondsSinceSpend;
@@ -31,10 +29,17 @@ namespace ProjectTheta.Player
                 CurrentFocus,
                 MaximumFocus);
 
+        /// <summary>최면을 유지하는 동안 초당 소모량이다. 20일차에 자산으로 옮겨 디버그 패널에서 조정한다.</summary>
         public float HypnosisDrainPerSecond =>
             Mathf.Max(
                 0f,
-                _hypnosisDrainPerSecond);
+                Balance.BalanceOverrides.StageOrDefault.FocusHypnosisDrainPerSecond);
+
+        /// <summary>쉬는 동안 초당 회복량이다.</summary>
+        public float RecoveryPerSecond =>
+            Mathf.Max(
+                0f,
+                Balance.BalanceOverrides.StageOrDefault.FocusRecoveryPerSecond);
 
         public float DashCost =>
             Mathf.Max(
@@ -64,6 +69,15 @@ namespace ProjectTheta.Player
 
         private void Update()
         {
+            // 디버그 치트: 집중력 무한 (20일차)
+            if (Core.DebugCheats.InfiniteFocus)
+            {
+                CurrentFocus =
+                    MaximumFocus;
+
+                return;
+            }
+
             _secondsSinceSpend +=
                 Time.deltaTime;
 
@@ -78,7 +92,7 @@ namespace ProjectTheta.Player
                 FocusLogic.Recover(
                     CurrentFocus,
                     MaximumFocus,
-                    _recoveryPerSecond,
+                    RecoveryPerSecond,
                     Time.deltaTime);
         }
 

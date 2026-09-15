@@ -95,6 +95,9 @@ namespace ProjectTheta.Balance
             Rival.OpponentTuningOverrides.Clear();
 
             BalanceOverrides.ResetToDefaults();
+
+            // 디버그 패널로 바꾸던 기록도 잊는다 (20일차). 재생을 멈추면 자산 값으로 돌아간다.
+            BalanceTuningSession.Clear();
         }
     }
 }

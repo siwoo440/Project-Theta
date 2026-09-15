@@ -105,6 +105,22 @@ namespace ProjectTheta.UI
             UiFactory.Stretch(
                 backdrop.rectTransform);
 
+            // 20일차 꾸미기: 배경에 느리게 떠오르는 보라 빛 알갱이
+            RectTransform motes =
+                UiFactory.CreateRect(
+                    canvas.transform,
+                    "Motes");
+
+            UiFactory.Stretch(
+                motes);
+
+            motes.gameObject.AddComponent<UiFloatingMotes>().Build(
+                new Color(
+                    UiTheme.Accent.r,
+                    UiTheme.Accent.g,
+                    UiTheme.Accent.b,
+                    0.22f));
+
             BuildHeader(
                 canvas.transform);
 

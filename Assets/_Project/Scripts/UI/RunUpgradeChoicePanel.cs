@@ -52,6 +52,7 @@ namespace ProjectTheta.UI
             public RectTransform Root;
             public Image Edge;
             public Image Band;
+            public Image Glow;
             public Text Category;
             public Text Name;
             public Text Description;
@@ -413,6 +414,21 @@ namespace ProjectTheta.UI
                 Vector2.zero,
                 new Vector2(340f, 480f));
 
+            // 20일차 꾸미기: 마우스를 올리면 카드 뒤로 계열 색 빛이 번진다. 카드보다 먼저 만들어 뒤에 깐다.
+            Image glow =
+                UiDecor.CreateGlow(
+                    root,
+                    "HoverGlow",
+                    new Color(1f, 1f, 1f, 0f),
+                    new Vector2(520f, 660f));
+
+            UiFactory.Place(
+                glow.rectTransform,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(520f, 660f));
+
             // 카드 전체가 버튼이다. 테두리 색이 계열을 나타낸다.
             UiButton button =
                 UiFactory.CreateButton(
@@ -425,6 +441,15 @@ namespace ProjectTheta.UI
 
             button.Background.color =
                 UiTheme.PanelEdge;
+
+            UiHoverEffect hover =
+                button.Background.GetComponent<UiHoverEffect>();
+
+            if (hover != null)
+            {
+                hover.Glow = glow;
+                hover.GlowAlpha = 0.55f;
+            }
 
             int captured =
                 index;
@@ -474,6 +499,23 @@ namespace ProjectTheta.UI
 
             UiFactory.Stretch(
                 category.rectTransform);
+
+            // 20일차 꾸미기: 계열 띠 양쪽 반짝임
+            UiDecor.CreateSpark(
+                band.transform,
+                "SparkLeft",
+                new Color(1f, 1f, 1f, 0.75f),
+                new Vector2(0f, 0.5f),
+                new Vector2(30f, 0f),
+                26f);
+
+            UiDecor.CreateSpark(
+                band.transform,
+                "SparkRight",
+                new Color(1f, 1f, 1f, 0.75f),
+                new Vector2(1f, 0.5f),
+                new Vector2(-30f, 0f),
+                26f);
 
             Text name =
                 UiFactory.CreateText(
@@ -559,6 +601,7 @@ namespace ProjectTheta.UI
                 Root = root,
                 Edge = button.Background,
                 Band = band,
+                Glow = glow,
                 Category = category,
                 Name = name,
                 Description = description,
@@ -607,6 +650,14 @@ namespace ProjectTheta.UI
 
             view.Edge.color = color;
             view.Band.color = color;
+
+            // 투명도는 마우스 오버 효과가 정한다. 색만 계열 색으로 바꾼다.
+            view.Glow.color =
+                new Color(
+                    color.r,
+                    color.g,
+                    color.b,
+                    view.Glow.color.a);
             view.Key.color = color;
 
             view.Category.text =
