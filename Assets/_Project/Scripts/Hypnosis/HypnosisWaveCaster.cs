@@ -294,7 +294,8 @@ namespace ProjectTheta.Hypnosis
         {
 #if ENABLE_INPUT_SYSTEM
             return Mouse.current != null &&
-                   Mouse.current.rightButton.isPressed;
+                   Mouse.current.rightButton.isPressed &&
+                   !PointerGuard.IsOverOverlay;
 #else
             return Input.GetMouseButton(
                 1);

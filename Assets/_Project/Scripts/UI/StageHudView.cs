@@ -17,7 +17,7 @@ namespace ProjectTheta.UI
     ///
     /// 14일차까지 플레이어에게 필요한 정보가 IMGUI 디버그 출력과 뒤섞여 있었다.
     /// 15일차에 Canvas로 옮기면서 "플레이에 필요한 것"만 여기로 모으고,
-    /// 개발용 수치는 <see cref="PrototypeHud"/>에 남겨 F1로 켜고 끄게 했다.
+    /// 개발용 수치는 F1 디버그 패널(20일차 <see cref="DebugTools.DebugPanel"/>)이 맡는다.
     ///
     /// 배치 원칙
     ///   좌상단  생존 - 체력 · 집중력
@@ -54,6 +54,9 @@ namespace ProjectTheta.UI
         private Text _healthText;
         private UiBar _focusBar;
         private Text _focusText;
+
+        // 20일차 꾸미기: 집중력 게이지 끝에서 맥동하는 빛. 가속 중일 때만 켜진다.
+        private Image _focusGlow;
 
         // 중상단
         private Text _timeText;
@@ -440,6 +443,34 @@ namespace ProjectTheta.UI
                 new Vector2(40f, -36f),
                 new Vector2(420f, 150f));
 
+            // 20일차 꾸미기: 생존 정보 뒤에 반투명 받침을 깔아 배경 위에서도 글자가 읽히게 한다.
+            RectTransform backing =
+                UiFactory.CreatePanel(
+                    group,
+                    "Backing",
+                    new Color(0.055f, 0.043f, 0.086f, 0.55f),
+                    new Color(0.42f, 0.26f, 0.68f, 0.35f),
+                    1f);
+
+            UiFactory.Place(
+                backing,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(-16f, 14f),
+                new Vector2(452f, 166f));
+
+            Image backingAccent =
+                UiFactory.CreateImage(
+                    backing,
+                    "Accent",
+                    new Color(UiTheme.Accent.r, UiTheme.Accent.g, UiTheme.Accent.b, 0.8f));
+
+            UiFactory.PlaceRow(
+                backingAccent.rectTransform,
+                1f,
+                2f,
+                1f);
+
             _healthText =
                 UiFactory.CreateText(
                     group,
@@ -500,6 +531,28 @@ namespace ProjectTheta.UI
                 new Vector2(0f, -76f),
                 new Vector2(400f, 22f));
 
+            _focusGlow =
+                UiDecor.CreateGlow(
+                    _focusBar.Root,
+                    "FocusGlow",
+                    UiTheme.Focus,
+                    new Vector2(44f, 44f));
+
+            UiFactory.Place(
+                _focusGlow.rectTransform,
+                new Vector2(0f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(44f, 44f));
+
+            UiPulse focusPulse =
+                _focusGlow.gameObject.AddComponent<UiPulse>();
+
+            focusPulse.Target = _focusGlow;
+            focusPulse.MinimumAlpha = 0.25f;
+            focusPulse.MaximumAlpha = 0.85f;
+            focusPulse.Period = 0.9f;
+
             BuildLevel(
                 group);
         }
@@ -511,6 +564,21 @@ namespace ProjectTheta.UI
         private void BuildLevel(
             Transform group)
         {
+            // 20일차 꾸미기: 레벨 글자 뒤 금빛 번짐
+            Image levelGlow =
+                UiDecor.CreateGlow(
+                    group,
+                    "LevelGlow",
+                    new Color(UiTheme.Gold.r, UiTheme.Gold.g, UiTheme.Gold.b, 0.22f),
+                    new Vector2(96f, 44f));
+
+            UiFactory.Place(
+                levelGlow.rectTransform,
+                new Vector2(0f, 1f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(24f, -120f),
+                new Vector2(96f, 44f));
+
             _levelText =
                 UiFactory.CreateText(
                     group,
@@ -900,6 +968,28 @@ namespace ProjectTheta.UI
                 _focus.IsExhausted
                     ? UiTheme.FocusExhausted
                     : UiTheme.Focus);
+
+            // 가속이 살아 있는 동안 게이지 끝이 빛난다. 바닥나면 빛이 꺼져 "가속 끝"이 눈에 보인다.
+            if (_focusGlow != null)
+            {
+                bool glowing =
+                    !_focus.IsExhausted;
+
+                if (_focusGlow.gameObject.activeSelf != glowing)
+                {
+                    _focusGlow.gameObject.SetActive(
+                        glowing);
+                }
+
+                if (glowing)
+                {
+                    _focusGlow.rectTransform.anchoredPosition =
+                        new Vector2(
+                            _focusBar.Root.rect.width *
+                            _focus.FocusNormalized,
+                            0f);
+                }
+            }
 
             if (UiChangeKey.Changed(
                     ref _focusKey,

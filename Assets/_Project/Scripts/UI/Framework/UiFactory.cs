@@ -328,6 +328,10 @@ namespace ProjectTheta.UI.Framework
                     -edgeThickness,
                     -edgeThickness);
 
+            // 20일차: 패널이 바닥에서 살짝 떠 보이게 그림자를 단다.
+            UiDecor.AddShadow(
+                border);
+
             return border.rectTransform;
         }
 
@@ -442,12 +446,105 @@ namespace ProjectTheta.UI.Framework
             Stretch(
                 text.rectTransform);
 
+            // 20일차: 마우스를 올리면 살짝 커진다. 모든 버튼이 같은 손맛을 갖게 여기서 붙인다.
+            background.gameObject.AddComponent<
+                UiHoverEffect>();
+
             return new UiButton
             {
                 Button = button,
                 Background = background,
                 Label = text
             };
+        }
+
+        /// <summary>
+        /// 가로 슬라이더를 만든다 (20일차 디버그 패널).
+        /// 트랙 · 채움 · 손잡이 세 조각이다. 손잡이만 클릭을 받는 게 아니라 트랙 전체를 눌러도 움직인다.
+        /// </summary>
+        public static Slider CreateSlider(
+            Transform parent,
+            string name,
+            Color fillColor)
+        {
+            Image track =
+                CreateImage(
+                    parent,
+                    name,
+                    UiTheme.TrackFill);
+
+            // 트랙을 눌러도 값이 바뀌게 클릭을 받는다.
+            track.raycastTarget = true;
+
+            Slider slider =
+                track.gameObject.AddComponent<Slider>();
+
+            RectTransform fillArea =
+                CreateRect(
+                    track.transform,
+                    "FillArea");
+
+            Stretch(
+                fillArea);
+
+            fillArea.offsetMin = new Vector2(3f, 3f);
+            fillArea.offsetMax = new Vector2(-3f, -3f);
+
+            Image fill =
+                CreateImage(
+                    fillArea,
+                    "Fill",
+                    fillColor);
+
+            fill.rectTransform.sizeDelta = Vector2.zero;
+
+            RectTransform handleArea =
+                CreateRect(
+                    track.transform,
+                    "HandleArea");
+
+            Stretch(
+                handleArea);
+
+            handleArea.offsetMin = new Vector2(6f, 0f);
+            handleArea.offsetMax = new Vector2(-6f, 0f);
+
+            Image handle =
+                CreateImage(
+                    handleArea,
+                    "Handle",
+                    UiTheme.TextPrimary);
+
+            handle.raycastTarget = true;
+
+            handle.rectTransform.sizeDelta =
+                new Vector2(12f, 0f);
+
+            slider.fillRect = fill.rectTransform;
+            slider.handleRect = handle.rectTransform;
+            slider.targetGraphic = handle;
+            slider.direction = Slider.Direction.LeftToRight;
+
+            ColorBlock colors =
+                slider.colors;
+
+            colors.normalColor = Color.white;
+            colors.highlightedColor = UiTheme.Gold;
+            colors.pressedColor = UiTheme.Gold;
+            colors.fadeDuration = 0.06f;
+
+            slider.colors = colors;
+
+            // 방향키로 슬라이더가 움직이면 캐릭터 이동 입력과 섞인다. 키보드 이동을 끈다.
+            Navigation navigation =
+                slider.navigation;
+
+            navigation.mode =
+                Navigation.Mode.None;
+
+            slider.navigation = navigation;
+
+            return slider;
         }
 
         // 배치 도우미 ----------------------------------------------------

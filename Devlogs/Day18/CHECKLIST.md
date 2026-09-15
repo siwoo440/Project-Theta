@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 19일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 20일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -109,6 +109,32 @@
 | 63 | 최면을 계속 걸어 **집중력을 0으로** 만듦 | "기본 속도"로 바뀌고 **최면은 끊기지 않고 계속 차오름** | `HypnosisCaster`, `FocusLogic.GetHypnosisSpeedMultiplier` |
 | 64 | 집중력 0에서 대시·최면 파동 | 쓸 수 없음 (집중력 부족), 최면은 여전히 가능 | `PlayerFocus.TrySpend` |
 | 65 | 최면을 멈추고 잠시 기다림 | 0.8초 뒤부터 집중력 회복, 다시 가속 표시 | `PlayerFocus.Update` |
+
+## 6-2. 디버그 패널 · UI 꾸미기 (20일차 추가)
+
+**가장 중요한 줄은 67번과 71번이다.** 패널 위 클릭이 게임으로 새는지, 자산 원본이 몰래 바뀌는지다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| ---: | --- | --- | --- |
+| 66 | 출격 → **F1** | 오른쪽에 디버그 패널, 상태 탭의 층·레벨·체력·집중력이 실제 값과 같음. 다시 F1이면 닫힘 | `DebugPanel.Update`, `DebugStatusTab` |
+| 67 | 패널 위에서 **좌클릭 유지 · 우클릭 유지** | **최면·파동이 나가지 않음**. 패널 밖에서는 정상 | `PointerGuard`, `HypnosisCaster.ReadHypnosisHeld` |
+| 68 | 수치 탭 → `일반 최면 배율`을 3으로 | 값이 금색 + `•`, "바뀐 값 1개", 최면이 **즉시** 빨라짐 | `BalanceTuningSession.Set` |
+| 69 | 최면 묶음 `되돌리기` → `전부 되돌리기` | 슬라이더가 1.30으로 돌아가고 "자산 값 그대로입니다" | `ResetGroup`, `ResetAll` |
+| 70 | 값을 바꾼 채로 **재생 종료 → 다시 재생** | 수치 탭이 전부 자산 값 (바꾼 값이 남지 않음) | `BalanceBootstrap.Reset` |
+| 71 | 값을 바꾼 채로 재생 종료 → `StageBalanceDatabase.asset` 인스펙터 확인 | **자산 값은 그대로** (저장 버튼을 누르지 않았으므로) | `BalanceTuningSession.BeginEdit` 복사본 |
+| 72 | 값을 바꾸고 `자산에 저장` → 재생 종료 → 인스펙터 | 자산에 바꾼 값이 들어가 있음. Git 변경에 `StageBalanceDatabase.asset`이 뜸 | `StageBalanceDatabase.SaveStageValues` |
+| 73 | 치트 탭 → `3F` | 동행과 함께 3층 계단 앞 도착, 첫 방문 경험치 | `FloorTransitionController.DebugTravelTo` |
+| 74 | `무적 ON` → 폭주에 붙잡힘 | 체력이 줄지 않음 | `PlayerHealth.TakeDamage`, `DebugCheats` |
+| 75 | `레벨업` | **정확히 한 레벨** 오르고 카드 화면 | `DebugCheatTab.LevelUp` |
+| 76 | `이 층 NPC 전부 최면` | 하트 연출과 함께 동행 합류, 넘친 인원은 최면이 풀림 | `HypnosisCaster.DebugClaim` |
+| 77 | `가장 가까운 동행 폭주` | 곧바로 붉은 파문 + "!" | `ImpulseMeter.DebugFillImpulse` |
+| 78 | 게임 속도 `×0.25` → 결과 화면 → 허브 → 재출격 | 허브와 다음 판은 **정상 속도** | `DebugPanel.OnDestroy`, 부트스트랩 `SetDebugSpeed(1)` |
+| 79 | 치트를 쓴 뒤 다음 판 | 무적·무한이 **꺼져** 있음, 기록 탭 "치트 없음" | `DebugCheats.ResetForRun` |
+| 80 | 판을 끝낸 뒤 기록 탭 → `기록 폴더 열기` | `RunLogs/날짜_시간.json`에 층별 시간 · 횟수 · `Cheated` | `RunStatsRecorder.Finish` |
+| 81 | 집중력이 남은 상태 | HUD 집중력 게이지 **끝에서 하늘색 빛이 맥동**, 0이 되면 빛이 꺼짐 | `StageHudView` `_focusGlow` |
+| 82 | 레벨업 카드에 마우스 올리기 | 카드가 살짝 커지고 **계열 색 빛**이 뒤로 번짐 | `UiHoverEffect.Glow` |
+| 83 | S·A 랭크로 클리어 | 도장 뒤에 **랭크 색 빛 번짐** | `StageResultPanel._rankGlow` |
+| 84 | 허브 · 타이틀 | 배경에 보라 빛 알갱이가 **천천히 떠오름**, 버튼에 마우스를 올리면 살짝 커짐 | `UiFloatingMotes`, `UiHoverEffect` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

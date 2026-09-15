@@ -336,6 +336,28 @@ namespace ProjectTheta.Hypnosis
             }
         }
 
+        /// <summary>
+        /// 디버그 치트: 게이지를 채우지 않고 바로 최면을 성공시킨다 (20일차).
+        /// 실제 최면 성공과 같은 길(점수·경험치·연출·동행 합류)을 그대로 탄다.
+        /// 이미 플레이어 소유면 아무것도 하지 않는다.
+        /// </summary>
+        public bool DebugClaim(
+            HypnosisTarget target)
+        {
+            if (target == null ||
+                target.Owner ==
+                NpcOwner.Player)
+            {
+                return false;
+            }
+
+            ClaimForPlayer(
+                target);
+
+            return target.Owner ==
+                   NpcOwner.Player;
+        }
+
         private HypnosisTarget FindBestTarget()
         {
             HypnosisTarget.CopyActive(
@@ -428,9 +450,11 @@ namespace ProjectTheta.Hypnosis
                 Keyboard.current != null &&
                 Keyboard.current.eKey.isPressed;
 
+            // 디버그 패널 위에서 누른 좌클릭은 최면이 아니다 (20일차).
             bool mouse =
                 Mouse.current != null &&
-                Mouse.current.leftButton.isPressed;
+                Mouse.current.leftButton.isPressed &&
+                !PointerGuard.IsOverOverlay;
 
             return keyboard ||
                    mouse;
