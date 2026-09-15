@@ -56,6 +56,16 @@ MonoBehaviour:
     XpDuelWin: 30
     XpFloorFirstVisit: 25
     XpRampageSurvived: 20
+    VfxShakeSmall: 0.06
+    VfxShakeMedium: 0.14
+    VfxShakeLarge: 0.26
+    VfxShakeSeconds: 0.22
+    VfxHitStopSeconds: 0.06
+    VfxHitStopScale: 0.05
+    VfxRippleRadius: 1.3
+    VfxFadeSeconds: 0.28
+    FocusHypnosisSpeedBonus: 0.6
+    PlayerHypnosisSpeedScale: 1.3
     LevelBaseXp: 60
     LevelXpGrowth: 35
     LevelMaximum: 10

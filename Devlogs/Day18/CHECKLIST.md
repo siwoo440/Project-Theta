@@ -4,8 +4,8 @@
 어긋난 줄이 나오면 번호를 적어두고 멈춘다. 그 줄의 "어긋나면 의심할 곳"부터 본다.
 
 - 준비: `Boot.unity`를 열고 재생
-- 소요: 한 바퀴 약 10분 (두 번째 판 포함)
-- 기준: 18일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 소요: 한 바퀴 약 12분 (두 번째 판 포함)
+- 기준: 19일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -85,6 +85,31 @@
 | 40 | 튜토리얼 | 지난 판에 끝까지 마쳤다면 **안내가 안 뜸** | `SaveData.TutorialCompleted` |
 | 41 | 게임이 멈춰 있지 않음 | 카드를 고른 뒤 정상 진행 | `GameplayPause` 초기화 |
 
+## 6-1. 연출 (19일차 추가)
+
+**가장 중요한 줄은 50번이다.** 레벨업 멈칫과 카드 화면의 완전 정지가 겹치는 곳이다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| ---: | --- | --- | --- |
+| 47 | NPC 최면 성공 | 보라 파문이 퍼지고 **하트가 톡** 떠오름, 종소리 | `StageVfxDirector.HandleHypnosis` |
+| 48 | 빼앗긴 NPC 되찾기 | 파문이 **두 겹**, 금색 파편 | `HandleHypnosis(wasReclaim)` |
+| 49 | 3명 모아서 회수 | 금색 **빛기둥** (1명일 때보다 굵음), `+정기` 숫자가 **HUD 정기 게이지로 날아감**, 약한 흔들림 | `HandleRecovery`, `GameVfx.EssenceTarget` |
+| 50 | **레벨업** | 금색 고리 + "LEVEL UP" + **아주 짧은 멈칫** → 카드 화면. **카드 화면이 떠 있는 동안 게임이 움직이지 않음** | `TimeScaleLogic.Resolve`, `GameplayPause.HitStop` |
+| 51 | 카드 선택 | 게임이 정상 속도로 재개 (느린 채로 남지 않음) | `GameplayPause.TickHitStop` |
+| 52 | 동행자 폭주 준비 | NPC 자리에 **붉은 파문 + "!"**, 화면 가장자리가 **붉게 맥동** | `HandleRampageWindup`, `GetDangerIntensity` |
+| 53 | 폭주 피함 | "회피!" 글자 + 하늘색 파문 + 흔들림, 가장자리 맥동이 사라짐 | `HandleRampageSurvived` |
+| 54 | 폭주에 붙잡힘 | **강한 흔들림** 한 번 | `HandleCapture` |
+| 55 | 힘겨루기 승리 | 흰 파편 + 멈칫 + 흔들림, 묵직한 소리 | `HandleDuelWon` |
+| 56 | 계단으로 층 이동 | 화면이 **잠깐 어두워졌다 밝아짐**, 발소리 | `HandleFloorChanged`, `GameVfx.Fade` |
+| 57 | 다른 층에서 폭주·최면이 일어남 | **지금 층 화면에는 연출이 안 뜸** | `GameVfx.IsVisible` |
+| 58 | 허브 → 설정 → `화면 흔들림 꺼짐` → 출격 | 흔들림만 사라지고 **파문·빛기둥은 그대로** | `CameraShake.Enabled`, `SaveData.ScreenShakeDisabled` |
+| 59 | 게임 재실행 | 흔들림 꺼짐 설정이 유지됨 | `HubScreen.ToggleScreenShake` |
+| 60 | 연출이 많이 겹치게 (체인 최면 + 대량 회수) | 멈추거나 끊기지 않음, 오래된 연출부터 사라짐 | `VfxRunner.MaximumWorld` |
+| 62 | 집중력이 남은 상태로 최면 | 좌상단 "최면 가속 ×1.6", 게이지가 눈에 띄게 빨리 참 | `PlayerFocus.HypnosisSpeedMultiplier` |
+| 63 | 최면을 계속 걸어 **집중력을 0으로** 만듦 | "기본 속도"로 바뀌고 **최면은 끊기지 않고 계속 차오름** | `HypnosisCaster`, `FocusLogic.GetHypnosisSpeedMultiplier` |
+| 64 | 집중력 0에서 대시·최면 파동 | 쓸 수 없음 (집중력 부족), 최면은 여전히 가능 | `PlayerFocus.TrySpend` |
+| 65 | 최면을 멈추고 잠시 기다림 | 0.8초 뒤부터 집중력 회복, 다시 가속 표시 | `PlayerFocus.Update` |
+
 ## 7. 에디터 재생 종료 → 다시 재생
 
 | # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
@@ -94,6 +119,7 @@
 | 44 | 효과음 | 버튼 틱·도장·구매 소리가 남 | `GameAudio.ResetOnPlayModeEnter` |
 | 45 | 한글 | 여전히 한글로 보임 | `UiFontProvider.ResetOnPlayModeEnter` |
 | 46 | Test Runner → Run All | 전부 통과 | - |
+| 61 | **레벨업 멈칫 도중** 재생 종료 → 다시 재생 | 게임이 **느린 채로 시작하지 않음** | `GameplayPause.ForceClear`, `VfxRunner.OnDestroy` |
 
 ---
 

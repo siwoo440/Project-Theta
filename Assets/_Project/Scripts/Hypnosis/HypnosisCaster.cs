@@ -107,10 +107,9 @@ namespace ProjectTheta.Hypnosis
                     _interruptRemaining -
                     Time.deltaTime);
 
+            // 19일차: 집중력은 더 이상 최면을 막지 않는다. 가속만 준다.
             if (_interruptRemaining > 0f ||
-                !ReadHypnosisHeld() ||
-                (_focus != null &&
-                 !_focus.CanCast))
+                !ReadHypnosisHeld())
             {
                 ChangeTarget(null);
 
@@ -146,25 +145,26 @@ namespace ProjectTheta.Hypnosis
                 return;
             }
 
-            // 최면을 유지하는 동안 집중력이 계속 소모된다.
-            if (_focus != null &&
-                !_focus.DrainContinuous(
-                    _focus.HypnosisDrainPerSecond,
-                    Time.deltaTime))
+            // 집중력이 남아 있으면 가속이 붙는다. 이번 프레임에 쓰기 전의 양으로 판정한다.
+            // 바닥나도 최면은 기본 속도로 계속된다.
+            float focusMultiplier =
+                _focus == null
+                    ? 1f
+                    : _focus.HypnosisSpeedMultiplier;
+
+            if (_focus != null)
             {
-                ChangeTarget(null);
-
-                _chainIndex =
-                    0;
-
-                return;
+                _focus.DrainContinuous(
+                    _focus.HypnosisDrainPerSecond,
+                    Time.deltaTime);
             }
 
             bool completed =
                 _currentTarget.ApplyPlayerFocus(
                     Time.deltaTime,
                     ChainHypnosisLogic.GetSpeedMultiplier(
-                        _chainIndex));
+                        _chainIndex) *
+                    focusMultiplier);
 
             if (!completed)
             {
@@ -323,6 +323,10 @@ namespace ProjectTheta.Hypnosis
             ResolveScoreTracker()?.
                 ReportHypnosisSuccess(
                     wasReclaim);
+
+            StageMoments.RaiseHypnosisSucceeded(
+                target.transform.position,
+                wasReclaim);
 
             if (_followerManager == null ||
                 !_followerManager.TryAdd(

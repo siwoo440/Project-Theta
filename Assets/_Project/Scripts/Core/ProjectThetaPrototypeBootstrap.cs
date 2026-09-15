@@ -8,6 +8,7 @@ using ProjectTheta.Impulse;
 using ProjectTheta.Items;
 using ProjectTheta.NPC;
 using ProjectTheta.Player;
+using ProjectTheta.Presentation;
 using ProjectTheta.Stage;
 using ProjectTheta.Rival;
 using ProjectTheta.Run;
@@ -132,10 +133,16 @@ namespace ProjectTheta.Core
                 stage,
                 followers);
 
-            CreateRunProgression(
+            RunProgression runProgression =
+                CreateRunProgression(
+                    player,
+                    stage,
+                    scoreTracker,
+                    floorTransition);
+
+            CreateVfxDirector(
                 player,
-                stage,
-                scoreTracker,
+                runProgression,
                 floorTransition);
 
             CreateStageResultPanel(
@@ -450,7 +457,30 @@ namespace ProjectTheta.Core
         /// 한 판 안의 레벨·강화를 붙인다.
         /// 점수 집계기와 층 이동이 먼저 만들어져 있어야 이벤트를 구독할 수 있다.
         /// </summary>
-        private void CreateRunProgression(
+        /// <summary>
+        /// 연출 담당을 붙인다. 레벨·층 이동 알림을 구독하므로 그 둘이 먼저 만들어져 있어야 한다.
+        /// </summary>
+        private void CreateVfxDirector(
+            PlayerSideViewController player,
+            RunProgression runProgression,
+            FloorTransitionController floorTransition)
+        {
+            GameObject directorObject =
+                new GameObject(
+                    "StageVfxDirector");
+
+            StageVfxDirector director =
+                directorObject.AddComponent<
+                    StageVfxDirector>();
+
+            director.Configure(
+                player.transform,
+                runProgression,
+                floorTransition,
+                player.GetComponent<RampageCoordinator>());
+        }
+
+        private RunProgression CreateRunProgression(
             PlayerSideViewController player,
             StageSessionController stage,
             StageScoreTracker scoreTracker,
@@ -473,6 +503,8 @@ namespace ProjectTheta.Core
                 scoreTracker,
                 floorTransition,
                 panel);
+
+            return progression;
         }
 
         /// <summary>층 이동 처리를 붙인다. 계단은 이미 층마다 지어져 있다.</summary>
