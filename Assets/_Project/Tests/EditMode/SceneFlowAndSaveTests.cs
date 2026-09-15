@@ -40,9 +40,15 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
-        public void Hub_Goes_To_Stage_Or_Back_To_Title()
+        public void Hub_Goes_To_Map_Or_Back_To_Title()
         {
+            // 21일차: 출격하면 지도를 거친다. 허브에서 스테이지로 바로 가지 않는다.
             Assert.IsTrue(
+                SceneFlowLogic.CanTransition(
+                    SceneNames.Hub,
+                    SceneDestination.Map));
+
+            Assert.IsFalse(
                 SceneFlowLogic.CanTransition(
                     SceneNames.Hub,
                     SceneDestination.Stage));
@@ -54,12 +60,41 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
-        public void Stage_Goes_Only_Back_To_Hub()
+        public void Map_Goes_To_Stage_Or_Gives_Up_To_Hub()
+        {
+            Assert.IsTrue(
+                SceneFlowLogic.CanTransition(
+                    SceneNames.Map,
+                    SceneDestination.Stage));
+
+            Assert.IsTrue(
+                SceneFlowLogic.CanTransition(
+                    SceneNames.Map,
+                    SceneDestination.Hub));
+
+            Assert.IsFalse(
+                SceneFlowLogic.CanTransition(
+                    SceneNames.Map,
+                    SceneDestination.MainMenu));
+
+            Assert.AreEqual(
+                SceneNames.Map,
+                SceneFlowLogic.GetSceneName(
+                    SceneDestination.Map));
+        }
+
+        [Test]
+        public void Stage_Goes_Back_To_Map_Or_Hub()
         {
             Assert.IsTrue(
                 SceneFlowLogic.CanTransition(
                     SceneNames.Stage,
                     SceneDestination.Hub));
+
+            Assert.IsTrue(
+                SceneFlowLogic.CanTransition(
+                    SceneNames.Stage,
+                    SceneDestination.Map));
 
             Assert.IsFalse(
                 SceneFlowLogic.CanTransition(
@@ -102,9 +137,20 @@ namespace ProjectTheta.Tests.EditMode
                     SceneNames.Stage,
                     SceneDestination.Hub));
 
+            // 구역을 클리어하고 지도로 갈 때도 그 구역 결과를 저장한다.
+            Assert.IsTrue(
+                SceneFlowLogic.ShouldSaveOnTransition(
+                    SceneNames.Stage,
+                    SceneDestination.Map));
+
             Assert.IsFalse(
                 SceneFlowLogic.ShouldSaveOnTransition(
                     SceneNames.Hub,
+                    SceneDestination.Map));
+
+            Assert.IsFalse(
+                SceneFlowLogic.ShouldSaveOnTransition(
+                    SceneNames.Map,
                     SceneDestination.Stage));
         }
 

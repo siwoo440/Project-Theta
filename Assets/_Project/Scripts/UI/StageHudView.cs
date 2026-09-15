@@ -8,6 +8,7 @@ using ProjectTheta.Player;
 using ProjectTheta.Presentation;
 using ProjectTheta.Run;
 using ProjectTheta.Stage;
+using ProjectTheta.Stage.Locations;
 using ProjectTheta.UI.Framework;
 
 namespace ProjectTheta.UI
@@ -85,6 +86,9 @@ namespace ProjectTheta.UI
         // 우상단
         private Image[] _floorMarks;
         private Text _floorLabel;
+
+        // 21일차: 층 표시 위의 "구역 2/5 · 해변가 · 낮"
+        private Text _zoneText;
 
         // 계단 안내
         private RectTransform _stairPrompt;
@@ -359,12 +363,30 @@ namespace ProjectTheta.UI
                     TextAnchor.MiddleRight,
                     FontStyle.Bold);
 
+            // 장소 이름이 붙어 "교육동 1F"처럼 길어지므로 넓힌다.
             UiFactory.Place(
                 _floorLabel.rectTransform,
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(0f, 0f),
-                new Vector2(170f, 30f));
+                new Vector2(360f, 30f));
+
+            _zoneText =
+                UiFactory.CreateText(
+                    group,
+                    "ZoneLabel",
+                    BuildZoneLabel(),
+                    UiTheme.FontSmall,
+                    UiTheme.Gold,
+                    TextAnchor.MiddleRight,
+                    FontStyle.Bold);
+
+            UiFactory.Place(
+                _zoneText.rectTransform,
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(0f, 24f),
+                new Vector2(480f, 24f));
 
             _floorMarks =
                 new Image[floorCount];
@@ -1303,6 +1325,13 @@ namespace ProjectTheta.UI
             {
                 _tutorialLoaded = true;
 
+                // 21일차: 튜토리얼은 시작 구역(기업 연수원)에서만 안내한다.
+                if (!LocationContext.Current.ShowsTutorial)
+                {
+                    _tutorialStep =
+                        TutorialStep.Completed;
+                }
+
                 if (GameSession.Instance != null &&
                     GameSession.Instance.Save != null &&
                     GameSession.Instance.Save.TutorialCompleted)
@@ -1381,6 +1410,26 @@ namespace ProjectTheta.UI
             session.WriteSave();
         }
 
+        /// <summary>"구역 2/5 · 해변가 · 낮"이다. 구역 안에서는 바뀌지 않으므로 만들 때 한 번만 쓴다.</summary>
+        private static string BuildZoneLabel()
+        {
+            LocationDefinition location =
+                LocationContext.Current;
+
+            Run.RunSession session =
+                GameSession.Instance == null
+                    ? null
+                    : GameSession.Instance.Run;
+
+            string time =
+                LocationCatalog.GetTimeLabel(
+                    location.TimeOfDay);
+
+            return session == null
+                ? $"{location.DisplayName} · {time}"
+                : $"구역 {session.NextStep + 1}/{Run.RunRouteLogic.ZoneCount} · {location.DisplayName} · {time}";
+        }
+
         /// <summary>층 표시와 계단 안내를 갱신한다.</summary>
         private void RefreshFloor()
         {
@@ -1434,7 +1483,7 @@ namespace ProjectTheta.UI
             int current)
         {
             _floorLabel.text =
-                FloorPlanLogic.GetLabel(
+                LocationContext.Current.GetFloorLabel(
                     current);
 
             for (int i = 0;

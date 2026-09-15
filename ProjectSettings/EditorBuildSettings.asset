@@ -15,6 +15,9 @@ EditorBuildSettings:
     path: Assets/_Project/Scenes/Hub.unity
     guid: 392b78fd6e6941ab991379750ed60d75
   - enabled: 1
+    path: Assets/_Project/Scenes/Map.unity
+    guid: 11b55b464472490fb700f2587dd106b2
+  - enabled: 1
     path: Assets/_Project/Scenes/TestStage.unity
     guid: 59eb0a8715f1247459bf1447109d2920
   m_configObjects:

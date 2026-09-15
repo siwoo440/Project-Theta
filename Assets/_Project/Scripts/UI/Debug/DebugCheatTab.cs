@@ -130,7 +130,8 @@ namespace ProjectTheta.UI.DebugTools
             DebugUi.Button(root, "+100 정기", (third + gap) * 2f, y, third, height, AddEssence);
             y += height + gap;
 
-            DebugUi.Button(root, "이 층 NPC 전부 최면", 0f, y, DebugUi.ContentWidth, height, HypnotizeFloor);
+            DebugUi.Button(root, "이 층 NPC 전부 최면", 0f, y, half, height, HypnotizeFloor);
+            DebugUi.Button(root, "구역 즉시 클리어", half + gap, y, half, height, ClearZone);
             y += height + DebugUi.SectionGap + 4f;
 
             // 위험
@@ -347,6 +348,24 @@ namespace ProjectTheta.UI.DebugTools
 
             _context.Stage.AddEssence(
                 100);
+
+            DebugCheats.MarkUsed();
+        }
+
+        /// <summary>
+        /// 목표 정기를 채워 구역을 바로 클리어한다 (21일차).
+        /// 지도 → 다음 구역 흐름을 빠르게 확인하는 용도다. 결과 화면 · 판 기록 · 저장은 평소대로 탄다.
+        /// </summary>
+        private void ClearZone()
+        {
+            if (_context.Stage == null ||
+                !_context.Stage.IsRunning)
+            {
+                return;
+            }
+
+            _context.Stage.AddEssence(
+                _context.Stage.TargetEssence);
 
             DebugCheats.MarkUsed();
         }

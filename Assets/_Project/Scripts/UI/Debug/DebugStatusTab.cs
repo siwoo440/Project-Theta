@@ -163,7 +163,7 @@ namespace ProjectTheta.UI.DebugTools
             string floorLabel =
                 floors == null
                     ? "-"
-                    : $"{floors.CurrentFloor + 1}F / {floors.FloorCount}F";
+                    : $"{Stage.Locations.LocationContext.Current.DisplayName} {floors.CurrentFloor + 1}F/{floors.FloorCount}F";
 
             string elapsed =
                 stage == null
@@ -176,7 +176,7 @@ namespace ProjectTheta.UI.DebugTools
                     : RunStats.FormatTime(stage.RemainingTime);
 
             _floorText.text =
-                $"{floorLabel}     경과 {elapsed}   남음 {remaining}";
+                $"{floorLabel}   경과 {elapsed}   남음 {remaining}";
 
             RunProgression run = _context.Run;
 

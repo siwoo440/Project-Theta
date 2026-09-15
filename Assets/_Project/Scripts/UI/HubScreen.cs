@@ -925,8 +925,16 @@ namespace ProjectTheta.UI
             sortie.Button.onClick.AddListener(
                 () =>
                 {
-                    GameSession.Instance?.GoTo(
-                        SceneDestination.Stage);
+                    // 21일차: 출격하면 새 판을 만들고 도시 지도에서 첫 장소를 고른다.
+                    if (GameSession.Instance == null)
+                    {
+                        return;
+                    }
+
+                    GameSession.Instance.BeginRun();
+
+                    GameSession.Instance.GoTo(
+                        SceneDestination.Map);
                 });
 
             UiButton back =

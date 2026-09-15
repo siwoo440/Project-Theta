@@ -8,6 +8,7 @@ using ProjectTheta.Presentation;
 using ProjectTheta.Run;
 using ProjectTheta.Save;
 using ProjectTheta.Stage;
+using ProjectTheta.Stage.Locations;
 using ProjectTheta.UI.Framework;
 
 namespace ProjectTheta.UI
@@ -64,6 +65,10 @@ namespace ProjectTheta.UI
         private Image _rankGlow;
         private Text _hintText;
         private UiButton _hubButton;
+
+        // 21일차: 구역 결과. 판이 이어지면 버튼이 "지도로", 끝나면 "허브로"가 된다.
+        private int _zoneNumber;
+        private bool _continuesRun;
 
         private readonly RectTransform[] _rowRects =
             new RectTransform[RowCount];
@@ -227,6 +232,10 @@ namespace ProjectTheta.UI
                     cleared,
                     rankLabel);
 
+            RecordZoneInRun(
+                cleared,
+                rankLabel);
+
             GameSession.Instance.SubmitStageResult(
                 new StageResultSummary
                 {
@@ -242,6 +251,43 @@ namespace ProjectTheta.UI
                     TargetEssence =
                         _stage.TargetEssence
                 });
+        }
+
+        /// <summary>
+        /// 구역 결과를 판에 기록한다 (21일차). 기록하기 전에 구역 번호와 "판이 이어지는가"를 먼저 읽어 둔다.
+        /// 기록하면 실패했거나 마지막 구역인 경우 판이 끝난다.
+        /// </summary>
+        private void RecordZoneInRun(
+            bool cleared,
+            string rankLabel)
+        {
+            RunSession session =
+                GameSession.Instance.Run;
+
+            if (session == null ||
+                session.SelectedLocation == null)
+            {
+                _zoneNumber = 0;
+                _continuesRun = false;
+
+                return;
+            }
+
+            _zoneNumber =
+                session.NextStep + 1;
+
+            session.RecordZone(
+                new ZoneRecord
+                {
+                    Location = session.SelectedLocation.Value,
+                    Cleared = cleared,
+                    RecoveredEssence = _tracker.RecoveredEssence,
+                    ContractEssence = _contractEssence,
+                    RankLabel = rankLabel
+                });
+
+            _continuesRun =
+                !session.IsFinished;
         }
 
         private void PlayPendingSounds()
@@ -401,7 +447,9 @@ namespace ProjectTheta.UI
                 UiFactory.CreateButton(
                     panel,
                     "HubButton",
-                    "허브로",
+                    _continuesRun
+                        ? "지도로  (다음 구역)"
+                        : "허브로",
                     UiTheme.FontSubheading,
                     true);
 
@@ -410,12 +458,31 @@ namespace ProjectTheta.UI
                 new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f),
                 new Vector2(0f, 30f),
-                new Vector2(280f, 52f));
+                new Vector2(320f, 52f));
 
             _hubButton.Button.onClick.AddListener(
                 () =>
                 {
-                    GameSession.Instance?.GoTo(
+                    GameSession session =
+                        GameSession.Instance;
+
+                    if (session == null)
+                    {
+                        return;
+                    }
+
+                    if (_continuesRun)
+                    {
+                        session.GoTo(
+                            SceneDestination.Map);
+
+                        return;
+                    }
+
+                    // 판이 끝났다. 허브로 가면서 판을 비운다. 정기는 구역마다 이미 확정됐다.
+                    session.EndRun();
+
+                    session.GoTo(
                         SceneDestination.Hub);
                 });
 
@@ -538,8 +605,29 @@ namespace ProjectTheta.UI
         {
             if (_titleText != null)
             {
+                LocationDefinition location =
+                    LocationContext.Current;
+
+                string zone =
+                    _zoneNumber > 0
+                        ? $"구역 {_zoneNumber}/{RunRouteLogic.ZoneCount} · {location.DisplayName}"
+                        : location.DisplayName;
+
+                // 마지막 구역을 끝냈으면 판 전체 결과를 함께 보여 준다.
+                RunSession session =
+                    GameSession.Instance == null
+                        ? null
+                        : GameSession.Instance.Run;
+
+                string runTotal =
+                    session != null &&
+                    session.IsFinished &&
+                    session.Records.Count > 0
+                        ? $"     |     한 판 종료 · {session.Records.Count}구역 · 계약 정기 +{session.TotalContractEssence}"
+                        : string.Empty;
+
                 _titleText.text =
-                    _stage.GetStateLabel();
+                    $"{zone}  —  {_stage.GetStateLabel()}{runTotal}";
             }
 
             for (int i = 0;
@@ -801,7 +889,7 @@ namespace ProjectTheta.UI
                     return _floors == null ||
                            _floors.Run == null
                         ? "1F"
-                        : $"{FloorPlanLogic.GetLabel(_floors.Run.HighestReached)}   ({_floors.Run.VisitedCount}개 층)";
+                        : $"{LocationContext.Current.GetFloorLabel(_floors.Run.HighestReached)}   ({_floors.Run.VisitedCount}개 층)";
 
                 case 7:
                     return _run == null

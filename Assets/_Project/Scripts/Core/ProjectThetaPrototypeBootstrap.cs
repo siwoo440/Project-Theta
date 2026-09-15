@@ -12,6 +12,7 @@ using ProjectTheta.Presentation;
 using ProjectTheta.Stage;
 using ProjectTheta.Rival;
 using ProjectTheta.Run;
+using ProjectTheta.Stage.Locations;
 using ProjectTheta.UI;
 using ProjectTheta.UI.DebugTools;
 
@@ -19,6 +20,12 @@ namespace ProjectTheta.Core
 {
     public sealed class ProjectThetaPrototypeBootstrap : MonoBehaviour
     {
+        /// <summary>지금 구역 번호다. 0이 1구역이다. NPC 등급 구성에 더한다.</summary>
+        private int _zoneStep;
+
+        /// <summary>장소별 NPC 밀도다.</summary>
+        private float _npcDensity = 1f;
+
         /// <summary>
         /// 씬 로드마다 <see cref="SceneBootstrapRouter"/>가 호출한다.
         /// 이미 구성되어 있으면 아무것도 하지 않는다.
@@ -60,11 +67,39 @@ namespace ProjectTheta.Core
             GameplayPause.SetDebugSpeed(
                 1f);
 
+            // 21일차: 지도에서 고른 장소를 짓는다. 판 없이 스테이지 씬을 바로 재생하면 첫 구역(연수원)으로 시작한다.
+            RunSession session =
+                GameSession.Instance == null
+                    ? null
+                    : GameSession.Instance.EnsureRunForStage();
+
+            LocationDefinition location =
+                LocationCatalog.Get(
+                    session != null &&
+                    session.SelectedLocation != null
+                        ? session.SelectedLocation.Value
+                        : LocationCatalog.StartLocation);
+
+            LocationContext.Set(
+                location);
+
+            // 뒤 구역일수록 같은 층이라도 고급 NPC가 더 섞인다.
+            _zoneStep =
+                session == null
+                    ? 0
+                    : session.NextStep;
+
+            _npcDensity =
+                location.NpcDensity;
+
             int floorCount =
-                FloorPlanLogic.DefaultFloorCount;
+                Mathf.Max(
+                    1,
+                    location.FloorCount);
 
             SchoolHallwayPrototypeBuilder.Build(
-                floorCount);
+                floorCount,
+                location.Tint);
 
             PlayerSideViewController player =
                 CreatePlayer();
@@ -72,6 +107,10 @@ namespace ProjectTheta.Core
             StageSessionController stage =
                 player.GetComponent<
                     StageSessionController>();
+
+            stage.ApplyObjective(
+                location.TimeLimitSeconds,
+                location.TargetEssence);
 
             FollowerManager followers =
                 player.GetComponent<
@@ -92,6 +131,10 @@ namespace ProjectTheta.Core
             CameraFollow2D cameraFollow =
                 CreateCamera(
                     player.transform);
+
+            // 카메라 배경색을 시간대로 덮어쓰므로 카메라를 만든 뒤에 둔다.
+            TimeOfDayOverlay.Create(
+                location.TimeOfDay);
 
             for (int floor = 0;
                  floor < floorCount;
@@ -114,15 +157,20 @@ namespace ProjectTheta.Core
                     cameraFollow,
                     floorCount);
 
-            CreateGeumtaeyang(
-                stage,
-                followers,
-                player);
+            if (location.HasRivals)
+            {
+                CreateGeumtaeyang(
+                    stage,
+                    followers,
+                    player,
+                    floorCount);
 
-            CreatePopularGuy(
-                stage,
-                followers,
-                player);
+                CreatePopularGuy(
+                    stage,
+                    followers,
+                    player,
+                    floorCount);
+            }
 
             CreateCursorController();
 
@@ -145,7 +193,8 @@ namespace ProjectTheta.Core
                     player,
                     stage,
                     scoreTracker,
-                    floorTransition);
+                    floorTransition,
+                    session);
 
             CreateVfxDirector(
                 player,
@@ -399,12 +448,16 @@ namespace ProjectTheta.Core
                 player.GetComponent<Collider2D>();
 
             int count =
-                FloorPlanLogic.GetNpcCount(
-                    floorIndex);
+                Mathf.Max(
+                    1,
+                    Mathf.RoundToInt(
+                        FloorPlanLogic.GetNpcCount(
+                            floorIndex) *
+                        _npcDensity));
 
             NpcGrade[] grades =
                 FloorPlanLogic.BuildGrades(
-                    floorIndex,
+                    floorIndex + _zoneStep,
                     count);
 
             for (int i = 0;
@@ -560,7 +613,8 @@ namespace ProjectTheta.Core
             PlayerSideViewController player,
             StageSessionController stage,
             StageScoreTracker scoreTracker,
-            FloorTransitionController floorTransition)
+            FloorTransitionController floorTransition,
+            RunSession session)
         {
             GameObject panelObject =
                 new GameObject(
@@ -578,7 +632,8 @@ namespace ProjectTheta.Core
                 stage,
                 scoreTracker,
                 floorTransition,
-                panel);
+                panel,
+                session);
 
             return progression;
         }
@@ -610,7 +665,8 @@ namespace ProjectTheta.Core
         private void CreateGeumtaeyang(
             StageSessionController stage,
             FollowerManager playerFollowers,
-            PlayerSideViewController player)
+            PlayerSideViewController player,
+            int floorCount)
         {
             GameObject rival =
                 new GameObject(
@@ -619,7 +675,9 @@ namespace ProjectTheta.Core
             // 1층은 연습 층이다. 금태양은 2층에서 처음 만난다.
             Vector2 rivalStart =
                 FloorSpace.ToWorld(
-                    OpponentFloorPlan.GeumtaeyangStartFloor,
+                    FloorPlanLogic.ClampFloor(
+                        OpponentFloorPlan.GeumtaeyangStartFloor,
+                        floorCount),
                     new Vector2(
                         -4.0f,
                         -2.7f));
@@ -700,7 +758,8 @@ namespace ProjectTheta.Core
         private void CreatePopularGuy(
             StageSessionController stage,
             FollowerManager playerFollowers,
-            PlayerSideViewController player)
+            PlayerSideViewController player,
+            int floorCount)
         {
             GameObject popularGuy =
                 new GameObject(
@@ -709,7 +768,9 @@ namespace ProjectTheta.Core
             // 인기남은 3층에서 처음 만난다. 위층일수록 경쟁자가 한 명씩 늘어난다.
             Vector2 popularGuyStart =
                 FloorSpace.ToWorld(
-                    OpponentFloorPlan.PopularGuyStartFloor,
+                    FloorPlanLogic.ClampFloor(
+                        OpponentFloorPlan.PopularGuyStartFloor,
+                        floorCount),
                     new Vector2(
                         8.2f,
                         -2.8f));
