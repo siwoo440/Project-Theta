@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace ProjectTheta.Balance
 {
@@ -24,6 +24,20 @@ namespace ProjectTheta.Balance
         public static bool NpcAssetApplied { get; private set; }
 
         public static bool StageAssetApplied { get; private set; }
+
+        /// <summary>
+        /// 플레이 진입마다 가장 먼저 주입을 비운다.
+        ///
+        /// 도메인 리로드를 끈 설정에서는 static이 이전 플레이의 값을 그대로 들고 있고,
+        /// <c>_applied</c>도 true로 남아 자산을 다시 읽지 않는다.
+        /// 여기서 비워 두어야 매 플레이가 자산의 현재 값으로 시작한다.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnPlayModeEnter()
+        {
+            Reset();
+        }
 
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.BeforeSceneLoad)]

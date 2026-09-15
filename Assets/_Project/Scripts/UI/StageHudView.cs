@@ -33,6 +33,7 @@ namespace ProjectTheta.UI
         private PlayerConsumables _consumables;
         private FollowerManager _followers;
         private StageScoreTracker _tracker;
+        private FloorTransitionController _floors;
 
         // 좌상단
         private UiBar _healthBar;
@@ -62,6 +63,14 @@ namespace ProjectTheta.UI
         private Text _followerText;
         private UiBar _stabilityBar;
 
+        // 우상단
+        private Image[] _floorMarks;
+        private Text _floorLabel;
+
+        // 계단 안내
+        private RectTransform _stairPrompt;
+        private Text _stairPromptText;
+
         // 우하단
         private RectTransform _comboGroup;
         private Text _comboText;
@@ -79,6 +88,10 @@ namespace ProjectTheta.UI
             _tracker =
                 FindFirstObjectByType<
                     StageScoreTracker>();
+
+            _floors =
+                FindFirstObjectByType<
+                    FloorTransitionController>();
 
             if (caster != null)
             {
@@ -111,6 +124,7 @@ namespace ProjectTheta.UI
             RefreshFollowers();
             RefreshCombo();
             RefreshTutorial();
+            RefreshFloor();
         }
 
         // 화면 조립 ------------------------------------------------------
@@ -137,6 +151,115 @@ namespace ProjectTheta.UI
 
             BuildCombo(
                 canvas.transform);
+
+            BuildFloorIndicator(
+                canvas.transform);
+
+            BuildStairPrompt(
+                canvas.transform);
+        }
+
+        /// <summary>
+        /// 층 표시다. 아래가 1층이고 위로 쌓인다.
+        /// 지금 층은 보라로 채우고, 가 본 층은 흐리게, 안 가 본 층은 테두리만 남긴다.
+        /// </summary>
+        private void BuildFloorIndicator(
+            Transform parent)
+        {
+            int floorCount =
+                _floors == null
+                    ? 1
+                    : _floors.FloorCount;
+
+            RectTransform group =
+                UiFactory.CreateRect(
+                    parent,
+                    "FloorIndicator");
+
+            UiFactory.Place(
+                group,
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-44f, -36f),
+                new Vector2(180f, 40f + (floorCount * 34f)));
+
+            _floorLabel =
+                UiFactory.CreateText(
+                    group,
+                    "FloorLabel",
+                    string.Empty,
+                    UiTheme.FontHeading,
+                    UiTheme.TextPrimary,
+                    TextAnchor.MiddleRight,
+                    FontStyle.Bold);
+
+            UiFactory.Place(
+                _floorLabel.rectTransform,
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(0f, 0f),
+                new Vector2(170f, 30f));
+
+            _floorMarks =
+                new Image[floorCount];
+
+            for (int i = 0;
+                 i < floorCount;
+                 i++)
+            {
+                Image mark =
+                    UiFactory.CreateImage(
+                        group,
+                        $"FloorMark_{i}",
+                        UiTheme.TrackFill);
+
+                // 1층이 맨 아래에 오도록 역순으로 쌓는다.
+                UiFactory.Place(
+                    mark.rectTransform,
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(
+                        0f,
+                        -40f - ((floorCount - 1 - i) * 34f)),
+                    new Vector2(84f, 26f));
+
+                _floorMarks[i] = mark;
+            }
+        }
+
+        /// <summary>계단 앞에 섰을 때만 뜨는 안내다.</summary>
+        private void BuildStairPrompt(
+            Transform parent)
+        {
+            _stairPrompt =
+                UiFactory.CreatePanel(
+                    parent,
+                    "StairPrompt",
+                    UiTheme.PanelFill,
+                    UiTheme.Accent);
+
+            UiFactory.Place(
+                _stairPrompt,
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 132f),
+                new Vector2(460f, 62f));
+
+            _stairPromptText =
+                UiFactory.CreateText(
+                    _stairPrompt,
+                    "Text",
+                    string.Empty,
+                    UiTheme.FontSubheading,
+                    UiTheme.TextPrimary,
+                    TextAnchor.MiddleCenter,
+                    FontStyle.Bold);
+
+            UiFactory.Stretch(
+                _stairPromptText.rectTransform);
+
+            _stairPrompt.gameObject.SetActive(
+                false);
         }
 
         private void BuildSurvival(
@@ -788,6 +911,66 @@ namespace ProjectTheta.UI
                 _tutorialText.text =
                     TutorialFlowLogic.GetHint(
                         _tutorialStep);
+            }
+        }
+
+        /// <summary>층 표시와 계단 안내를 갱신한다.</summary>
+        private void RefreshFloor()
+        {
+            if (_floors == null ||
+                _floorMarks == null)
+            {
+                return;
+            }
+
+            int current =
+                _floors.CurrentFloor;
+
+            _floorLabel.text =
+                FloorPlanLogic.GetLabel(
+                    current);
+
+            for (int i = 0;
+                 i < _floorMarks.Length;
+                 i++)
+            {
+                if (_floorMarks[i] == null)
+                {
+                    continue;
+                }
+
+                bool isCurrent =
+                    i == current;
+
+                bool visited =
+                    _floors.Run != null &&
+                    _floors.Run.IsVisited(
+                        i);
+
+                _floorMarks[i].color =
+                    isCurrent
+                        ? UiTheme.Accent
+                        : visited
+                            ? UiTheme.AccentSoft * 0.55f
+                            : UiTheme.TrackFill;
+            }
+
+            FloorStairway stairway =
+                _floors.ActiveStairway;
+
+            bool show =
+                stairway != null;
+
+            if (_stairPrompt.gameObject.activeSelf != show)
+            {
+                _stairPrompt.gameObject.SetActive(
+                    show);
+            }
+
+            if (show)
+            {
+                _stairPromptText.text =
+                    stairway.GetPromptText();
             }
         }
 

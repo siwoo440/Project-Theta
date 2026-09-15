@@ -1,7 +1,15 @@
-using UnityEngine;
+﻿using UnityEngine;
+using ProjectTheta.Stage;
 
 namespace ProjectTheta.Core
 {
+    /// <summary>
+    /// 플레이어를 따라가는 2D 카메라다.
+    ///
+    /// 16일차부터 층이 세로로 쌓이므로, 세로 추적과 경계는 모두
+    /// <b>플레이어가 선 층의 원점 기준</b>으로 계산한다.
+    /// 그렇게 해야 3층에서도 1층과 똑같은 화면 구도가 나온다.
+    /// </summary>
     public sealed class CameraFollow2D : MonoBehaviour
     {
         [SerializeField] private Transform _target;
@@ -27,16 +35,31 @@ namespace ProjectTheta.Core
             _useBounds = true;
         }
 
-        private void LateUpdate()
+        /// <summary>층을 옮긴 직후처럼 즉시 따라붙어야 할 때 쓴다.</summary>
+        public void SnapToTarget()
         {
             if (_target == null)
             {
                 return;
             }
 
+            transform.position = GetDesiredPosition();
+            _velocity = Vector3.zero;
+        }
+
+        private Vector3 GetDesiredPosition()
+        {
+            float originY =
+                FloorSpace.OriginY(
+                    FloorSpace.FloorAt(
+                        _target.position.y));
+
+            float localY =
+                _target.position.y - originY;
+
             Vector3 desired = new Vector3(
                 _target.position.x + _offset.x,
-                (_target.position.y * _verticalFollowScale) + _offset.y,
+                (localY * _verticalFollowScale) + _offset.y,
                 _offset.z);
 
             if (_useBounds)
@@ -45,9 +68,21 @@ namespace ProjectTheta.Core
                 desired.y = Mathf.Clamp(desired.y, _minimum.y, _maximum.y);
             }
 
+            desired.y += originY;
+
+            return desired;
+        }
+
+        private void LateUpdate()
+        {
+            if (_target == null)
+            {
+                return;
+            }
+
             transform.position = Vector3.SmoothDamp(
                 transform.position,
-                desired,
+                GetDesiredPosition(),
                 ref _velocity,
                 _smoothTime);
         }

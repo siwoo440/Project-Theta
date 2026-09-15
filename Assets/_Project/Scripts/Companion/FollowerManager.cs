@@ -4,6 +4,7 @@ using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Ownership;
 using ProjectTheta.Player;
+using ProjectTheta.Stage;
 
 namespace ProjectTheta.Companion
 {
@@ -55,6 +56,13 @@ namespace ProjectTheta.Companion
 
         public int Count =>
             _followers.Count;
+
+        /// <summary>
+        /// 지금 따라오는 동행자다.
+        /// 층 이동 때 함께 옮기기 위해 <see cref="ProjectTheta.Stage.FloorTransitionController"/>가 읽는다.
+        /// </summary>
+        public IReadOnlyList<FollowerController> Followers =>
+            _followers;
 
         public float LowestStabilityNormalized
         {
@@ -195,13 +203,15 @@ namespace ProjectTheta.Companion
                 (facingDirection *
                  trailingDistance);
 
+            // 플레이어가 선 층 안에서만 줄을 세운다.
             float y =
-                Mathf.Clamp(
+                FloorSpace.ClampYNear(
+                    transform.position.y,
                     transform.position.y +
                     verticalOffset +
                     personalOffset.y,
-                    SchoolHallwayPrototypeBuilder.WalkMinY + 0.35f,
-                    SchoolHallwayPrototypeBuilder.WalkMaxY - 0.25f);
+                    0.35f,
+                    0.25f);
 
             return new Vector2(
                 x,

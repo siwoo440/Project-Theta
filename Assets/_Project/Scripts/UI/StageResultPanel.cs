@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -24,7 +24,7 @@ namespace ProjectTheta.UI
     /// </summary>
     public sealed class StageResultPanel : MonoBehaviour
     {
-        private const int RowCount = 8;
+        private const int RowCount = 9;
 
         /// <summary>총점부터는 글자를 키워 구분한다.</summary>
         private const int EmphasisRowStart = RowCount - 2;
@@ -43,6 +43,7 @@ namespace ProjectTheta.UI
 
         private StageSessionController _stage;
         private StageScoreTracker _tracker;
+        private FloorTransitionController _floors;
 
         private StageScoreBreakdown _breakdown;
         private StageRank _rank;
@@ -173,6 +174,10 @@ namespace ProjectTheta.UI
             {
                 return;
             }
+
+            _floors =
+                FindFirstObjectByType<
+                    FloorTransitionController>();
 
             _breakdown =
                 _tracker.BuildBreakdown();
@@ -690,6 +695,9 @@ namespace ProjectTheta.UI
                     return "남은 시간";
 
                 case 6:
+                    return "도달 층";
+
+                case 7:
                     return "총점";
 
                 default:
@@ -727,6 +735,12 @@ namespace ProjectTheta.UI
                         _stage.RemainingTime);
 
                 case 6:
+                    return _floors == null ||
+                           _floors.Run == null
+                        ? "1F"
+                        : $"{FloorPlanLogic.GetLabel(_floors.Run.HighestReached)}   ({_floors.Run.VisitedCount}개 층)";
+
+                case 7:
                     return $"{_breakdown.Total:N0}";
 
                 default:

@@ -3,6 +3,7 @@ using UnityEngine;
 using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Ownership;
+using ProjectTheta.Stage;
 
 namespace ProjectTheta.Rival
 {
@@ -21,6 +22,13 @@ namespace ProjectTheta.Rival
             new List<OpponentFollowerController>();
 
         private OpponentControllerBase _controller;
+
+        /// <summary>
+        /// 이 경쟁자가 데리고 있는 NPC다.
+        /// 층을 옮길 때 함께 옮기기 위해 층 이동 처리가 읽는다.
+        /// </summary>
+        public IReadOnlyList<OpponentFollowerController> Followers =>
+            _followers;
 
         public int Count =>
             _followers.Count;
@@ -173,12 +181,13 @@ namespace ProjectTheta.Rival
                 horizontalDistance;
 
             float y =
-                Mathf.Clamp(
+                FloorSpace.ClampYNear(
+                    transform.position.y,
                     transform.position.y +
                     verticalOffset +
                     personalOffset.y,
-                    SchoolHallwayPrototypeBuilder.WalkMinY + 0.35f,
-                    SchoolHallwayPrototypeBuilder.WalkMaxY - 0.25f);
+                    0.35f,
+                    0.25f);
 
             return new Vector2(
                 x,

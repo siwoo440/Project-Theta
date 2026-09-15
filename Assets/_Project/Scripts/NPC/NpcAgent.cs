@@ -2,6 +2,7 @@
 using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Ownership;
+using ProjectTheta.Stage;
 
 namespace ProjectTheta.NPC
 {
@@ -312,12 +313,13 @@ namespace ProjectTheta.NPC
                 new Vector2(
                     Mathf.Clamp(
                         destination.x,
-                        SchoolHallwayPrototypeBuilder.WalkMinX + 0.8f,
-                        SchoolHallwayPrototypeBuilder.WalkMaxX - 0.8f),
-                    Mathf.Clamp(
+                        FloorSpace.WalkMinX + 0.8f,
+                        FloorSpace.WalkMaxX - 0.8f),
+                    FloorSpace.ClampYOn(
+                        CurrentFloor,
                         destination.y,
-                        SchoolHallwayPrototypeBuilder.WalkMinY + 0.55f,
-                        SchoolHallwayPrototypeBuilder.WalkMaxY - 0.35f));
+                        0.55f,
+                        0.35f));
 
             Vector2 delta =
                 destination -
@@ -383,13 +385,19 @@ namespace ProjectTheta.NPC
                 new Vector2(
                     Mathf.Clamp(
                         destination.x,
-                        SchoolHallwayPrototypeBuilder.WalkMinX + 1.0f,
-                        SchoolHallwayPrototypeBuilder.WalkMaxX - 1.0f),
-                    Mathf.Clamp(
+                        FloorSpace.WalkMinX + 1.0f,
+                        FloorSpace.WalkMaxX - 1.0f),
+                    FloorSpace.ClampYOn(
+                        CurrentFloor,
                         destination.y,
-                        SchoolHallwayPrototypeBuilder.WalkMinY + 0.7f,
-                        SchoolHallwayPrototypeBuilder.WalkMaxY - 0.4f));
+                        0.7f,
+                        0.4f));
         }
+
+        /// <summary>이 NPC가 서 있는 층이다. 층은 세로 좌표로 결정된다.</summary>
+        public int CurrentFloor =>
+            FloorSpace.FloorAt(
+                transform.position.y);
 
         private void EnterIdle()
         {
@@ -413,14 +421,19 @@ namespace ProjectTheta.NPC
             SetState(
                 NpcState.Move);
 
+            int floor =
+                CurrentFloor;
+
             _moveTarget =
                 new Vector2(
                     Random.Range(
-                        SchoolHallwayPrototypeBuilder.WalkMinX + 1.0f,
-                        SchoolHallwayPrototypeBuilder.WalkMaxX - 1.0f),
+                        FloorSpace.WalkMinX + 1.0f,
+                        FloorSpace.WalkMaxX - 1.0f),
                     Random.Range(
-                        SchoolHallwayPrototypeBuilder.WalkMinY + 0.7f,
-                        SchoolHallwayPrototypeBuilder.WalkMaxY - 0.4f));
+                        FloorSpace.MinYOn(
+                            floor) + 0.7f,
+                        FloorSpace.MaxYOn(
+                            floor) - 0.4f));
         }
 
         private void SetState(
