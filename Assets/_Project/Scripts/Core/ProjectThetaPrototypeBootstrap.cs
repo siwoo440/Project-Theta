@@ -51,7 +51,11 @@ namespace ProjectTheta.Core
 
         private void Start()
         {
-            SchoolHallwayPrototypeBuilder.Build();
+            int floorCount =
+                FloorPlanLogic.DefaultFloorCount;
+
+            SchoolHallwayPrototypeBuilder.Build(
+                floorCount);
 
             PlayerSideViewController player =
                 CreatePlayer();
@@ -76,11 +80,29 @@ namespace ProjectTheta.Core
                 player.GetComponent<
                     OpponentDuelController>();
 
-            CreateCamera(
-                player.transform);
+            CameraFollow2D cameraFollow =
+                CreateCamera(
+                    player.transform);
 
-            CreateNpcs(
-                player);
+            for (int floor = 0;
+                 floor < floorCount;
+                 floor++)
+            {
+                CreateNpcs(
+                    player,
+                    floor);
+
+                CreateRecoveryPoint(
+                    stage,
+                    followers,
+                    floor);
+            }
+
+            CreateFloorTransition(
+                player,
+                followers,
+                cameraFollow,
+                floorCount);
 
             CreateGeumtaeyang(
                 stage,
@@ -91,10 +113,6 @@ namespace ProjectTheta.Core
                 stage,
                 followers,
                 player);
-
-            CreateRecoveryPoint(
-                stage,
-                followers);
 
             CreateCursorController();
 
@@ -139,10 +157,11 @@ namespace ProjectTheta.Core
             GameObject player =
                 new GameObject("Player");
 
+            // 1층 계단실 근처에서 시작한다.
             player.transform.position =
                 new Vector3(
-                    -13.5f,
-                    -0.45f,
+                    FloorLayout.PlayerStartX,
+                    FloorLayout.PlayerStartY,
                     0f);
 
             player.AddComponent<SpriteRenderer>();
@@ -223,7 +242,7 @@ namespace ProjectTheta.Core
             return controller;
         }
 
-        private void CreateCamera(
+        private CameraFollow2D CreateCamera(
             Transform target)
         {
             Camera camera =
@@ -261,6 +280,8 @@ namespace ProjectTheta.Core
                 camera.gameObject.AddComponent<
                     CameraFollow2D>();
 
+            // 경계는 층 기준(1층 좌표)으로 준다.
+            // 실제 카메라 위치는 플레이어가 선 층만큼 위로 올라간다.
             follow.Configure(
                 target,
                 new Vector2(
@@ -269,53 +290,46 @@ namespace ProjectTheta.Core
                 new Vector2(
                     10.5f,
                     1.65f));
+
+            follow.SnapToTarget();
+
+            return follow;
         }
 
+        /// <summary>
+        /// 한 층의 NPC를 배치한다.
+        /// 층마다 인원과 등급 구성이 다르고, 위층일수록 고급 NPC가 섞인다.
+        /// </summary>
         private void CreateNpcs(
-            PlayerSideViewController player)
+            PlayerSideViewController player,
+            int floorIndex)
         {
             Collider2D playerCollider =
                 player.GetComponent<Collider2D>();
 
-            Vector2[] positions =
-            {
-                new Vector2(-10.5f, 0.15f),
-                new Vector2(-8.0f, -1.25f),
-                new Vector2(-5.2f, -3.75f),
-                new Vector2(-2.0f, -0.45f),
-                new Vector2(1.5f, -2.15f),
-                new Vector2(4.8f, -4.05f),
-                new Vector2(7.5f, 0.10f),
-                new Vector2(9.8f, -1.55f),
-                new Vector2(12.2f, -3.25f),
-                new Vector2(15.0f, -0.70f)
-            };
+            int count =
+                FloorPlanLogic.GetNpcCount(
+                    floorIndex);
 
-            // 프로토타입 스테이지 등급 구성: 일반 5 / 숙련 3 / 희귀 1 / 각성 1
             NpcGrade[] grades =
-            {
-                NpcGrade.Common,
-                NpcGrade.Common,
-                NpcGrade.Skilled,
-                NpcGrade.Common,
-                NpcGrade.Rare,
-                NpcGrade.Common,
-                NpcGrade.Skilled,
-                NpcGrade.Common,
-                NpcGrade.Awakened,
-                NpcGrade.Skilled
-            };
+                FloorPlanLogic.BuildGrades(
+                    floorIndex,
+                    count);
 
             for (int i = 0;
-                 i < positions.Length;
+                 i < count;
                  i++)
             {
                 GameObject npc =
                     new GameObject(
-                        $"FemaleNPC_{i + 1:00}");
+                        $"FemaleNPC_{floorIndex + 1}F_{i + 1:00}");
 
                 npc.transform.position =
-                    positions[i];
+                    FloorSpace.ToWorld(
+                        floorIndex,
+                        GetNpcSpawnPosition(
+                            i,
+                            count));
 
                 npc.AddComponent<SpriteRenderer>();
 
@@ -382,6 +396,67 @@ namespace ProjectTheta.Core
                     player.transform,
                     animator);
             }
+        }
+
+        /// <summary>
+        /// 복도를 가로로 고르게 나눠 NPC를 세운다.
+        /// 난수를 쓰지 않아 같은 층은 항상 같은 배치가 되고, 밸런스를 읽기 쉽다.
+        /// </summary>
+        private static Vector2 GetNpcSpawnPosition(
+            int index,
+            int count)
+        {
+            // 계단실(왼쪽 끝)은 비워 둔다. 시작하자마자 NPC에 둘러싸이지 않게 한다.
+            const float minX = -10.5f;
+            const float maxX = 15.0f;
+
+            float t =
+                count <= 1
+                    ? 0.5f
+                    : index / (float)(count - 1);
+
+            float x =
+                Mathf.Lerp(
+                    minX,
+                    maxX,
+                    t);
+
+            // 앞뒤로 지그재그를 줘 한 줄로 서지 않게 한다.
+            float[] depths =
+            {
+                0.15f,
+                -1.25f,
+                -3.75f,
+                -0.45f,
+                -2.15f,
+                -4.05f
+            };
+
+            return new Vector2(
+                x,
+                depths[index % depths.Length]);
+        }
+
+        /// <summary>층 이동 처리를 붙인다. 계단은 이미 층마다 지어져 있다.</summary>
+        private void CreateFloorTransition(
+            PlayerSideViewController player,
+            FollowerManager followers,
+            CameraFollow2D cameraFollow,
+            int floorCount)
+        {
+            GameObject transition =
+                new GameObject(
+                    "FloorTransition");
+
+            FloorTransitionController controller =
+                transition.AddComponent<
+                    FloorTransitionController>();
+
+            controller.Configure(
+                player.transform,
+                followers,
+                cameraFollow,
+                floorCount);
         }
 
         private void CreateGeumtaeyang(
@@ -548,13 +623,19 @@ namespace ProjectTheta.Core
                 OpponentDuelTarget>();
         }
 
+        /// <summary>
+        /// 층마다 회수 지점을 둔다.
+        /// 계단은 복도 왼쪽 끝, 회수 지점은 오른쪽 끝이라
+        /// "데리고 가로지르는" 이동이 매 층마다 생긴다.
+        /// </summary>
         private void CreateRecoveryPoint(
             StageSessionController stage,
-            FollowerManager followers)
+            FollowerManager followers,
+            int floorIndex)
         {
             GameObject recovery =
                 new GameObject(
-                    "RecoveryPoint");
+                    $"RecoveryPoint_{floorIndex + 1}F");
 
             recovery.AddComponent<
                 SpriteRenderer>();
@@ -566,9 +647,11 @@ namespace ProjectTheta.Core
             point.Configure(
                 stage,
                 followers,
-                new Vector2(
-                    16.2f,
-                    -2.15f),
+                FloorSpace.ToWorld(
+                    floorIndex,
+                    new Vector2(
+                        FloorLayout.RecoveryX,
+                        FloorLayout.RecoveryY)),
                 new Vector2(
                     1.8f,
                     5.0f));

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using ProjectTheta.Presentation;
+using ProjectTheta.Stage;
 
 namespace ProjectTheta.Core
 {
@@ -67,10 +68,19 @@ namespace ProjectTheta.Core
                 return;
             }
 
+            // 층은 세로로 쌓여 있으므로 세계 좌표를 그대로 쓰면 정렬 범위를 넘어간다.
+            // 자기 층 안에서의 세로 위치로 환산해 정렬한다.
+            // 층끼리는 화면에 함께 보이지 않으므로 값이 겹쳐도 문제가 없다.
+            float localY =
+                transform.position.y -
+                FloorSpace.OriginY(
+                    FloorSpace.FloorAt(
+                        transform.position.y));
+
             int depthOrder =
                 CharacterSortingLogic.GetSortingOrder(
                     _layer,
-                    transform.position.y);
+                    localY);
 
             for (int i = 0; i < _renderers.Length; i++)
             {
