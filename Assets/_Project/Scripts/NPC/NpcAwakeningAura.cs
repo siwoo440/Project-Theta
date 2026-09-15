@@ -13,6 +13,9 @@ namespace ProjectTheta.NPC
     /// </summary>
     public sealed class NpcAwakeningAura : MonoBehaviour
     {
+        /// <summary>최면 대상 검색용 버퍼다. 재사용해서 매번 배열을 만들지 않는다.</summary>
+        private readonly System.Collections.Generic.List<HypnosisTarget> _targetBuffer =
+            new System.Collections.Generic.List<HypnosisTarget>();
         [SerializeField] private float _radius = 3.2f;
         [SerializeField] private float _drainPerSecond = 6f;
         [SerializeField] private float _rescanInterval = 0.25f;
@@ -103,16 +106,18 @@ namespace ProjectTheta.NPC
         {
             _nearby.Clear();
 
-            HypnosisTarget[] targets =
-                FindObjectsByType<HypnosisTarget>(
-                    FindObjectsSortMode.None);
+            HypnosisTarget.CopyActive(
+                _targetBuffer);
+
+            System.Collections.Generic.List<HypnosisTarget> targets =
+                _targetBuffer;
 
             float radiusSquared =
                 Radius *
                 Radius;
 
             for (int i = 0;
-                 i < targets.Length;
+                 i < targets.Count;
                  i++)
             {
                 HypnosisTarget candidate =
@@ -218,8 +223,16 @@ namespace ProjectTheta.NPC
                 follower);
         }
 
+        /// <summary>참조를 모두 찾았으면 다시 확인하지 않는다. 스테이지 동안 사라지지 않는다.</summary>
+        private bool _referencesResolved;
+
         private void ResolveRuntimeReferences()
         {
+            if (_referencesResolved)
+            {
+                return;
+            }
+
             if (_stage == null)
             {
                 _stage =
@@ -233,6 +246,10 @@ namespace ProjectTheta.NPC
                     FindFirstObjectByType<
                         FollowerManager>();
             }
+
+            _referencesResolved =
+                _stage != null &&
+                _playerFollowers != null;
         }
     }
 }

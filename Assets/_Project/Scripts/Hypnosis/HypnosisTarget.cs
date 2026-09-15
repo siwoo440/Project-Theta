@@ -11,6 +11,55 @@ namespace ProjectTheta.Hypnosis
     [RequireComponent(typeof(NpcAgent))]
     public sealed class HypnosisTarget : MonoBehaviour
     {
+        /// <summary>
+        /// 활성화된 최면 대상 목록이다.
+        ///
+        /// 18일차 전까지는 대상을 찾을 때마다 FindObjectsByType으로 씬 전체를 뒤졌다.
+        /// 최면 시전은 이걸 매 프레임 했고, 16일차에 층이 생기며 NPC가 52명으로 늘어
+        /// 매 프레임 씬 검색 + 배열 할당이 일어났다.
+        /// 켜질 때 등록하고 꺼질 때 빼는 방식으로 바꿔 검색 비용을 없앴다.
+        /// </summary>
+        private static readonly System.Collections.Generic.List<HypnosisTarget> ActiveTargets =
+            new System.Collections.Generic.List<HypnosisTarget>();
+
+        public static int ActiveCount =>
+            ActiveTargets.Count;
+
+        /// <summary>
+        /// 활성 대상을 호출한 쪽의 버퍼에 복사한다.
+        /// 목록을 그대로 넘기지 않는 이유는, 순회 도중 NPC가 꺼지거나 켜지면
+        /// 원본 목록이 바뀌어 순회가 깨지기 때문이다. 버퍼는 재사용하므로 할당이 없다.
+        /// </summary>
+        public static void CopyActive(
+            System.Collections.Generic.List<HypnosisTarget> buffer)
+        {
+            buffer.Clear();
+
+            buffer.AddRange(
+                ActiveTargets);
+        }
+
+        private void OnEnable()
+        {
+            if (!ActiveTargets.Contains(this))
+            {
+                ActiveTargets.Add(this);
+            }
+        }
+
+        private void OnDisable()
+        {
+            ActiveTargets.Remove(this);
+        }
+
+        /// <summary>도메인 리로드가 꺼져 있어도 이전 플레이의 등록이 남지 않게 한다.</summary>
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetRegistry()
+        {
+            ActiveTargets.Clear();
+        }
+
         [SerializeField] private float _maximumHypnosis = 100f;
         [SerializeField] private float _buildPerSecond = 32f;
         [SerializeField] private float _playerReclaimPerSecond = 24f;

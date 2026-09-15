@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using ProjectTheta.Companion;
+using ProjectTheta.Core;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Items;
 using ProjectTheta.Player;
@@ -64,6 +65,8 @@ namespace ProjectTheta.UI
         private TutorialStep _tutorialStep =
             TutorialStep.Hypnosis;
 
+        private bool _tutorialLoaded;
+
         // 좌하단
         private Text _waveText;
         private UiBar _waveBar;
@@ -89,6 +92,20 @@ namespace ProjectTheta.UI
         private Text _comboText;
 
         private float _comboPulse;
+
+        // 마지막으로 그린 값의 키다. 같으면 문자열을 다시 만들지 않는다 (18일차 최적화).
+        private long _healthKey = UiChangeKey.Unset;
+        private long _focusKey = UiChangeKey.Unset;
+        private long _timeKey = UiChangeKey.Unset;
+        private long _essenceKey = UiChangeKey.Unset;
+        private long _noticeKey = UiChangeKey.Unset;
+        private long _waveKey = UiChangeKey.Unset;
+        private long _followerKey = UiChangeKey.Unset;
+        private long _comboKey = UiChangeKey.Unset;
+        private long _floorKey = UiChangeKey.Unset;
+        private long _stairKey = UiChangeKey.Unset;
+        private long _levelKey = UiChangeKey.Unset;
+        private long _xpGainKey = UiChangeKey.Unset;
 
         public void Configure(
             HypnosisCaster caster,
@@ -193,10 +210,19 @@ namespace ProjectTheta.UI
             RunLevelState level =
                 _run.Level;
 
-            _levelText.text =
-                level.IsMaxLevel
-                    ? "MAX"
-                    : $"Lv {level.Level}";
+            if (UiChangeKey.Changed(
+                    ref _levelKey,
+                    UiChangeKey.Of(
+                        level.Level,
+                        level.IsMaxLevel
+                            ? 1
+                            : 0)))
+            {
+                _levelText.text =
+                    level.IsMaxLevel
+                        ? "MAX"
+                        : $"Lv {level.Level}";
+            }
 
             _xpBar.SetValue(
                 level.Progress);
@@ -243,11 +269,18 @@ namespace ProjectTheta.UI
 
                 _xpGainText.color = color;
 
-                _xpGainText.text =
-                    $"+{_xpGainAccumulated}";
+                if (UiChangeKey.Changed(
+                        ref _xpGainKey,
+                        _xpGainAccumulated))
+                {
+                    _xpGainText.text =
+                        $"+{_xpGainAccumulated}";
+                }
             }
-            else if (_xpGainText.text.Length > 0)
+            else if (_xpGainKey != UiChangeKey.Unset)
             {
+                _xpGainKey = UiChangeKey.Unset;
+
                 _xpGainText.text = string.Empty;
             }
         }
@@ -835,8 +868,15 @@ namespace ProjectTheta.UI
                 _healthBar.SetValue(
                     _health.HealthNormalized);
 
-                _healthText.text =
-                    $"체력  {_health.CurrentHealth} / {_health.MaximumHealth}";
+                if (UiChangeKey.Changed(
+                        ref _healthKey,
+                        UiChangeKey.Of(
+                            _health.CurrentHealth,
+                            _health.MaximumHealth)))
+                {
+                    _healthText.text =
+                        $"체력  {_health.CurrentHealth} / {_health.MaximumHealth}";
+                }
             }
 
             if (_focus == null)
@@ -852,10 +892,22 @@ namespace ProjectTheta.UI
                     ? UiTheme.FocusExhausted
                     : UiTheme.Focus);
 
-            _focusText.text =
-                _focus.IsExhausted
-                    ? $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}   고갈 - {_focus.ResumeThreshold:0} 필요"
-                    : $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}";
+            if (UiChangeKey.Changed(
+                    ref _focusKey,
+                    UiChangeKey.Of(
+                        UiChangeKey.Whole(
+                            _focus.CurrentFocus),
+                        UiChangeKey.Whole(
+                            _focus.MaximumFocus),
+                        _focus.IsExhausted
+                            ? 1
+                            : 0)))
+            {
+                _focusText.text =
+                    _focus.IsExhausted
+                        ? $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}   고갈 - {_focus.ResumeThreshold:0} 필요"
+                        : $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}";
+            }
 
             _focusText.color =
                 _focus.IsExhausted
@@ -870,9 +922,18 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            _timeText.text =
-                FormatTime(
-                    _stage.RemainingTime);
+            // 시간은 초 단위로만 보이므로 1초에 한 번만 문자열을 만든다.
+            if (UiChangeKey.Changed(
+                    ref _timeKey,
+                    Mathf.Max(
+                        0,
+                        Mathf.FloorToInt(
+                            _stage.RemainingTime))))
+            {
+                _timeText.text =
+                    FormatTime(
+                        _stage.RemainingTime);
+            }
 
             // 30초를 끊으면 시간 표시를 붉게 바꿔 마감을 알린다.
             _timeText.color =
@@ -883,14 +944,30 @@ namespace ProjectTheta.UI
             _essenceBar.SetValue(
                 _stage.EssenceNormalized);
 
-            _essenceText.text =
-                $"정기  {_stage.CurrentEssence} / {_stage.TargetEssence}";
+            if (UiChangeKey.Changed(
+                    ref _essenceKey,
+                    UiChangeKey.Of(
+                        _stage.CurrentEssence,
+                        _stage.TargetEssence)))
+            {
+                _essenceText.text =
+                    $"정기  {_stage.CurrentEssence} / {_stage.TargetEssence}";
+            }
 
             if (_followers != null &&
                 _followers.IsContestWarded)
             {
-                _noticeText.text =
-                    $"차단 부적 활성  {_followers.ContestWardRemaining:0.0}초";
+                if (UiChangeKey.Changed(
+                        ref _noticeKey,
+                        UiChangeKey.Of(
+                            UiChangeKey.Tenths(
+                                _followers.ContestWardRemaining),
+                            0,
+                            1)))
+                {
+                    _noticeText.text =
+                        $"차단 부적 활성  {_followers.ContestWardRemaining:0.0}초";
+                }
 
                 _noticeText.color = UiTheme.Focus;
 
@@ -899,16 +976,33 @@ namespace ProjectTheta.UI
 
             if (_stage.HasPendingRecovery)
             {
-                _noticeText.text =
-                    $"회수 정산 중  {_stage.PendingRecoveryCount}명  ×{_stage.PendingRecoveryMultiplier:0.0}";
+                if (UiChangeKey.Changed(
+                        ref _noticeKey,
+                        UiChangeKey.Of(
+                            _stage.PendingRecoveryCount,
+                            UiChangeKey.Tenths(
+                                _stage.PendingRecoveryMultiplier),
+                            2)))
+                {
+                    _noticeText.text =
+                        $"회수 정산 중  {_stage.PendingRecoveryCount}명  ×{_stage.PendingRecoveryMultiplier:0.0}";
+                }
 
                 _noticeText.color = UiTheme.Gold;
 
                 return;
             }
 
-            _noticeText.text =
-                "회수 지점에 도착해야 정기가 확정됩니다";
+            if (UiChangeKey.Changed(
+                    ref _noticeKey,
+                    UiChangeKey.Of(
+                        0,
+                        0,
+                        0)))
+            {
+                _noticeText.text =
+                    "회수 지점에 도착해야 정기가 확정됩니다";
+            }
 
             _noticeText.color = UiTheme.TextMuted;
         }
@@ -919,8 +1013,17 @@ namespace ProjectTheta.UI
             {
                 if (_wave.CooldownRemaining > 0f)
                 {
-                    _waveText.text =
-                        $"파동(우클릭 유지)  재사용 {_wave.CooldownRemaining:0.0}초";
+                    if (UiChangeKey.Changed(
+                            ref _waveKey,
+                            UiChangeKey.Of(
+                                UiChangeKey.Tenths(
+                                    _wave.CooldownRemaining),
+                                0,
+                                1)))
+                    {
+                        _waveText.text =
+                            $"파동(우클릭 유지)  재사용 {_wave.CooldownRemaining:0.0}초";
+                    }
 
                     _waveText.color = UiTheme.TextDisabled;
 
@@ -937,8 +1040,17 @@ namespace ProjectTheta.UI
                 }
                 else if (_wave.IsCharging)
                 {
-                    _waveText.text =
-                        $"파동 충전  {_wave.ChargeNormalized * 100f:0}%";
+                    if (UiChangeKey.Changed(
+                            ref _waveKey,
+                            UiChangeKey.Of(
+                                UiChangeKey.Whole(
+                                    _wave.ChargeNormalized * 100f),
+                                0,
+                                2)))
+                    {
+                        _waveText.text =
+                            $"파동 충전  {_wave.ChargeNormalized * 100f:0}%";
+                    }
 
                     _waveText.color = UiTheme.Accent;
 
@@ -950,8 +1062,17 @@ namespace ProjectTheta.UI
                 }
                 else
                 {
-                    _waveText.text =
-                        $"파동(우클릭 유지)  준비됨   집중력 -{_wave.FocusCost:0}";
+                    if (UiChangeKey.Changed(
+                            ref _waveKey,
+                            UiChangeKey.Of(
+                                UiChangeKey.Whole(
+                                    _wave.FocusCost),
+                                0,
+                                3)))
+                    {
+                        _waveText.text =
+                            $"파동(우클릭 유지)  준비됨   집중력 -{_wave.FocusCost:0}";
+                    }
 
                     _waveText.color = UiTheme.TextMuted;
 
@@ -989,8 +1110,13 @@ namespace ProjectTheta.UI
             int count =
                 _followers.Count;
 
-            _followerText.text =
-                $"동행  {count}명";
+            if (UiChangeKey.Changed(
+                    ref _followerKey,
+                    count))
+            {
+                _followerText.text =
+                    $"동행  {count}명";
+            }
 
             float stability =
                 count <= 0
@@ -1008,8 +1134,11 @@ namespace ProjectTheta.UI
                         ? UiTheme.Gold
                         : UiTheme.Danger);
 
-            _stabilityBar.Root.gameObject.SetActive(
-                count > 0);
+            if (_stabilityBar.Root.gameObject.activeSelf != count > 0)
+            {
+                _stabilityBar.Root.gameObject.SetActive(
+                    count > 0);
+            }
         }
 
         private void RefreshCombo()
@@ -1031,8 +1160,14 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            _comboText.text =
-                $"콤보 ×{_tracker.CurrentComboMultiplier:0.0}";
+            if (UiChangeKey.Changed(
+                    ref _comboKey,
+                    UiChangeKey.Tenths(
+                        _tracker.CurrentComboMultiplier)))
+            {
+                _comboText.text =
+                    $"콤보 ×{_tracker.CurrentComboMultiplier:0.0}";
+            }
 
             // 콤보가 살아 있는 동안 아주 약하게 맥동시켜 시선을 끈다.
             _comboPulse += Time.deltaTime * 4.2f;
@@ -1051,15 +1186,40 @@ namespace ProjectTheta.UI
         }
 
         /// <summary>
-        /// 기획서 A.11절: 별도 튜토리얼 스테이지 없이 첫 구역에서 기능을 순서대로 연다.
+        /// 기획서 A.11절: 별도 튜토리얼 스테이지 없이 기능을 순서대로 연다.
         ///
-        /// 폭주 생존은 아직 보고 지점이 없어 그 단계에 닿으면 안내를 끝낸다.
-        /// 폭주는 경고 연출 자체가 안내 역할을 하기 때문이다.
+        /// 18일차에 폭주 생존 신호가 생겨 다섯 단계를 끝까지 닫는다.
+        /// 끝까지 마치면 세이브에 남기고, 다음 판부터는 안내를 띄우지 않는다.
         /// </summary>
         private void RefreshTutorial()
         {
             if (_tutorialText == null)
             {
+                return;
+            }
+
+            if (!_tutorialLoaded)
+            {
+                _tutorialLoaded = true;
+
+                if (GameSession.Instance != null &&
+                    GameSession.Instance.Save != null &&
+                    GameSession.Instance.Save.TutorialCompleted)
+                {
+                    _tutorialStep =
+                        TutorialStep.Completed;
+                }
+            }
+
+            if (TutorialFlowLogic.IsCompleted(
+                    _tutorialStep))
+            {
+                if (_tutorialText.gameObject.activeSelf)
+                {
+                    _tutorialText.gameObject.SetActive(
+                        false);
+                }
+
                 return;
             }
 
@@ -1077,25 +1237,47 @@ namespace ProjectTheta.UI
                             RecoveryCount =
                                 _tracker.RecoveryCount,
                             ReclaimCount =
-                                _tracker.ReclaimCount
+                                _tracker.ReclaimCount,
+                            RampageSurvivedCount =
+                                _tracker.RampageSurvivedCount
                         });
             }
 
-            bool show =
-                _tutorialStep < TutorialStep.Rampage;
+            if (TutorialFlowLogic.IsCompleted(
+                    _tutorialStep))
+            {
+                SaveTutorialCompleted();
 
-            if (_tutorialText.gameObject.activeSelf != show)
+                return;
+            }
+
+            if (!_tutorialText.gameObject.activeSelf)
             {
                 _tutorialText.gameObject.SetActive(
-                    show);
+                    true);
             }
 
-            if (show)
+            _tutorialText.text =
+                TutorialFlowLogic.GetHint(
+                    _tutorialStep);
+        }
+
+        /// <summary>튜토리얼을 마친 순간 한 번만 세이브에 기록한다.</summary>
+        private void SaveTutorialCompleted()
+        {
+            GameSession session =
+                GameSession.Instance;
+
+            if (session == null ||
+                session.Save == null ||
+                session.Save.TutorialCompleted)
             {
-                _tutorialText.text =
-                    TutorialFlowLogic.GetHint(
-                        _tutorialStep);
+                return;
             }
+
+            session.Save.TutorialCompleted = true;
+
+            session.WriteSave();
         }
 
         /// <summary>층 표시와 계단 안내를 갱신한다.</summary>
@@ -1110,6 +1292,46 @@ namespace ProjectTheta.UI
             int current =
                 _floors.CurrentFloor;
 
+            // 층 표시는 층을 옮기거나 새 층을 처음 밟을 때만 바뀐다.
+            if (UiChangeKey.Changed(
+                    ref _floorKey,
+                    UiChangeKey.Of(
+                        current,
+                        _floors.Run == null
+                            ? 0
+                            : _floors.Run.VisitedCount)))
+            {
+                RedrawFloorMarks(
+                    current);
+            }
+
+            FloorStairway stairway =
+                _floors.ActiveStairway;
+
+            bool show =
+                stairway != null;
+
+            if (_stairPrompt.gameObject.activeSelf != show)
+            {
+                _stairPrompt.gameObject.SetActive(
+                    show);
+            }
+
+            if (show &&
+                UiChangeKey.Changed(
+                    ref _stairKey,
+                    UiChangeKey.Of(
+                        stairway.TargetFloor,
+                        (int)stairway.Direction)))
+            {
+                _stairPromptText.text =
+                    stairway.GetPromptText();
+            }
+        }
+
+        private void RedrawFloorMarks(
+            int current)
+        {
             _floorLabel.text =
                 FloorPlanLogic.GetLabel(
                     current);
@@ -1137,24 +1359,6 @@ namespace ProjectTheta.UI
                         : visited
                             ? UiTheme.AccentSoft * 0.55f
                             : UiTheme.TrackFill;
-            }
-
-            FloorStairway stairway =
-                _floors.ActiveStairway;
-
-            bool show =
-                stairway != null;
-
-            if (_stairPrompt.gameObject.activeSelf != show)
-            {
-                _stairPrompt.gameObject.SetActive(
-                    show);
-            }
-
-            if (show)
-            {
-                _stairPromptText.text =
-                    stairway.GetPromptText();
             }
         }
 

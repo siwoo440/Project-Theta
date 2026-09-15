@@ -87,5 +87,12 @@ namespace ProjectTheta.Player
             Active =
                 null;
         }
+
+        [UnityEngine.RuntimeInitializeOnLoadMethod(
+            UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnPlayModeEnter()
+        {
+            Clear();
+        }
     }
 }

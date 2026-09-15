@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using ProjectTheta.Companion;
+using ProjectTheta.Impulse;
 
 namespace ProjectTheta.Stage
 {
@@ -11,6 +12,7 @@ namespace ProjectTheta.Stage
     {
         private StageSessionController _stage;
         private FollowerManager _followers;
+        private RampageCoordinator _rampage;
 
         private int _combo;
         private float _secondsSinceLastCombo;
@@ -36,6 +38,11 @@ namespace ProjectTheta.Stage
         public event System.Action<int, int, int> RecoveryConfirmed;
 
         public event System.Action DuelWon;
+
+        /// <summary>폭주를 붙잡히지 않고 넘긴 횟수다. 튜토리얼 마지막 단계와 경험치에 쓴다.</summary>
+        public int RampageSurvivedCount { get; private set; }
+
+        public event System.Action RampageSurvived;
 
         /// <summary>최면 성공 횟수다. 튜토리얼 진행 판정에 쓴다.</summary>
         public int HypnosisCount { get; private set; }
@@ -67,6 +74,43 @@ namespace ProjectTheta.Stage
 
             _followers =
                 followers;
+
+            if (_rampage != null)
+            {
+                _rampage.RampageSurvived -= ReportRampageSurvived;
+            }
+
+            _rampage =
+                followers == null
+                    ? null
+                    : followers.GetComponent<RampageCoordinator>();
+
+            if (_rampage != null)
+            {
+                _rampage.RampageSurvived += ReportRampageSurvived;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_rampage != null)
+            {
+                _rampage.RampageSurvived -= ReportRampageSurvived;
+            }
+        }
+
+        /// <summary>폭주를 피해냈을 때 호출된다. 점수에는 넣지 않고 기록과 알림만 한다.</summary>
+        public void ReportRampageSurvived()
+        {
+            if (_stage != null &&
+                !_stage.IsRunning)
+            {
+                return;
+            }
+
+            RampageSurvivedCount++;
+
+            RampageSurvived?.Invoke();
         }
 
         private void Update()

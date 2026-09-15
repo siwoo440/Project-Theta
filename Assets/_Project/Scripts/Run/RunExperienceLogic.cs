@@ -28,7 +28,10 @@ namespace ProjectTheta.Run
         DuelWin = 6,
 
         /// <summary>새 층에 처음 올라갔다.</summary>
-        FloorFirstVisit = 7
+        FloorFirstVisit = 7,
+
+        /// <summary>폭주한 동행자에게 붙잡히지 않고 넘겼다.</summary>
+        RampageSurvived = 8
     }
 
     /// <summary>
@@ -76,6 +79,9 @@ namespace ProjectTheta.Run
 
                 case RunXpSource.FloorFirstVisit:
                     return v.XpFloorFirstVisit;
+
+                case RunXpSource.RampageSurvived:
+                    return v.XpRampageSurvived;
 
                 default:
                     return 0;

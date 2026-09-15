@@ -36,6 +36,22 @@ namespace ProjectTheta.Presentation
 
         private static AudioSource _source;
 
+        /// <summary>
+        /// 플레이를 끝내면 소스와 런타임에 만든 클립이 파괴된다.
+        /// 도메인 리로드가 꺼져 있으면 참조만 남으므로 진입 시 비운다.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnPlayModeEnter()
+        {
+            _source = null;
+
+            System.Array.Clear(
+                Clips,
+                0,
+                Clips.Length);
+        }
+
         public static void Play(
             GameSfx sfx,
             float volumeScale = 1f)

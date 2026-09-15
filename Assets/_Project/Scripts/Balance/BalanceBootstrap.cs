@@ -91,6 +91,7 @@ namespace ProjectTheta.Balance
             NPC.NpcGradeTable.Override = null;
             NPC.NpcTraitTable.Override = null;
             Items.ConsumableItemTable.Override = null;
+            Run.RunUpgradeTable.Override = null;
             Rival.OpponentTuningOverrides.Clear();
 
             BalanceOverrides.ResetToDefaults();

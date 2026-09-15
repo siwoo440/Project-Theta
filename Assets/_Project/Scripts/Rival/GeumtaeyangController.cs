@@ -10,6 +10,9 @@ namespace ProjectTheta.Rival
     /// </summary>
     public sealed class GeumtaeyangController : OpponentControllerBase
     {
+        /// <summary>최면 대상 검색용 버퍼다. 재사용해서 매번 배열을 만들지 않는다.</summary>
+        private readonly System.Collections.Generic.List<HypnosisTarget> _targetBuffer =
+            new System.Collections.Generic.List<HypnosisTarget>();
         public override NpcOwner OwnerTag =>
             NpcOwner.Geumtaeyang;
 
@@ -72,7 +75,9 @@ namespace ProjectTheta.Rival
             if (target == null ||
                 !target.isActiveAndEnabled ||
                 target.Owner !=
-                NpcOwner.Player)
+                NpcOwner.Player ||
+                !IsOnSameFloor(
+                    target))
             {
                 return false;
             }
@@ -126,9 +131,11 @@ namespace ProjectTheta.Rival
 
         private HypnosisTarget FindBestPlayerTarget()
         {
-            HypnosisTarget[] targets =
-                FindObjectsByType<HypnosisTarget>(
-                    FindObjectsSortMode.None);
+            HypnosisTarget.CopyActive(
+                _targetBuffer);
+
+            System.Collections.Generic.List<HypnosisTarget> targets =
+                _targetBuffer;
 
             HypnosisTarget best =
                 null;
@@ -142,7 +149,7 @@ namespace ProjectTheta.Rival
                     Tuning.SearchRange);
 
             for (int i = 0;
-                 i < targets.Length;
+                 i < targets.Count;
                  i++)
             {
                 HypnosisTarget candidate =
