@@ -3,6 +3,7 @@ using ProjectTheta.Companion;
 using ProjectTheta.Impulse;
 using ProjectTheta.NPC;
 using ProjectTheta.Player;
+using ProjectTheta.Run;
 
 namespace ProjectTheta.Stage
 {
@@ -307,10 +308,13 @@ namespace ProjectTheta.Stage
                 return;
             }
 
+            // 동시 회수 배율을 먼저 적용한 뒤, 런 강화 "정기 흡수"를 곱한다.
             int confirmed =
-                EssenceRecoveryLogic.ComputeBatchEssence(
-                    _pendingEssence,
-                    _pendingCount);
+                Mathf.RoundToInt(
+                    EssenceRecoveryLogic.ComputeBatchEssence(
+                        _pendingEssence,
+                        _pendingCount) *
+                    RunUpgradeMultipliers.RecoveryEssence);
 
             int count =
                 _pendingCount;

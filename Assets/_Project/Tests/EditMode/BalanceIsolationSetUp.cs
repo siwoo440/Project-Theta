@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using ProjectTheta.Balance;
+using ProjectTheta.Run;
 
 namespace ProjectTheta.Tests.EditMode
 {
@@ -18,6 +19,9 @@ namespace ProjectTheta.Tests.EditMode
         public void ClearInjectedBalance()
         {
             BalanceBootstrap.Reset();
+
+            // 플레이 중 고른 런 강화도 static에 남으므로 함께 비운다.
+            RunUpgradeMultipliers.Clear();
         }
 
         [OneTimeTearDown]
@@ -25,6 +29,8 @@ namespace ProjectTheta.Tests.EditMode
         {
             // 비워 둔 채로 끝낸다. 다음 플레이 진입 때 BalanceBootstrap이 다시 주입한다.
             BalanceBootstrap.Reset();
+
+            RunUpgradeMultipliers.Clear();
         }
     }
 }

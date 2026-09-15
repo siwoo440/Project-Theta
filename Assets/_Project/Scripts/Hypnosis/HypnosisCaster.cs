@@ -7,6 +7,8 @@ using ProjectTheta.Companion;
 using ProjectTheta.Ownership;
 using ProjectTheta.Player;
 using ProjectTheta.Rival;
+using ProjectTheta.Run;
+using ProjectTheta.Core;
 
 namespace ProjectTheta.Hypnosis
 {
@@ -91,6 +93,11 @@ namespace ProjectTheta.Hypnosis
 
         private void Update()
         {
+            if (GameplayPause.IsPaused)
+            {
+                return;
+            }
+
             _interruptRemaining =
                 Mathf.Max(
                     0f,
@@ -182,7 +189,8 @@ namespace ProjectTheta.Hypnosis
         {
             if (source == null ||
                 !ChainHypnosisLogic.CanChain(
-                    _chainIndex))
+                    _chainIndex,
+                    RunUpgradeMultipliers.ChainExtraTargets))
             {
                 _chainIndex =
                     0;
@@ -204,7 +212,8 @@ namespace ProjectTheta.Hypnosis
 
             int nextIndex =
                 ChainHypnosisLogic.Advance(
-                    _chainIndex);
+                    _chainIndex,
+                    RunUpgradeMultipliers.ChainExtraTargets);
 
             float cost =
                 ChainHypnosisLogic.GetChainFocusCost(

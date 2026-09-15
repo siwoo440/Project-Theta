@@ -10,6 +10,7 @@ using ProjectTheta.NPC;
 using ProjectTheta.Player;
 using ProjectTheta.Stage;
 using ProjectTheta.Rival;
+using ProjectTheta.Run;
 using ProjectTheta.UI;
 
 namespace ProjectTheta.Core
@@ -98,11 +99,12 @@ namespace ProjectTheta.Core
                     floor);
             }
 
-            CreateFloorTransition(
-                player,
-                followers,
-                cameraFollow,
-                floorCount);
+            FloorTransitionController floorTransition =
+                CreateFloorTransition(
+                    player,
+                    followers,
+                    cameraFollow,
+                    floorCount);
 
             CreateGeumtaeyang(
                 stage,
@@ -129,6 +131,12 @@ namespace ProjectTheta.Core
             scoreTracker.Configure(
                 stage,
                 followers);
+
+            CreateRunProgression(
+                player,
+                stage,
+                scoreTracker,
+                floorTransition);
 
             CreateStageResultPanel(
                 stage,
@@ -406,9 +414,10 @@ namespace ProjectTheta.Core
             int index,
             int count)
         {
-            // 계단실(왼쪽 끝)은 비워 둔다. 시작하자마자 NPC에 둘러싸이지 않게 한다.
-            const float minX = -10.5f;
-            const float maxX = 15.0f;
+            // 왼쪽 아래층 계단, 오른쪽 위층 계단과 회수 지점 앞은 비워 둔다.
+            // 계단으로 올라오자마자 NPC에 둘러싸이지 않게 하기 위해서다.
+            const float minX = -10.0f;
+            const float maxX = 11.5f;
 
             float t =
                 count <= 1
@@ -437,8 +446,37 @@ namespace ProjectTheta.Core
                 depths[index % depths.Length]);
         }
 
+        /// <summary>
+        /// 한 판 안의 레벨·강화를 붙인다.
+        /// 점수 집계기와 층 이동이 먼저 만들어져 있어야 이벤트를 구독할 수 있다.
+        /// </summary>
+        private void CreateRunProgression(
+            PlayerSideViewController player,
+            StageSessionController stage,
+            StageScoreTracker scoreTracker,
+            FloorTransitionController floorTransition)
+        {
+            GameObject panelObject =
+                new GameObject(
+                    "RunUpgradeChoicePanel");
+
+            RunUpgradeChoicePanel panel =
+                panelObject.AddComponent<
+                    RunUpgradeChoicePanel>();
+
+            RunProgression progression =
+                player.gameObject.AddComponent<
+                    RunProgression>();
+
+            progression.Configure(
+                stage,
+                scoreTracker,
+                floorTransition,
+                panel);
+        }
+
         /// <summary>층 이동 처리를 붙인다. 계단은 이미 층마다 지어져 있다.</summary>
-        private void CreateFloorTransition(
+        private FloorTransitionController CreateFloorTransition(
             PlayerSideViewController player,
             FollowerManager followers,
             CameraFollow2D cameraFollow,
@@ -457,6 +495,8 @@ namespace ProjectTheta.Core
                 followers,
                 cameraFollow,
                 floorCount);
+
+            return controller;
         }
 
         private void CreateGeumtaeyang(
@@ -653,7 +693,7 @@ namespace ProjectTheta.Core
                         FloorLayout.RecoveryX,
                         FloorLayout.RecoveryY)),
                 new Vector2(
-                    1.8f,
+                    FloorLayout.RecoveryWidth,
                     5.0f));
         }
 

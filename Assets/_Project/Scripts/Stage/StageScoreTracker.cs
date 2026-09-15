@@ -29,6 +29,14 @@ namespace ProjectTheta.Stage
 
         public int CaptureCount { get; private set; }
 
+        /// <summary>최면 성공 시 알린다. 인자는 재탈환 여부다. 런 경험치가 구독한다.</summary>
+        public event System.Action<bool> HypnosisSucceeded;
+
+        /// <summary>회수 묶음 확정 시 알린다. 인자는 (인원, 위험 회수, 고급 등급)이다.</summary>
+        public event System.Action<int, int, int> RecoveryConfirmed;
+
+        public event System.Action DuelWon;
+
         /// <summary>최면 성공 횟수다. 튜토리얼 진행 판정에 쓴다.</summary>
         public int HypnosisCount { get; private set; }
 
@@ -95,6 +103,9 @@ namespace ProjectTheta.Stage
         {
             HypnosisCount++;
 
+            HypnosisSucceeded?.Invoke(
+                wasReclaim);
+
             AddCombo();
 
             if (wasReclaim)
@@ -108,6 +119,8 @@ namespace ProjectTheta.Stage
         public void ReportDuelWin()
         {
             DuelWinCount++;
+
+            DuelWon?.Invoke();
 
             AddCombo();
         }
@@ -135,6 +148,11 @@ namespace ProjectTheta.Stage
                 Mathf.Max(
                     0,
                     highGradeRecoveries);
+
+            RecoveryConfirmed?.Invoke(
+                recoveredCount,
+                riskyRecoveries,
+                highGradeRecoveries);
 
             AddCombo();
 

@@ -47,6 +47,17 @@ MonoBehaviour:
     ContractRankBonusB: 20
     ContractRankBonusA: 50
     ContractRankBonusS: 100
+    XpHypnosisSuccess: 10
+    XpReclaimBonus: 15
+    XpRecoveryPerFollower: 12
+    XpBatchBonusPerExtra: 6
+    XpRiskyRecovery: 10
+    XpHighGradeRecovery: 15
+    XpDuelWin: 30
+    XpFloorFirstVisit: 25
+    LevelBaseXp: 60
+    LevelXpGrowth: 35
+    LevelMaximum: 10
   _overrideOpponents: 1
   _geumtaeyang:
     MoveSpeed: 4.2

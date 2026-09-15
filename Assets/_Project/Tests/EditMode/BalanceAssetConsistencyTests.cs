@@ -52,6 +52,29 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
+        public void Stage_Asset_Run_Xp_Values_Match_Code_Defaults()
+        {
+            // 17일차에 추가한 런 경험치 · 레벨 곡선 값이다.
+            StageBalanceValues asset =
+                LoadStage();
+
+            StageBalanceValues d =
+                new StageBalanceValues();
+
+            Assert.AreEqual(d.XpHypnosisSuccess, asset.XpHypnosisSuccess, nameof(d.XpHypnosisSuccess));
+            Assert.AreEqual(d.XpReclaimBonus, asset.XpReclaimBonus, nameof(d.XpReclaimBonus));
+            Assert.AreEqual(d.XpRecoveryPerFollower, asset.XpRecoveryPerFollower, nameof(d.XpRecoveryPerFollower));
+            Assert.AreEqual(d.XpBatchBonusPerExtra, asset.XpBatchBonusPerExtra, nameof(d.XpBatchBonusPerExtra));
+            Assert.AreEqual(d.XpRiskyRecovery, asset.XpRiskyRecovery, nameof(d.XpRiskyRecovery));
+            Assert.AreEqual(d.XpHighGradeRecovery, asset.XpHighGradeRecovery, nameof(d.XpHighGradeRecovery));
+            Assert.AreEqual(d.XpDuelWin, asset.XpDuelWin, nameof(d.XpDuelWin));
+            Assert.AreEqual(d.XpFloorFirstVisit, asset.XpFloorFirstVisit, nameof(d.XpFloorFirstVisit));
+            Assert.AreEqual(d.LevelBaseXp, asset.LevelBaseXp, nameof(d.LevelBaseXp));
+            Assert.AreEqual(d.LevelXpGrowth, asset.LevelXpGrowth, nameof(d.LevelXpGrowth));
+            Assert.AreEqual(d.LevelMaximum, asset.LevelMaximum, nameof(d.LevelMaximum));
+        }
+
+        [Test]
         public void Stage_Asset_Arrays_Are_Ordered_Sensibly()
         {
             // 자산을 고치다 순서를 뒤집어도 잡히도록, 기본값과 무관한 규칙도 확인한다.
