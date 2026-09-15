@@ -66,21 +66,73 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
-        public void Depleted_Focus_Locks_Until_The_Resume_Threshold()
+        public void Remaining_Focus_Speeds_Up_Hypnosis()
         {
+            // 19일차: 집중력이 조금이라도 남아 있으면 가속이 붙는다.
+            Assert.AreEqual(
+                1.6f,
+                FocusLogic.GetHypnosisSpeedMultiplier(
+                    100f,
+                    0.6f),
+                0.0001f);
+
+            Assert.AreEqual(
+                1.6f,
+                FocusLogic.GetHypnosisSpeedMultiplier(
+                    0.5f,
+                    0.6f),
+                0.0001f);
+        }
+
+        [Test]
+        public void Depleted_Focus_Keeps_Base_Hypnosis_Speed()
+        {
+            // 집중력이 0이어도 최면은 멈추지 않는다. 기본 속도(1배)로 계속된다.
             Assert.IsTrue(
                 FocusLogic.IsDepleted(
                     0f));
 
-            Assert.IsFalse(
-                FocusLogic.CanResume(
-                    29.9f,
-                    30f));
+            Assert.AreEqual(
+                1f,
+                FocusLogic.GetHypnosisSpeedMultiplier(
+                    0f,
+                    0.6f),
+                0.0001f);
 
-            Assert.IsTrue(
-                FocusLogic.CanResume(
-                    30f,
-                    30f));
+            Assert.Greater(
+                FocusLogic.GetHypnosisSpeedMultiplier(
+                    0f,
+                    0.6f),
+                0f);
+        }
+
+        [Test]
+        public void Negative_Bonus_Never_Slows_Below_Base()
+        {
+            Assert.AreEqual(
+                1f,
+                FocusLogic.GetHypnosisSpeedMultiplier(
+                    50f,
+                    -0.5f),
+                0.0001f);
+        }
+
+        [Test]
+        public void Base_Hypnosis_Is_Faster_Than_The_Grade_Table()
+        {
+            // 19일차 밸런스: 등급별 속도 표 위에 전체 1.3배를 곱한다.
+            Assert.AreEqual(
+                1.3f,
+                new ProjectTheta.Balance.StageBalanceValues().PlayerHypnosisSpeedScale,
+                0.0001f);
+        }
+
+        [Test]
+        public void Default_Focus_Bonus_Is_A_Real_Speed_Up()
+        {
+            Assert.Greater(
+                new ProjectTheta.Balance.StageBalanceValues().FocusHypnosisSpeedBonus,
+                0f);
         }
 
         [Test]

@@ -56,6 +56,7 @@ namespace ProjectTheta.UI
         private Text _statsText;
         private Text _assetText;
         private Text _difficultyHintText;
+        private UiButton _shakeButton;
 
         private bool _resultApplied;
 
@@ -148,6 +149,9 @@ namespace ProjectTheta.UI
                 right);
 
             BuildDifficultyCard(
+                right);
+
+            BuildSettingsCard(
                 right);
 
             BuildFooter(
@@ -615,6 +619,136 @@ namespace ProjectTheta.UI
             };
         }
 
+        /// <summary>
+        /// 설정 카드다. 지금은 화면 흔들림 켜기·끄기 하나뿐이다 (19일차).
+        /// 흔들림과 번쩍임은 사람에 따라 멀미를 일으킬 수 있어 끌 수 있게 했다.
+        /// 끄면 흔들림만 빠지고 나머지 연출은 그대로다.
+        /// </summary>
+        private void BuildSettingsCard(
+            Transform parent)
+        {
+            RectTransform card =
+                UiFactory.CreatePanel(
+                    parent,
+                    "SettingsCard",
+                    UiTheme.PanelFill,
+                    UiTheme.PanelEdge);
+
+            card.anchorMin = new Vector2(0f, 1f);
+            card.anchorMax = new Vector2(1f, 1f);
+            card.pivot = new Vector2(0.5f, 1f);
+            card.offsetMin = new Vector2(0f, 0f);
+            card.offsetMax = new Vector2(0f, 0f);
+
+            card.anchoredPosition =
+                new Vector2(0f, -518f);
+
+            card.sizeDelta = new Vector2(0f, 84f);
+
+            Text caption =
+                UiFactory.CreateText(
+                    card,
+                    "Caption",
+                    "설정",
+                    UiTheme.FontSubheading,
+                    UiTheme.TextPrimary,
+                    TextAnchor.MiddleLeft,
+                    FontStyle.Bold);
+
+            UiFactory.Place(
+                caption.rectTransform,
+                new Vector2(0f, 0.5f),
+                new Vector2(0f, 0.5f),
+                new Vector2(28f, 0f),
+                new Vector2(160f, 30f));
+
+            _shakeButton =
+                UiFactory.CreateButton(
+                    card,
+                    "ScreenShake",
+                    string.Empty,
+                    UiTheme.FontBody);
+
+            UiFactory.Place(
+                _shakeButton.Background.rectTransform,
+                new Vector2(0f, 0.5f),
+                new Vector2(0f, 0.5f),
+                new Vector2(190f, 0f),
+                new Vector2(260f, 44f));
+
+            _shakeButton.Button.onClick.AddListener(
+                ToggleScreenShake);
+
+            Text hint =
+                UiFactory.CreateText(
+                    card,
+                    "Hint",
+                    "멀미가 나면 끄세요. 다른 연출은 그대로 유지됩니다",
+                    UiTheme.FontSmall,
+                    UiTheme.TextMuted,
+                    TextAnchor.MiddleLeft);
+
+            UiFactory.Place(
+                hint.rectTransform,
+                new Vector2(0f, 0.5f),
+                new Vector2(0f, 0.5f),
+                new Vector2(476f, 0f),
+                new Vector2(560f, 26f));
+        }
+
+        private void ToggleScreenShake()
+        {
+            GameSession session =
+                GameSession.Instance;
+
+            if (session == null ||
+                session.Save == null)
+            {
+                return;
+            }
+
+            session.Save.ScreenShakeDisabled =
+                !session.Save.ScreenShakeDisabled;
+
+            CameraShake.Enabled =
+                !session.Save.ScreenShakeDisabled;
+
+            GameAudio.Play(
+                GameSfx.UiTick);
+
+            session.WriteSave();
+
+            Refresh();
+        }
+
+        private void RefreshSettings(
+            SaveData save)
+        {
+            if (_shakeButton.Button == null)
+            {
+                return;
+            }
+
+            bool enabled =
+                save == null ||
+                !save.ScreenShakeDisabled;
+
+            _shakeButton.SetText(
+                enabled
+                    ? "화면 흔들림  켜짐"
+                    : "화면 흔들림  꺼짐");
+
+            _shakeButton.Background.color =
+                enabled
+                    ? UiTheme.PrimaryButtonNormal
+                    : UiTheme.ButtonNormal;
+
+            _shakeButton.Label.color =
+                enabled
+                    ? UiTheme.TextPrimary
+                    : UiTheme.TextMuted;
+        }
+
         private void BuildDifficultyCard(
             Transform parent)
         {
@@ -821,6 +955,9 @@ namespace ProjectTheta.UI
             RefreshDifficulty();
 
             RefreshStats(
+                save);
+
+            RefreshSettings(
                 save);
         }
 

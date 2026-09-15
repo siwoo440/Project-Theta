@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectTheta.Presentation;
 
 namespace ProjectTheta.Core
 {
@@ -16,14 +17,26 @@ namespace ProjectTheta.Core
     {
         private static int _requests;
 
+        private static float _hitStopRemaining;
+
+        private static float _hitStopScale =
+            TimeScaleLogic.DefaultHitStopScale;
+
+        /// <summary>
+        /// 완전 정지 중인지다. 입력을 막는 쪽은 이것만 본다.
+        /// 멈칫(히트스톱)은 0.06초 남짓이라 입력을 막지 않는다.
+        /// </summary>
         public static bool IsPaused =>
             _requests > 0;
+
+        public static bool IsHitStopping =>
+            _hitStopRemaining > 0f;
 
         public static void Request()
         {
             _requests++;
 
-            Time.timeScale = 0f;
+            ApplyTimeScale();
         }
 
         public static void Release()
@@ -35,10 +48,62 @@ namespace ProjectTheta.Core
 
             _requests--;
 
-            if (_requests == 0)
+            ApplyTimeScale();
+        }
+
+        /// <summary>
+        /// 짧은 멈칫을 건다 (19일차).
+        /// 카드 화면 같은 완전 정지가 걸려 있으면 그쪽이 이긴다 (<see cref="TimeScaleLogic.Resolve"/>).
+        /// </summary>
+        public static void HitStop(
+            float seconds,
+            float scale)
+        {
+            _hitStopRemaining =
+                TimeScaleLogic.Extend(
+                    _hitStopRemaining,
+                    seconds);
+
+            _hitStopScale = scale;
+
+            ApplyTimeScale();
+        }
+
+        /// <summary>멈칫 시간을 실제 시간으로 흘린다. 연출 담당이 매 프레임 호출한다.</summary>
+        public static void TickHitStop(
+            float unscaledDeltaTime)
+        {
+            if (_hitStopRemaining <= 0f)
             {
-                Time.timeScale = 1f;
+                return;
             }
+
+            _hitStopRemaining =
+                TimeScaleLogic.Tick(
+                    _hitStopRemaining,
+                    unscaledDeltaTime);
+
+            if (_hitStopRemaining <= 0f)
+            {
+                ApplyTimeScale();
+            }
+        }
+
+        /// <summary>진행 중인 멈칫만 끝낸다. 연출 담당이 사라질 때 멈칫이 남지 않게 한다.</summary>
+        public static void CancelHitStop()
+        {
+            _hitStopRemaining = 0f;
+
+            ApplyTimeScale();
+        }
+
+        private static void ApplyTimeScale()
+        {
+            Time.timeScale =
+                TimeScaleLogic.Resolve(
+                    _requests,
+                    _hitStopRemaining,
+                    _hitStopScale);
         }
 
         /// <summary>
@@ -48,6 +113,7 @@ namespace ProjectTheta.Core
         public static void ForceClear()
         {
             _requests = 0;
+            _hitStopRemaining = 0f;
 
             Time.timeScale = 1f;
         }

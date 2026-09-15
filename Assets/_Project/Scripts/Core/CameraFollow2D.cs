@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using ProjectTheta.Presentation;
 using ProjectTheta.Stage;
 
 namespace ProjectTheta.Core
@@ -22,6 +23,15 @@ namespace ProjectTheta.Core
 
         private Vector3 _velocity;
 
+        /// <summary>
+        /// 흔들림을 뺀 카메라 위치다.
+        /// 흔들린 위치를 그대로 부드럽게 따라가기의 출발점으로 쓰면
+        /// 흔들림이 추적에 섞여 카메라가 조금씩 밀려난다. 그래서 둘을 따로 둔다 (19일차).
+        /// </summary>
+        private Vector3 _basePosition;
+
+        private bool _hasBase;
+
         public void Configure(Transform target)
         {
             _target = target;
@@ -43,8 +53,13 @@ namespace ProjectTheta.Core
                 return;
             }
 
-            transform.position = GetDesiredPosition();
+            _basePosition = GetDesiredPosition();
+            _hasBase = true;
             _velocity = Vector3.zero;
+
+            transform.position =
+                _basePosition +
+                CameraShake.Offset;
         }
 
         private Vector3 GetDesiredPosition()
@@ -80,11 +95,21 @@ namespace ProjectTheta.Core
                 return;
             }
 
-            transform.position = Vector3.SmoothDamp(
-                transform.position,
+            if (!_hasBase)
+            {
+                _basePosition = transform.position;
+                _hasBase = true;
+            }
+
+            _basePosition = Vector3.SmoothDamp(
+                _basePosition,
                 GetDesiredPosition(),
                 ref _velocity,
                 _smoothTime);
+
+            transform.position =
+                _basePosition +
+                CameraShake.Offset;
         }
     }
 }

@@ -115,6 +115,9 @@ namespace ProjectTheta.Capture
 
             _stage.GrantRampageCaptureReward();
 
+            StageMoments.RaiseCaptureStarted(
+                transform.position);
+
             ApplyCaptureLocks(
                 true);
 

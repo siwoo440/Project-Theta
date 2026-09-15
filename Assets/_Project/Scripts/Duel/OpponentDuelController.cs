@@ -343,6 +343,10 @@ namespace ProjectTheta.Duel
 
             if (defeated != null)
             {
+                // 밀려나기 전 자리에서 터뜨린다.
+                StageMoments.RaiseDuelWon(
+                    defeated.transform.position);
+
                 defeated.RegisterPlayerVictory(
                     transform.position,
                     _opponentStunDuration,

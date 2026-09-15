@@ -206,6 +206,9 @@ namespace ProjectTheta.Impulse
 
         private void BeginPreparing()
         {
+            StageMoments.RaiseRampageWindup(
+                transform.position);
+
             State =
                 ImpulseState.Preparing;
 
@@ -297,6 +300,9 @@ namespace ProjectTheta.Impulse
                     _coordinator.NotifySurvived(
                         this);
                 }
+
+                StageMoments.RaiseRampageSurvived(
+                    transform.position);
 
                 BeginRecovering();
             }

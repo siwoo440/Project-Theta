@@ -117,11 +117,22 @@ namespace ProjectTheta.Hypnosis
                 Owner);
 
         /// <summary>등급·특성·플레이어 성장·난이도가 모두 반영된 최종 최면 상승 속도다.</summary>
+        /// <summary>
+        /// 플레이어가 이 NPC를 최면하는 속도다.
+        /// 등급별 기본 속도 × 전체 최면 배율(19일차, 자산) × 난이도·영구 성장·런 강화.
+        /// 집중력 가속은 시전 쪽에서 따로 곱한다.
+        /// </summary>
         public float BuildPerSecond =>
             (Profile == null
                 ? _buildPerSecond
                 : Profile.HypnosisBuildPerSecond) *
+            PlayerHypnosisSpeedScale *
             PlayerUpgradeMultipliers.HypnosisSpeed;
+
+        private static float PlayerHypnosisSpeedScale =>
+            Mathf.Max(
+                0f,
+                Balance.BalanceOverrides.StageOrDefault.PlayerHypnosisSpeedScale);
 
         /// <summary>시선 회피형 NPC가 지금 최면 연결을 끊고 있는지 여부다.</summary>
         public bool IsGazeBlocked
@@ -277,10 +288,16 @@ namespace ProjectTheta.Hypnosis
                        MaximumHypnosis;
             }
 
+            // 되찾기도 집중력 가속을 받는다 (19일차).
+            // 체인 배율은 중립 NPC에만 걸리므로 여기서는 사실상 집중력 가속만 곱해진다.
             CurrentHypnosis =
                 OwnershipContestLogic.Drain(
                     CurrentHypnosis,
-                    _playerReclaimPerSecond,
+                    _playerReclaimPerSecond *
+                    PlayerHypnosisSpeedScale *
+                    Mathf.Max(
+                        0f,
+                        speedMultiplier),
                     deltaTime);
 
             return OwnershipContestLogic.IsDepleted(

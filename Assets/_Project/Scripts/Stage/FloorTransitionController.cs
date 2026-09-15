@@ -257,9 +257,7 @@ namespace ProjectTheta.Stage
             _opponentChaseRemaining =
                 _opponentChaseDelay;
 
-            GameAudio.Play(
-                GameSfx.UiTick);
-
+            // 도착 효과음과 페이드는 StageVfxDirector가 FloorChanged를 듣고 낸다 (19일차).
             FloorChanged?.Invoke(
                 previousFloor,
                 _run.CurrentFloor,

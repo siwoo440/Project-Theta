@@ -32,6 +32,9 @@ namespace ProjectTheta.Stage
         private int _pendingCount;
         private int _pendingRiskyCount;
         private int _pendingHighGradeCount;
+
+        /// <summary>마지막으로 회수된 NPC의 자리다. 회수 연출(빛기둥)을 띄울 위치로 쓴다.</summary>
+        private Vector2 _pendingPosition;
         private float _pendingElapsed;
         private bool _hasPendingBatch;
 
@@ -229,6 +232,9 @@ namespace ProjectTheta.Stage
 
             RecoveredFollowerCount++;
 
+            _pendingPosition =
+                follower.transform.position;
+
             NpcProfile profile =
                 follower.GetComponent<NpcProfile>();
 
@@ -338,6 +344,11 @@ namespace ProjectTheta.Stage
                     risky,
                     highGrade);
             }
+
+            StageMoments.RaiseRecoveryConfirmed(
+                _pendingPosition,
+                count,
+                confirmed);
         }
 
         private void ClearPendingBatch()

@@ -71,8 +71,11 @@ namespace ProjectTheta.NPC
         {
             ResolvePlayerReferences();
 
-            _focus?.TrySpend(
-                _focusDamage);
+            if (_focus != null)
+            {
+                _focus.TakeDamage(
+                    _focusDamage);
+            }
 
             _caster?.Interrupt(
                 _interruptSeconds);

@@ -109,6 +109,28 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
+        public void Stage_Asset_Vfx_Tuning_Matches_Code_Defaults()
+        {
+            // 19일차 연출 수치다.
+            StageBalanceValues asset =
+                LoadStage();
+
+            StageBalanceValues d =
+                new StageBalanceValues();
+
+            Assert.AreEqual(d.VfxShakeSmall, asset.VfxShakeSmall, 0.0001f, nameof(d.VfxShakeSmall));
+            Assert.AreEqual(d.VfxShakeMedium, asset.VfxShakeMedium, 0.0001f, nameof(d.VfxShakeMedium));
+            Assert.AreEqual(d.VfxShakeLarge, asset.VfxShakeLarge, 0.0001f, nameof(d.VfxShakeLarge));
+            Assert.AreEqual(d.VfxShakeSeconds, asset.VfxShakeSeconds, 0.0001f, nameof(d.VfxShakeSeconds));
+            Assert.AreEqual(d.VfxHitStopSeconds, asset.VfxHitStopSeconds, 0.0001f, nameof(d.VfxHitStopSeconds));
+            Assert.AreEqual(d.VfxHitStopScale, asset.VfxHitStopScale, 0.0001f, nameof(d.VfxHitStopScale));
+            Assert.AreEqual(d.VfxRippleRadius, asset.VfxRippleRadius, 0.0001f, nameof(d.VfxRippleRadius));
+            Assert.AreEqual(d.VfxFadeSeconds, asset.VfxFadeSeconds, 0.0001f, nameof(d.VfxFadeSeconds));
+            Assert.AreEqual(d.FocusHypnosisSpeedBonus, asset.FocusHypnosisSpeedBonus, 0.0001f, nameof(d.FocusHypnosisSpeedBonus));
+            Assert.AreEqual(d.PlayerHypnosisSpeedScale, asset.PlayerHypnosisSpeedScale, 0.0001f, nameof(d.PlayerHypnosisSpeedScale));
+        }
+
+        [Test]
         public void Stage_Asset_Arrays_Are_Ordered_Sensibly()
         {
             // 자산을 고치다 순서를 뒤집어도 잡히도록, 기본값과 무관한 규칙도 확인한다.
