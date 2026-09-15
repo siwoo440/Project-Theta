@@ -92,6 +92,37 @@ namespace ProjectTheta.Balance
                     : null;
         }
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// 디버그 패널의 "자산에 저장"이 호출한다 (20일차, 에디터 전용).
+        /// 넘겨받은 값의 복사본으로 자산의 스테이지 수치를 바꾸고 저장한다.
+        /// 복사본을 넣으므로 이후 패널에서 계속 바꿔도 저장된 자산은 따라 바뀌지 않는다.
+        /// </summary>
+        public StageBalanceValues SaveStageValues(
+            StageBalanceValues values)
+        {
+            if (values == null)
+            {
+                return _stage;
+            }
+
+            UnityEditor.Undo.RecordObject(
+                this,
+                "Debug Panel Save Balance");
+
+            _stage =
+                values.Clone();
+
+            UnityEditor.EditorUtility.SetDirty(
+                this);
+
+            UnityEditor.AssetDatabase.SaveAssetIfDirty(
+                this);
+
+            return _stage;
+        }
+#endif
+
         /// <summary>자산에 정의된 난이도 배율을 찾는다. 없으면 코드 기본값을 쓴다.</summary>
         public DifficultyMultipliers FindDifficulty(
             DifficultyLevel level)

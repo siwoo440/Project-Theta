@@ -30,6 +30,12 @@ namespace ProjectTheta.Player
         public void TakeDamage(
             int amount)
         {
+            // 디버그 치트: 무적 (20일차)
+            if (Core.DebugCheats.Invincible)
+            {
+                return;
+            }
+
             int safeAmount =
                 Mathf.Max(
                     0,
@@ -41,6 +47,13 @@ namespace ProjectTheta.Player
                     safeAmount,
                     0,
                     MaximumHealth);
+        }
+
+        /// <summary>체력을 가득 채운다. 디버그 치트가 쓴다 (20일차).</summary>
+        public void RestoreFull()
+        {
+            CurrentHealth =
+                MaximumHealth;
         }
     }
 }

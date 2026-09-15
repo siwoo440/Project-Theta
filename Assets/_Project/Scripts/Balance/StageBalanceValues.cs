@@ -76,6 +76,14 @@ namespace ProjectTheta.Balance
         // 집중력이 남아 있을 때 최면 속도에 더하는 비율이다. 0.6이면 1.6배.
         public float FocusHypnosisSpeedBonus = 0.6f;
 
+        // 20일차: 디버그 패널에서 조정하려고 PlayerFocus 안의 값을 자산으로 옮겼다. 값은 그대로다.
+        public float FocusHypnosisDrainPerSecond = 6f;
+        public float FocusRecoveryPerSecond = 14f;
+
+        // --- 충동 (20일차) ---
+        // 동행 NPC의 충동이 차오르는 속도 전체에 곱한다. 1이면 기존 그대로, 2면 두 배 빨리 폭주한다.
+        public float ImpulseBuildScale = 1f;
+
         // --- 최면 속도 (19일차) ---
         // 플레이어 최면 전체에 곱하는 기본 배율이다. 등급별 속도 표는 그대로 두고 전체만 올린다.
         // 1.3이면 모든 등급이 1.3배 빨라진다 (일반 40/초 → 52/초). 되찾기에도 똑같이 걸린다.
@@ -135,6 +143,9 @@ namespace ProjectTheta.Balance
                 VfxRippleRadius = VfxRippleRadius,
                 VfxFadeSeconds = VfxFadeSeconds,
                 FocusHypnosisSpeedBonus = FocusHypnosisSpeedBonus,
+                FocusHypnosisDrainPerSecond = FocusHypnosisDrainPerSecond,
+                FocusRecoveryPerSecond = FocusRecoveryPerSecond,
+                ImpulseBuildScale = ImpulseBuildScale,
                 PlayerHypnosisSpeedScale = PlayerHypnosisSpeedScale,
                 LevelBaseXp = LevelBaseXp,
                 LevelXpGrowth = LevelXpGrowth,

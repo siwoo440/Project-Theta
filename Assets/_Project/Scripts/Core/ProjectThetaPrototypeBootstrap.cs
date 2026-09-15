@@ -13,6 +13,7 @@ using ProjectTheta.Stage;
 using ProjectTheta.Rival;
 using ProjectTheta.Run;
 using ProjectTheta.UI;
+using ProjectTheta.UI.DebugTools;
 
 namespace ProjectTheta.Core
 {
@@ -53,6 +54,12 @@ namespace ProjectTheta.Core
 
         private void Start()
         {
+            // 치트와 게임 속도는 판마다 꺼진 채로 시작한다 (20일차).
+            DebugCheats.ResetForRun();
+
+            GameplayPause.SetDebugSpeed(
+                1f);
+
             int floorCount =
                 FloorPlanLogic.DefaultFloorCount;
 
@@ -163,8 +170,77 @@ namespace ProjectTheta.Core
             CreateHud(
                 player.GetComponent<HypnosisCaster>(),
                 stage,
-                health,
-                capture);
+                health);
+
+            RunStatsRecorder recorder =
+                CreateRunStatsRecorder(
+                    player,
+                    stage,
+                    floorTransition,
+                    runProgression);
+
+            CreateDebugPanel(
+                new DebugPanelContext
+                {
+                    Caster = player.GetComponent<HypnosisCaster>(),
+                    Stage = stage,
+                    Health = health,
+                    Focus = player.GetComponent<PlayerFocus>(),
+                    Followers = followers,
+                    Run = runProgression,
+                    Floors = floorTransition,
+                    Rampage = player.GetComponent<RampageCoordinator>(),
+                    Capture = capture,
+                    Recorder = recorder
+                });
+        }
+
+        /// <summary>한 판 기록을 붙인다 (20일차). 층 이동·레벨 알림을 구독하므로 둘 다 만들어진 뒤에 부른다.</summary>
+        private RunStatsRecorder CreateRunStatsRecorder(
+            PlayerSideViewController player,
+            StageSessionController stage,
+            FloorTransitionController floorTransition,
+            RunProgression runProgression)
+        {
+            GameObject recorderObject =
+                new GameObject(
+                    "RunStatsRecorder");
+
+            RunStatsRecorder recorder =
+                recorderObject.AddComponent<
+                    RunStatsRecorder>();
+
+            recorder.Configure(
+                stage,
+                floorTransition,
+                player.GetComponent<PlayerFocus>(),
+                runProgression);
+
+            return recorder;
+        }
+
+        /// <summary>
+        /// F1 디버그 패널을 붙인다 (20일차).
+        /// 에디터와 개발 빌드에서만 만든다. 정식 빌드에는 치트가 들어가지 않는다.
+        /// </summary>
+        private void CreateDebugPanel(
+            DebugPanelContext context)
+        {
+            if (!Debug.isDebugBuild)
+            {
+                return;
+            }
+
+            GameObject panelObject =
+                new GameObject(
+                    "DebugPanel");
+
+            DebugPanel panel =
+                panelObject.AddComponent<
+                    DebugPanel>();
+
+            panel.Configure(
+                context);
         }
 
         private PlayerSideViewController CreatePlayer()
@@ -851,10 +927,9 @@ namespace ProjectTheta.Core
         private void CreateHud(
             HypnosisCaster caster,
             StageSessionController stage,
-            PlayerHealth health,
-            PlayerCaptureController capture)
+            PlayerHealth health)
         {
-            // 플레이어용 정식 HUD와 개발용 디버그 HUD를 나눠 붙인다.
+            // 개발용 수치는 20일차부터 F1 디버그 패널(CreateDebugPanel)이 맡는다.
             GameObject hud =
                 new GameObject(
                     "StageHud");
@@ -866,14 +941,6 @@ namespace ProjectTheta.Core
                 caster,
                 stage,
                 health);
-
-            PrototypeHud prototypeHud =
-                hud.AddComponent<PrototypeHud>();
-
-            prototypeHud.Configure(
-                caster,
-                stage,
-                capture);
         }
     }
 }

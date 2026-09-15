@@ -439,10 +439,19 @@ namespace ProjectTheta.Rival
                 target.GetComponent<
                     FollowerController>();
 
-            return PlayerFollowers != null &&
-                   follower != null &&
-                   PlayerFollowers.TransferOutFollower(
-                       follower);
+            bool detached =
+                PlayerFollowers != null &&
+                follower != null &&
+                PlayerFollowers.TransferOutFollower(
+                    follower);
+
+            if (detached)
+            {
+                StageMoments.RaiseFollowerStolen(
+                    target.transform.position);
+            }
+
+            return detached;
         }
 
         /// <summary>플레이어 동행 NPC가 지금 쟁탈 대상이 될 수 있는 상태인지 판정한다.</summary>

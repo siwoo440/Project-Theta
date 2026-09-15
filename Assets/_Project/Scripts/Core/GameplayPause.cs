@@ -97,13 +97,30 @@ namespace ProjectTheta.Core
             ApplyTimeScale();
         }
 
+        private static float _debugSpeed = 1f;
+
+        /// <summary>디버그 패널에서 고른 게임 속도다 (20일차). 기본 1배.</summary>
+        public static float DebugSpeed =>
+            _debugSpeed;
+
+        public static void SetDebugSpeed(
+            float speed)
+        {
+            _debugSpeed =
+                TimeScaleLogic.ClampDebugSpeed(
+                    speed);
+
+            ApplyTimeScale();
+        }
+
         private static void ApplyTimeScale()
         {
             Time.timeScale =
                 TimeScaleLogic.Resolve(
                     _requests,
                     _hitStopRemaining,
-                    _hitStopScale);
+                    _hitStopScale,
+                    _debugSpeed);
         }
 
         /// <summary>
@@ -114,6 +131,7 @@ namespace ProjectTheta.Core
         {
             _requests = 0;
             _hitStopRemaining = 0f;
+            _debugSpeed = 1f;
 
             Time.timeScale = 1f;
         }

@@ -59,6 +59,9 @@ namespace ProjectTheta.UI
         private Canvas _canvas;
         private Text _titleText;
         private Text _rankText;
+
+        // 20일차 꾸미기: 랭크 도장 뒤 빛 번짐
+        private Image _rankGlow;
         private Text _hintText;
         private UiButton _hubButton;
 
@@ -338,6 +341,24 @@ namespace ProjectTheta.UI
                 new Vector2(0.5f, 1f),
                 new Vector2(0f, -28f),
                 new Vector2(700f, 30f));
+
+            // 도장보다 먼저 만들어 뒤에 깐다.
+            _rankGlow =
+                UiDecor.CreateGlow(
+                    _canvas.transform,
+                    "RankGlow",
+                    new Color(1f, 1f, 1f, 0f),
+                    new Vector2(420f, 240f));
+
+            UiFactory.Place(
+                _rankGlow.rectTransform,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 366f),
+                new Vector2(420f, 240f));
+
+            _rankGlow.gameObject.SetActive(
+                false);
 
             // 랭크 도장은 패널 위쪽 바깥으로 살짝 걸치게 둔다.
             _rankText =
@@ -633,6 +654,12 @@ namespace ProjectTheta.UI
                 _rankText.gameObject.SetActive(
                     false);
 
+                if (_rankGlow != null)
+                {
+                    _rankGlow.gameObject.SetActive(
+                        false);
+                }
+
                 return;
             }
 
@@ -650,6 +677,13 @@ namespace ProjectTheta.UI
             if (_rankText.gameObject.activeSelf != visible)
             {
                 _rankText.gameObject.SetActive(
+                    visible);
+            }
+
+            if (_rankGlow != null &&
+                _rankGlow.gameObject.activeSelf != visible)
+            {
+                _rankGlow.gameObject.SetActive(
                     visible);
             }
 
@@ -673,6 +707,23 @@ namespace ProjectTheta.UI
                     _rank,
                     StageResultRevealLogic.GetRankAlpha(
                         progress));
+
+            if (_rankGlow != null)
+            {
+                // 도장이 찍히는 동안 빛이 조금 늦게, 조금 크게 번진다.
+                _rankGlow.rectTransform.localScale =
+                    new Vector3(
+                        scale * 1.15f,
+                        scale * 1.15f,
+                        1f);
+
+                _rankGlow.color =
+                    GetRankColor(
+                        _rank,
+                        StageResultRevealLogic.GetRankAlpha(
+                            progress) *
+                        0.45f);
+            }
         }
 
         // 내용 ----------------------------------------------------------

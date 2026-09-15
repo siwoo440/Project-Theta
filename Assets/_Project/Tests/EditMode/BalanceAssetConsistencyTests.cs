@@ -128,6 +128,9 @@ namespace ProjectTheta.Tests.EditMode
             Assert.AreEqual(d.VfxFadeSeconds, asset.VfxFadeSeconds, 0.0001f, nameof(d.VfxFadeSeconds));
             Assert.AreEqual(d.FocusHypnosisSpeedBonus, asset.FocusHypnosisSpeedBonus, 0.0001f, nameof(d.FocusHypnosisSpeedBonus));
             Assert.AreEqual(d.PlayerHypnosisSpeedScale, asset.PlayerHypnosisSpeedScale, 0.0001f, nameof(d.PlayerHypnosisSpeedScale));
+            Assert.AreEqual(d.FocusHypnosisDrainPerSecond, asset.FocusHypnosisDrainPerSecond, 0.0001f, nameof(d.FocusHypnosisDrainPerSecond));
+            Assert.AreEqual(d.FocusRecoveryPerSecond, asset.FocusRecoveryPerSecond, 0.0001f, nameof(d.FocusRecoveryPerSecond));
+            Assert.AreEqual(d.ImpulseBuildScale, asset.ImpulseBuildScale, 0.0001f, nameof(d.ImpulseBuildScale));
         }
 
         [Test]

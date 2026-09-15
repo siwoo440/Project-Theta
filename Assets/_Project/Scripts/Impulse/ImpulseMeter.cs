@@ -173,7 +173,10 @@ namespace ProjectTheta.Impulse
                     _maximumImpulse,
                     _buildPerSecond *
                     _buildRateMultiplier *
-                    GradeImpulseMultiplier,
+                    GradeImpulseMultiplier *
+                    Mathf.Max(
+                        0f,
+                        Balance.BalanceOverrides.StageOrDefault.ImpulseBuildScale),
                     Time.deltaTime);
 
             State =
@@ -354,6 +357,32 @@ namespace ProjectTheta.Impulse
         /// 최면 파동이나 진정제가 충동을 낮춘다.
         /// 폭주 진행 중인 NPC는 이미 통제를 벗어났으므로 영향을 주지 않는다.
         /// </summary>
+        /// <summary>
+        /// 디버그 치트: 충동을 가득 채워 다음 프레임에 폭주 준비로 넘긴다 (20일차).
+        /// 값만 채우고 상태 전환은 평소 흐름(UpdateCharge)에 맡긴다. 이미 폭주 중이면 무시한다.
+        /// </summary>
+        public bool DebugFillImpulse()
+        {
+            if (!IsFollowingActive)
+            {
+                return false;
+            }
+
+            switch (State)
+            {
+                case ImpulseState.Preparing:
+                case ImpulseState.Rampaging:
+                case ImpulseState.Capturing:
+                case ImpulseState.Recovering:
+                    return false;
+            }
+
+            CurrentImpulse =
+                _maximumImpulse;
+
+            return true;
+        }
+
         public void RelieveImpulse(
             float amount)
         {

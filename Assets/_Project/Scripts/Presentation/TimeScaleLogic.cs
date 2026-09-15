@@ -39,6 +39,42 @@ namespace ProjectTheta.Presentation
             return 1f;
         }
 
+        public const float MinimumDebugSpeed = 0.1f;
+        public const float MaximumDebugSpeed = 4f;
+
+        /// <summary>
+        /// 디버그 패널의 게임 속도(20일차)까지 곱한 최종 시간 배율이다.
+        /// 완전 정지는 속도를 올려도 0으로 남는다. 곱하기라 0 × 2 = 0이다.
+        /// </summary>
+        public static float Resolve(
+            int pauseRequests,
+            float hitStopRemaining,
+            float hitStopScale,
+            float debugSpeed)
+        {
+            return Resolve(
+                       pauseRequests,
+                       hitStopRemaining,
+                       hitStopScale) *
+                   ClampDebugSpeed(
+                       debugSpeed);
+        }
+
+        public static float ClampDebugSpeed(
+            float speed)
+        {
+            if (float.IsNaN(speed))
+            {
+                return 1f;
+            }
+
+            return Math.Max(
+                MinimumDebugSpeed,
+                Math.Min(
+                    MaximumDebugSpeed,
+                    speed));
+        }
+
         /// <summary>
         /// 멈칫을 새로 걸 때의 남은 시간이다.
         /// 여러 번 겹쳐도 더하지 않고 긴 쪽만 남긴다. 더하면 연속 체인 최면에서 멈칫이 길게 늘어진다.

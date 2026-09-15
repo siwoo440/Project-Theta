@@ -33,6 +33,9 @@ namespace ProjectTheta.Stage
         /// <summary>힘겨루기에서 이겼다. (밀려난 경쟁자 위치)</summary>
         public static event Action<Vector2> DuelWon;
 
+        /// <summary>경쟁자가 플레이어 동행자를 빼앗아 갔다. (NPC 위치) — 20일차 판 기록용</summary>
+        public static event Action<Vector2> FollowerStolen;
+
         public static void RaiseHypnosisSucceeded(
             Vector2 position,
             bool wasReclaim)
@@ -81,6 +84,13 @@ namespace ProjectTheta.Stage
                 position);
         }
 
+        public static void RaiseFollowerStolen(
+            Vector2 position)
+        {
+            FollowerStolen?.Invoke(
+                position);
+        }
+
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetOnPlayModeEnter()
@@ -91,6 +101,7 @@ namespace ProjectTheta.Stage
             RampageSurvived = null;
             CaptureStarted = null;
             DuelWon = null;
+            FollowerStolen = null;
         }
     }
 }
