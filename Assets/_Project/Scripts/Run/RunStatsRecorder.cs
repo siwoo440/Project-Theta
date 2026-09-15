@@ -13,6 +13,11 @@ namespace ProjectTheta.Run
     public sealed class RunLogEntry
     {
         public string Date;
+
+        /// <summary>21일차: 장소와 구역 번호다. 구역마다 기록 파일이 하나씩 생긴다.</summary>
+        public string Location;
+        public int Zone;
+
         public string Result;
         public string Difficulty;
         public bool TuningModified;
@@ -157,6 +162,11 @@ namespace ProjectTheta.Run
                     new RunLogEntry
                     {
                         Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                        Location = Stage.Locations.LocationContext.Current.Id.ToString(),
+                        Zone = GameSession.Instance == null ||
+                               GameSession.Instance.Run == null
+                            ? 0
+                            : GameSession.Instance.Run.Records.Count,
                         Result = _stage.State.ToString(),
                         Difficulty = BalanceOverrides.Difficulty == null
                             ? "-"

@@ -6,7 +6,7 @@ using ProjectTheta.UI;
 namespace ProjectTheta.Core
 {
     /// <summary>
-    /// Boot · MainMenu · Hub 씬의 내용을 런타임에 구성한다.
+    /// Boot · MainMenu · Hub · Map 씬의 내용을 런타임에 구성한다.
     /// 스테이지 씬은 기존 <see cref="ProjectThetaPrototypeBootstrap"/>이 담당한다.
     ///
     /// 씬 파일을 비워 두고 코드로 만드는 것은 이 프로젝트의 기존 방식과 같다.
@@ -21,7 +21,8 @@ namespace ProjectTheta.Core
 
             if (sceneName != SceneNames.Boot &&
                 sceneName != SceneNames.MainMenu &&
-                sceneName != SceneNames.Hub)
+                sceneName != SceneNames.Hub &&
+                sceneName != SceneNames.Map)
             {
                 return;
             }
@@ -75,6 +76,18 @@ namespace ProjectTheta.Core
                 {
                     gameObject.AddComponent<
                         HubScreen>();
+                }
+
+                return;
+            }
+
+            if (sceneName == SceneNames.Map)
+            {
+                if (FindFirstObjectByType<
+                        MapScreen>() == null)
+                {
+                    gameObject.AddComponent<
+                        MapScreen>();
                 }
             }
         }

@@ -80,7 +80,8 @@ namespace ProjectTheta.Core
 
             if (sceneName == SceneNames.Boot ||
                 sceneName == SceneNames.MainMenu ||
-                sceneName == SceneNames.Hub)
+                sceneName == SceneNames.Hub ||
+                sceneName == SceneNames.Map)
             {
                 SceneScreenBootstrap.CreateForScene();
             }
