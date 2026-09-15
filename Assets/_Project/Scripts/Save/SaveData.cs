@@ -50,6 +50,13 @@ namespace ProjectTheta.Save
         public int ContractEssence;
         public int[] UpgradeLevels = new int[4];
 
+        // --- 18일차 ---
+        /// <summary>
+        /// 튜토리얼을 끝까지 마쳤는지다. 마친 뒤로는 안내 문구를 띄우지 않는다.
+        /// 예전 세이브에는 이 필드가 없지만 JsonUtility가 false로 채우므로 호환된다.
+        /// </summary>
+        public bool TutorialCompleted;
+
         public SaveData Clone()
         {
             SaveData copy =
@@ -61,6 +68,7 @@ namespace ProjectTheta.Save
                     BestScore = BestScore,
                     BestRankLabel = BestRankLabel,
                     ContractEssence = ContractEssence,
+                    TutorialCompleted = TutorialCompleted,
                     UpgradeLevels = new int[UpgradeLevels?.Length ?? 4]
                 };
 

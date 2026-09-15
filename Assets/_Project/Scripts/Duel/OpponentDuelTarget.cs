@@ -10,6 +10,9 @@ namespace ProjectTheta.Duel
     /// </summary>
     public sealed class OpponentDuelTarget : MonoBehaviour
     {
+        /// <summary>최면 대상 검색용 버퍼다. 재사용해서 매번 배열을 만들지 않는다.</summary>
+        private readonly System.Collections.Generic.List<HypnosisTarget> _targetBuffer =
+            new System.Collections.Generic.List<HypnosisTarget>();
         [SerializeField] private int _maximumDefeats = 3;
 
         private OpponentControllerBase _opponent;
@@ -142,12 +145,14 @@ namespace ProjectTheta.Duel
                 return;
             }
 
-            HypnosisTarget[] targets =
-                FindObjectsByType<HypnosisTarget>(
-                    FindObjectsSortMode.None);
+            HypnosisTarget.CopyActive(
+                _targetBuffer);
+
+            System.Collections.Generic.List<HypnosisTarget> targets =
+                _targetBuffer;
 
             for (int i = 0;
-                 i < targets.Length;
+                 i < targets.Count;
                  i++)
             {
                 HypnosisTarget target =

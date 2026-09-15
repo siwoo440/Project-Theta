@@ -16,6 +16,9 @@ namespace ProjectTheta.Hypnosis
     [RequireComponent(typeof(FollowerManager))]
     public sealed class HypnosisCaster : MonoBehaviour
     {
+        /// <summary>최면 대상 검색용 버퍼다. 재사용해서 매번 배열을 만들지 않는다.</summary>
+        private readonly System.Collections.Generic.List<HypnosisTarget> _targetBuffer =
+            new System.Collections.Generic.List<HypnosisTarget>();
         [SerializeField] private float _scanRange = 4.5f;
         [SerializeField] private float _verticalTolerance = 2.4f;
 
@@ -239,9 +242,11 @@ namespace ProjectTheta.Hypnosis
         private HypnosisTarget FindChainTarget(
             HypnosisTarget source)
         {
-            HypnosisTarget[] targets =
-                FindObjectsByType<HypnosisTarget>(
-                    FindObjectsSortMode.None);
+            HypnosisTarget.CopyActive(
+                _targetBuffer);
+
+            System.Collections.Generic.List<HypnosisTarget> targets =
+                _targetBuffer;
 
             HypnosisTarget best =
                 null;
@@ -250,7 +255,7 @@ namespace ProjectTheta.Hypnosis
                 float.MaxValue;
 
             for (int i = 0;
-                 i < targets.Length;
+                 i < targets.Count;
                  i++)
             {
                 HypnosisTarget target =
@@ -329,9 +334,11 @@ namespace ProjectTheta.Hypnosis
 
         private HypnosisTarget FindBestTarget()
         {
-            HypnosisTarget[] targets =
-                FindObjectsByType<HypnosisTarget>(
-                    FindObjectsSortMode.None);
+            HypnosisTarget.CopyActive(
+                _targetBuffer);
+
+            System.Collections.Generic.List<HypnosisTarget> targets =
+                _targetBuffer;
 
             HypnosisTarget best = null;
 
@@ -339,7 +346,7 @@ namespace ProjectTheta.Hypnosis
                 float.MaxValue;
 
             for (int i = 0;
-                 i < targets.Length;
+                 i < targets.Count;
                  i++)
             {
                 HypnosisTarget target =

@@ -32,6 +32,18 @@ namespace ProjectTheta.Core
         public StageResultSummary PendingResult =>
             _pendingResult;
 
+        /// <summary>
+        /// 도메인 리로드가 꺼져 있으면 지난 플레이에서 파괴된 세션을 계속 가리킨다.
+        /// Unity 오브젝트의 == null 덕분에 지금은 우연히 안전하지만,
+        /// ?. 연산자는 그 규칙을 따르지 않으므로 명시적으로 비운다.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnPlayModeEnter()
+        {
+            _instance = null;
+        }
+
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void EnsureExists()

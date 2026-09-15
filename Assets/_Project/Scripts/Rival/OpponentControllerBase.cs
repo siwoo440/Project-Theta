@@ -628,11 +628,59 @@ namespace ProjectTheta.Rival
             }
         }
 
+        /// <summary>
+        /// 대상이 같은 층에 있는지 본다.
+        ///
+        /// 층은 세로로 16씩 떨어져 있어서, 다른 층 NPC를 노리면 벽에 막혀 걸어가지 못한다.
+        /// 특히 인기남은 탐색 범위가 사실상 무제한(999)이라, 이 확인이 없으면
+        /// 위아래 층 NPC를 향해 벽에 붙어 서 있게 된다.
+        /// </summary>
+        protected bool IsOnSameFloor(
+            HypnosisTarget target)
+        {
+            return target != null &&
+                   FloorSpace.FloorAt(
+                       target.transform.position.y) ==
+                   FloorSpace.FloorAt(
+                       transform.position.y);
+        }
+
+        /// <summary>활성화된 경쟁자 목록이다. 씬 검색 대신 여기서 읽는다.</summary>
+        private static readonly System.Collections.Generic.List<OpponentControllerBase> ActiveOpponents =
+            new System.Collections.Generic.List<OpponentControllerBase>();
+
+        /// <summary>활성 경쟁자를 호출한 쪽의 버퍼에 복사한다. 순회 중 목록 변경을 막기 위해 복사한다.</summary>
+        public static void CopyActive(
+            System.Collections.Generic.List<OpponentControllerBase> buffer)
+        {
+            buffer.Clear();
+
+            buffer.AddRange(
+                ActiveOpponents);
+        }
+
+        protected virtual void OnEnable()
+        {
+            if (!ActiveOpponents.Contains(this))
+            {
+                ActiveOpponents.Add(this);
+            }
+        }
+
         protected virtual void OnDisable()
         {
+            ActiveOpponents.Remove(this);
+
             ClearCurrentTargetVisuals();
 
             StopMovement();
+        }
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetRegistry()
+        {
+            ActiveOpponents.Clear();
         }
     }
 }

@@ -106,6 +106,7 @@ namespace ProjectTheta.Run
                 _tracker.HypnosisSucceeded += HandleHypnosis;
                 _tracker.RecoveryConfirmed += HandleRecovery;
                 _tracker.DuelWon += HandleDuelWon;
+                _tracker.RampageSurvived += HandleRampageSurvived;
             }
 
             if (_floors != null)
@@ -121,6 +122,7 @@ namespace ProjectTheta.Run
                 _tracker.HypnosisSucceeded -= HandleHypnosis;
                 _tracker.RecoveryConfirmed -= HandleRecovery;
                 _tracker.DuelWon -= HandleDuelWon;
+                _tracker.RampageSurvived -= HandleRampageSurvived;
             }
 
             if (_floors != null)
@@ -156,6 +158,13 @@ namespace ProjectTheta.Run
             GrantXp(
                 RunExperienceLogic.GetPoints(
                     RunXpSource.DuelWin));
+        }
+
+        private void HandleRampageSurvived()
+        {
+            GrantXp(
+                RunExperienceLogic.GetPoints(
+                    RunXpSource.RampageSurvived));
         }
 
         private void HandleFloorChanged(

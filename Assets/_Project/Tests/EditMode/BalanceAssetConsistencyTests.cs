@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 using ProjectTheta.Balance;
+using ProjectTheta.Run;
 
 namespace ProjectTheta.Tests.EditMode
 {
@@ -69,9 +70,42 @@ namespace ProjectTheta.Tests.EditMode
             Assert.AreEqual(d.XpHighGradeRecovery, asset.XpHighGradeRecovery, nameof(d.XpHighGradeRecovery));
             Assert.AreEqual(d.XpDuelWin, asset.XpDuelWin, nameof(d.XpDuelWin));
             Assert.AreEqual(d.XpFloorFirstVisit, asset.XpFloorFirstVisit, nameof(d.XpFloorFirstVisit));
+            Assert.AreEqual(d.XpRampageSurvived, asset.XpRampageSurvived, nameof(d.XpRampageSurvived));
             Assert.AreEqual(d.LevelBaseXp, asset.LevelBaseXp, nameof(d.LevelBaseXp));
             Assert.AreEqual(d.LevelXpGrowth, asset.LevelXpGrowth, nameof(d.LevelXpGrowth));
             Assert.AreEqual(d.LevelMaximum, asset.LevelMaximum, nameof(d.LevelMaximum));
+        }
+
+        [Test]
+        public void Stage_Asset_Run_Upgrade_Cards_Match_Code_Defaults()
+        {
+            // 18일차에 카드 수치를 자산으로 옮겼다. 자산이 비면 코드 기본표를 쓰지만,
+            // 자산에 적힌 값은 코드 기본표와 같아야 한다 (조정 전 기준선).
+            StageBalanceDatabase database =
+                Resources.Load<StageBalanceDatabase>(
+                    BalanceBootstrap.StageBalancePath);
+
+            RunUpgradeProfile[] asset =
+                database.RunUpgrades;
+
+            RunUpgradeProfile[] expected =
+                RunUpgradeTable.Profiles;
+
+            Assert.IsNotNull(asset, "_runUpgrades가 비어 있습니다");
+            Assert.AreEqual(expected.Length, asset.Length, "카드 수가 다릅니다");
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                string at = $"_runUpgrades[{i}]";
+
+                Assert.AreEqual(expected[i].Card, asset[i].Card, at + ".Card");
+                Assert.AreEqual(expected[i].Category, asset[i].Category, at + ".Category");
+                Assert.AreEqual(expected[i].DisplayName, asset[i].DisplayName, at + ".DisplayName");
+                Assert.AreEqual(expected[i].DescriptionFormat, asset[i].DescriptionFormat, at + ".DescriptionFormat");
+                Assert.AreEqual(expected[i].ValuePerStack, asset[i].ValuePerStack, 0.0001f, at + ".ValuePerStack");
+                Assert.AreEqual(expected[i].MaximumStacks, asset[i].MaximumStacks, at + ".MaximumStacks");
+                Assert.AreEqual(expected[i].IsInteger, asset[i].IsInteger, at + ".IsInteger");
+            }
         }
 
         [Test]

@@ -33,6 +33,16 @@ namespace ProjectTheta.UI.Framework
         private static Font _cached;
         private static bool _resolved;
 
+        /// <summary>런타임에 만든 폰트는 플레이 종료 때 파괴되므로 진입 시 다시 찾게 한다.</summary>
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnPlayModeEnter()
+        {
+            _cached = null;
+            _resolved = false;
+            ResolvedName = string.Empty;
+        }
+
         /// <summary>확보한 폰트 이름이다. 진단용으로만 쓴다.</summary>
         public static string ResolvedName { get; private set; } = string.Empty;
 

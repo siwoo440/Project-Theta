@@ -14,6 +14,20 @@ namespace ProjectTheta.Core
     {
         private static bool _subscribed;
 
+        /// <summary>
+        /// 도메인 리로드가 꺼져 있으면 구독 플래그와 이벤트 구독이 플레이 사이에 남는다.
+        /// 진입 시 둘 다 비워, 매 플레이가 정확히 한 번 구독하고 시작하게 한다.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnPlayModeEnter()
+        {
+            SceneManager.sceneLoaded -=
+                HandleSceneLoaded;
+
+            _subscribed = false;
+        }
+
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Initialize()

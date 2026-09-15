@@ -23,6 +23,13 @@ namespace ProjectTheta.Hypnosis
     [RequireComponent(typeof(PlayerFocus))]
     public sealed class HypnosisWaveCaster : MonoBehaviour
     {
+        /// <summary>경쟁자 검색용 버퍼다. 재사용해서 매번 배열을 만들지 않는다.</summary>
+        private readonly System.Collections.Generic.List<OpponentControllerBase> _opponentBuffer =
+            new System.Collections.Generic.List<OpponentControllerBase>();
+
+        /// <summary>최면 대상 검색용 버퍼다. 재사용해서 매번 배열을 만들지 않는다.</summary>
+        private readonly System.Collections.Generic.List<HypnosisTarget> _targetBuffer =
+            new System.Collections.Generic.List<HypnosisTarget>();
         [SerializeField] private float _chargeSeconds =
             HypnosisWaveLogic.ChargeSeconds;
 
@@ -179,12 +186,14 @@ namespace ProjectTheta.Hypnosis
         /// <summary>내 동행 NPC의 충동을 낮춘다. 동시 폭주 위기를 끊는 핵심 효과다.</summary>
         private void RelieveFollowerImpulse()
         {
-            HypnosisTarget[] targets =
-                FindObjectsByType<HypnosisTarget>(
-                    FindObjectsSortMode.None);
+            HypnosisTarget.CopyActive(
+                _targetBuffer);
+
+            System.Collections.Generic.List<HypnosisTarget> targets =
+                _targetBuffer;
 
             for (int i = 0;
-                 i < targets.Length;
+                 i < targets.Count;
                  i++)
             {
                 HypnosisTarget target =
@@ -209,12 +218,14 @@ namespace ProjectTheta.Hypnosis
         /// <summary>경쟁자를 정지시키고 진행 중이던 선점·쟁탈을 초기화한다.</summary>
         private void StunNearbyOpponents()
         {
-            OpponentControllerBase[] opponents =
-                FindObjectsByType<OpponentControllerBase>(
-                    FindObjectsSortMode.None);
+            OpponentControllerBase.CopyActive(
+                _opponentBuffer);
+
+            System.Collections.Generic.List<OpponentControllerBase> opponents =
+                _opponentBuffer;
 
             for (int i = 0;
-                 i < opponents.Length;
+                 i < opponents.Count;
                  i++)
             {
                 OpponentControllerBase opponent =

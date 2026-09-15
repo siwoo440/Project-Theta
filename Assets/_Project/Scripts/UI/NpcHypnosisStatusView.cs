@@ -3,6 +3,7 @@ using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
 using ProjectTheta.NPC;
 using ProjectTheta.Ownership;
+using ProjectTheta.Stage;
 
 namespace ProjectTheta.UI
 {
@@ -47,6 +48,18 @@ namespace ProjectTheta.UI
         private SpriteRenderer _exclamationRenderer;
 
         private static Sprite _squareSprite;
+
+        // 마지막으로 적용한 값이다. 같으면 렌더러에 다시 쓰지 않는다.
+        private static readonly Color UnsetColor =
+            new Color(-1f, -1f, -1f, -1f);
+
+        private float _appliedPrimaryProgress = -1f;
+        private float _appliedOwnershipProgress = -1f;
+        private Color _appliedPrimaryColor = UnsetColor;
+        private Color _appliedOwnershipColor = UnsetColor;
+        private Color _appliedHeartColor = UnsetColor;
+        private Color _appliedExclamationColor = UnsetColor;
+        private Color _appliedGradeColor = UnsetColor;
         private Sprite _heartSprite;
         private Sprite _exclamationSprite;
 
@@ -341,6 +354,17 @@ namespace ProjectTheta.UI
                 return;
             }
 
+            // 16일차부터 NPC 52명 중 화면에 보이는 건 지금 층의 한 무리뿐이다.
+            // 다른 층 NPC의 게이지는 어차피 안 보이므로 계산하지 않는다.
+            // 층을 옮기면 FloorTransitionController가 Update에서 층을 바꾸므로
+            // 새 층 NPC는 같은 프레임 LateUpdate에서 바로 갱신된다.
+            if (FloorSpace.FloorAt(
+                    transform.position.y) !=
+                FloorVisibility.ViewFloor)
+            {
+                return;
+            }
+
             bool playerOwned =
                 _target.Owner ==
                 NpcOwner.Player;
@@ -388,84 +412,149 @@ namespace ProjectTheta.UI
                         ? _impulse.ImpulseNormalized
                         : 0f;
 
-            if (_gaugeRoot != null)
-            {
-                _gaugeRoot.SetActive(
-                    showPrimaryGauge);
-            }
+            SetActiveIfChanged(
+                _gaugeRoot,
+                showPrimaryGauge);
 
             if (showPrimaryGauge)
             {
-                SetGaugeProgress(
+                SetGaugeProgressIfChanged(
                     _fillTransform,
+                    ref _appliedPrimaryProgress,
                     primaryProgress);
 
-                if (_fillRenderer != null)
-                {
-                    _fillRenderer.color =
-                        GetPrimaryGaugeColor(
-                            hasImpulse);
-                }
+                SetColorIfChanged(
+                    _fillRenderer,
+                    ref _appliedPrimaryColor,
+                    GetPrimaryGaugeColor(
+                        hasImpulse));
             }
 
-            if (_ownershipGaugeRoot != null)
-            {
-                _ownershipGaugeRoot.SetActive(
-                    isHypnotized ||
-                    popularGuyNeutralClaim);
-            }
+            bool showOwnership =
+                isHypnotized ||
+                popularGuyNeutralClaim;
 
-            if (isHypnotized ||
-                popularGuyNeutralClaim)
+            SetActiveIfChanged(
+                _ownershipGaugeRoot,
+                showOwnership);
+
+            if (showOwnership)
             {
-                SetGaugeProgress(
+                SetGaugeProgressIfChanged(
                     _ownershipFillTransform,
+                    ref _appliedOwnershipProgress,
                     popularGuyNeutralClaim
                         ? _target.OpponentClaimNormalized
                         : _target.HypnosisNormalized);
 
-                if (_ownershipFillRenderer != null)
-                {
-                    _ownershipFillRenderer.color =
-                        popularGuyNeutralClaim
-                            ? GetOwnershipColor(
-                                NpcOwner.PopularGuy)
-                            : GetOwnershipColor(
-                                _target.Owner);
-                }
-            }
-
-            if (_gradeMarkerRenderer != null &&
-                _profile != null)
-            {
-                _gradeMarkerRenderer.color =
-                    _profile.GradeMarkerColor;
-            }
-
-            if (_heartRenderer != null)
-            {
-                _heartRenderer.enabled =
-                    isHypnotized &&
-                    !showImpulseWarning &&
-                    !showOpponentWarning;
-
-                _heartRenderer.color =
-                    GetOwnershipColor(
-                        _target.Owner);
-            }
-
-            if (_exclamationRenderer != null)
-            {
-                _exclamationRenderer.enabled =
-                    showImpulseWarning ||
-                    showOpponentWarning;
-
-                _exclamationRenderer.color =
-                    showOpponentWarning
+                SetColorIfChanged(
+                    _ownershipFillRenderer,
+                    ref _appliedOwnershipColor,
+                    popularGuyNeutralClaim
                         ? GetOwnershipColor(
-                            _target.PrimaryThreatOwner)
-                        : Color.white;
+                            NpcOwner.PopularGuy)
+                        : GetOwnershipColor(
+                            _target.Owner));
             }
+
+            // 등급은 판 도중에 바뀌지 않으므로 사실상 한 번만 쓰인다.
+            if (_profile != null)
+            {
+                SetColorIfChanged(
+                    _gradeMarkerRenderer,
+                    ref _appliedGradeColor,
+                    _profile.GradeMarkerColor);
+            }
+
+            SetEnabledIfChanged(
+                _heartRenderer,
+                isHypnotized &&
+                !showImpulseWarning &&
+                !showOpponentWarning);
+
+            SetColorIfChanged(
+                _heartRenderer,
+                ref _appliedHeartColor,
+                GetOwnershipColor(
+                    _target.Owner));
+
+            SetEnabledIfChanged(
+                _exclamationRenderer,
+                showImpulseWarning ||
+                showOpponentWarning);
+
+            SetColorIfChanged(
+                _exclamationRenderer,
+                ref _appliedExclamationColor,
+                showOpponentWarning
+                    ? GetOwnershipColor(
+                        _target.PrimaryThreatOwner)
+                    : Color.white);
+        }
+
+        // 바뀔 때만 쓰기 -----------------------------------------------
+
+        private static void SetActiveIfChanged(
+            GameObject target,
+            bool active)
+        {
+            if (target != null &&
+                target.activeSelf != active)
+            {
+                target.SetActive(active);
+            }
+        }
+
+        private static void SetEnabledIfChanged(
+            SpriteRenderer renderer,
+            bool enabled)
+        {
+            if (renderer != null &&
+                renderer.enabled != enabled)
+            {
+                renderer.enabled = enabled;
+            }
+        }
+
+        private static void SetColorIfChanged(
+            SpriteRenderer renderer,
+            ref Color applied,
+            Color color)
+        {
+            if (renderer == null ||
+                applied == color)
+            {
+                return;
+            }
+
+            applied = color;
+
+            renderer.color = color;
+        }
+
+        /// <summary>게이지 폭이 눈에 띄게(0.5% 이상) 바뀔 때만 transform을 건드린다.</summary>
+        private void SetGaugeProgressIfChanged(
+            Transform fillTransform,
+            ref float applied,
+            float progress)
+        {
+            float clamped =
+                Mathf.Clamp01(
+                    progress);
+
+            if (Mathf.Abs(
+                    clamped -
+                    applied) <
+                0.005f)
+            {
+                return;
+            }
+
+            applied = clamped;
+
+            SetGaugeProgress(
+                fillTransform,
+                clamped);
         }
 
         private Color GetOwnershipColor(

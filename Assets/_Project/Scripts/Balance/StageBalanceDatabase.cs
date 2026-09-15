@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using ProjectTheta.Items;
 using ProjectTheta.Rival;
+using ProjectTheta.Run;
 
 namespace ProjectTheta.Balance
 {
@@ -52,6 +53,13 @@ namespace ProjectTheta.Balance
         [Header("난이도 배율")]
         [SerializeField] private DifficultyMultipliers[] _difficulties;
 
+        [Header("런 강화 카드 (18일차)")]
+        [SerializeField] private RunUpgradeProfile[] _runUpgrades;
+
+        /// <summary>자산에 들어 있는 카드 표다. 자산 검사 테스트가 읽는다.</summary>
+        public RunUpgradeProfile[] RunUpgrades =>
+            _runUpgrades;
+
         public StageBalanceValues StageValues =>
             _stage;
 
@@ -75,6 +83,13 @@ namespace ProjectTheta.Balance
 
             ConsumableItemTable.Override =
                 BuildConsumables();
+
+            // 비어 있으면 null을 넣어 코드 기본표를 쓰게 한다.
+            RunUpgradeTable.Override =
+                _runUpgrades != null &&
+                _runUpgrades.Length > 0
+                    ? _runUpgrades
+                    : null;
         }
 
         /// <summary>자산에 정의된 난이도 배율을 찾는다. 없으면 코드 기본값을 쓴다.</summary>

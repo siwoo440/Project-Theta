@@ -25,6 +25,9 @@ namespace ProjectTheta.Stage
     /// </summary>
     public sealed class FloorTransitionController : MonoBehaviour
     {
+        /// <summary>경쟁자 검색용 버퍼다. 재사용해서 매번 배열을 만들지 않는다.</summary>
+        private readonly System.Collections.Generic.List<OpponentControllerBase> _opponentBuffer =
+            new System.Collections.Generic.List<OpponentControllerBase>();
         /// <summary>경쟁자가 계단을 타고 쫓아오기까지의 시간이다.</summary>
         [SerializeField] private float _opponentChaseDelay = 3.2f;
 
@@ -43,6 +46,13 @@ namespace ProjectTheta.Stage
         private float _cooldownRemaining;
         private float _opponentChaseRemaining;
         private bool _opponentChasePending;
+
+        /// <summary>
+        /// 플레이어와 한 번이라도 같은 층에 있었던 경쟁자다.
+        /// 만나기 전에는 쫓아오지 않는다. 그래야 층별 첫 조우가 의미를 가진다.
+        /// </summary>
+        private readonly HashSet<OpponentControllerBase> _metOpponents =
+            new HashSet<OpponentControllerBase>();
 
         /// <summary>지금 쓸 수 있는 계단이다. 없으면 null이다.</summary>
         public FloorStairway ActiveStairway { get; private set; }
@@ -77,7 +87,12 @@ namespace ProjectTheta.Stage
                 new FloorRunState(
                     floorCount);
 
+            FloorVisibility.ViewFloor =
+                _run.CurrentFloor;
+
             RefreshStairways();
+
+            RecordMeetings();
         }
 
         /// <summary>씬에 있는 계단을 모두 찾아 둔다. 층은 미리 다 지어져 있으므로 한 번만 하면 된다.</summary>
@@ -225,8 +240,14 @@ namespace ProjectTheta.Stage
                 _run.MoveTo(
                     stairway.TargetFloor);
 
+            FloorVisibility.ViewFloor =
+                _run.CurrentFloor;
+
             MoveEntities(
                 arrival);
+
+            // 도착한 층에 원래 있던 경쟁자와 여기서 처음 만난다.
+            RecordMeetings();
 
             _cooldownRemaining =
                 _transitionCooldown;
@@ -346,17 +367,19 @@ namespace ProjectTheta.Stage
 
         private void ChaseOpponentsToCurrentFloor()
         {
-            OpponentControllerBase[] opponents =
-                FindObjectsByType<OpponentControllerBase>(
-                    FindObjectsSortMode.None);
+            OpponentControllerBase.CopyActive(
+                _opponentBuffer);
 
-            if (opponents.Length == 0)
+            System.Collections.Generic.List<OpponentControllerBase> opponents =
+                _opponentBuffer;
+
+            if (opponents.Count == 0)
             {
                 return;
             }
 
             for (int i = 0;
-                 i < opponents.Length;
+                 i < opponents.Count;
                  i++)
             {
                 OpponentControllerBase opponent =
@@ -371,8 +394,11 @@ namespace ProjectTheta.Stage
                     FloorSpace.FloorAt(
                         opponent.transform.position.y);
 
-                if (opponentFloor ==
-                    _run.CurrentFloor)
+                if (!OpponentFloorPlan.ShouldChase(
+                        _metOpponents.Contains(
+                            opponent),
+                        opponentFloor,
+                        _run.CurrentFloor))
                 {
                     continue;
                 }
@@ -393,6 +419,35 @@ namespace ProjectTheta.Stage
                 MoveOpponent(
                     opponent,
                     arrival);
+            }
+        }
+
+        /// <summary>플레이어와 같은 층에 있는 경쟁자를 "만난 경쟁자"로 기록한다.</summary>
+        private void RecordMeetings()
+        {
+            if (_run == null)
+            {
+                return;
+            }
+
+            OpponentControllerBase.CopyActive(
+                _opponentBuffer);
+
+            for (int i = 0;
+                 i < _opponentBuffer.Count;
+                 i++)
+            {
+                OpponentControllerBase opponent =
+                    _opponentBuffer[i];
+
+                if (opponent != null &&
+                    FloorSpace.FloorAt(
+                        opponent.transform.position.y) ==
+                    _run.CurrentFloor)
+                {
+                    _metOpponents.Add(
+                        opponent);
+                }
             }
         }
 
