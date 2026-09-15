@@ -1,46 +1,137 @@
 using UnityEngine;
+using ProjectTheta.Stage;
 
 namespace ProjectTheta.Core
 {
+    /// <summary>
+    /// 학교 복도를 런타임에 짓는다.
+    ///
+    /// 16일차부터 한 판은 여러 층으로 이뤄진다.
+    /// 층마다 씬을 따로 두지 않고 <b>같은 씬 안에 세로로 쌓아</b> 미리 전부 지어 둔다.
+    /// 그래야 계단에서 로딩 없이 즉시 넘어갈 수 있고, 동행 NPC를 다시 만들 필요도 없다.
+    ///
+    /// 층 사이 간격(<see cref="FloorSpace.FloorHeight"/>)이 카메라 시야보다 넓어
+    /// 위아래 층이 화면에 함께 보이지 않는다.
+    /// </summary>
     public static class SchoolHallwayPrototypeBuilder
     {
-        public const float WalkMinX = -17.4f;
-        public const float WalkMaxX = 17.4f;
-        public const float WalkMinY = -5.2f;
-        public const float WalkMaxY = 0.9f;
+        public const string RootName = "Day02_SchoolHallway";
+
+        public const float WalkMinX = FloorSpace.WalkMinX;
+        public const float WalkMaxX = FloorSpace.WalkMaxX;
+        public const float WalkMinY = FloorSpace.WalkMinY;
+        public const float WalkMaxY = FloorSpace.WalkMaxY;
 
         private static Sprite _squareSprite;
 
+        /// <summary>지금 짓고 있는 층의 세로 원점이다. 모든 배치 좌표에 더해진다.</summary>
+        private static float _originY;
+
+        /// <summary>지금 짓고 있는 층의 색조다. 층이 올라갈수록 차가워진다.</summary>
+        private static Color _floorTint = Color.white;
+
+        /// <summary>기본 층 수로 건물 전체를 짓는다.</summary>
         public static void Build()
         {
-            if (GameObject.Find("Day02_SchoolHallway") != null)
+            Build(
+                FloorPlanLogic.DefaultFloorCount);
+        }
+
+        /// <summary>건물 전체를 짓는다. 이미 지어져 있으면 아무것도 하지 않는다.</summary>
+        public static void Build(
+            int floorCount)
+        {
+            if (GameObject.Find(RootName) != null)
             {
                 return;
             }
 
-            GameObject root = new GameObject("Day02_SchoolHallway");
+            int safeCount =
+                Mathf.Max(
+                    1,
+                    floorCount);
 
-            CreateVisual(root.transform, "BackWall", new Vector2(0f, 2.0f), new Vector2(38f, 5.1f), new Color(0.92f, 0.89f, 0.80f), -120);
-            CreateVisual(root.transform, "LowerWallPanel", new Vector2(0f, 0.55f), new Vector2(38f, 1.1f), new Color(0.49f, 0.63f, 0.62f), -110);
-            CreateVisual(root.transform, "WallDivider", new Vector2(0f, 1.08f), new Vector2(38f, 0.12f), new Color(0.22f, 0.33f, 0.33f), -100);
-            CreateVisual(root.transform, "Ceiling", new Vector2(0f, 4.25f), new Vector2(38f, 0.7f), new Color(0.82f, 0.82f, 0.78f), -115);
+            GameObject building =
+                new GameObject(RootName);
 
-            // Day 02 추가 수정: 기존 4.1 높이의 바닥을 약 2배(8.2)로 확장.
-            // 상단 위치는 유지하고 아래쪽(화면 전방)으로 확장한다.
-            CreateVisual(root.transform, "Floor", new Vector2(0f, -3.40f), new Vector2(38f, 8.2f), new Color(0.76f, 0.73f, 0.66f), -90);
-            CreateVisual(root.transform, "FloorBackBand", new Vector2(0f, 0.73f), new Vector2(38f, 0.18f), new Color(0.25f, 0.34f, 0.34f), -80);
-            CreateVisual(root.transform, "FloorFrontBand", new Vector2(0f, -7.55f), new Vector2(38f, 0.24f), new Color(0.26f, 0.28f, 0.27f), 2200);
+            for (int floor = 0;
+                 floor < safeCount;
+                 floor++)
+            {
+                BuildFloor(
+                    building.transform,
+                    floor,
+                    safeCount);
+            }
 
-            CreateFloorTiles(root.transform);
-            CreateWindows(root.transform);
-            CreateDoors(root.transform);
-            CreateLockers(root.transform);
-            CreateNoticeBoard(root.transform);
-            CreateCeilingLights(root.transform);
-            CreatePillars(root.transform);
-            CreateBench(root.transform);
-            CreateVendingMachine(root.transform);
-            CreateBoundaries(root.transform);
+            _originY = 0f;
+            _floorTint = Color.white;
+        }
+
+        private static void BuildFloor(
+            Transform building,
+            int floorIndex,
+            int floorCount)
+        {
+            _originY =
+                FloorSpace.OriginY(
+                    floorIndex);
+
+            _floorTint =
+                FloorPlanLogic.GetWallTint(
+                    floorIndex);
+
+            GameObject root =
+                new GameObject(
+                    $"Floor_{floorIndex + 1:00}");
+
+            root.transform.SetParent(
+                building,
+                false);
+
+            Transform parent =
+                root.transform;
+
+            CreateVisual(parent, "BackWall", new Vector2(0f, 2.0f), new Vector2(38f, 5.1f), new Color(0.92f, 0.89f, 0.80f), -120);
+            CreateVisual(parent, "LowerWallPanel", new Vector2(0f, 0.55f), new Vector2(38f, 1.1f), new Color(0.49f, 0.63f, 0.62f), -110);
+            CreateVisual(parent, "WallDivider", new Vector2(0f, 1.08f), new Vector2(38f, 0.12f), new Color(0.22f, 0.33f, 0.33f), -100);
+            CreateVisual(parent, "Ceiling", new Vector2(0f, 4.25f), new Vector2(38f, 0.7f), new Color(0.82f, 0.82f, 0.78f), -115);
+
+            CreateVisual(parent, "Floor", new Vector2(0f, -3.40f), new Vector2(38f, 8.2f), new Color(0.76f, 0.73f, 0.66f), -90);
+            CreateVisual(parent, "FloorBackBand", new Vector2(0f, 0.73f), new Vector2(38f, 0.18f), new Color(0.25f, 0.34f, 0.34f), -80);
+            CreateVisual(parent, "FloorFrontBand", new Vector2(0f, -7.55f), new Vector2(38f, 0.24f), new Color(0.26f, 0.28f, 0.27f), 2200);
+
+            CreateFloorTiles(parent);
+            CreateWindows(parent);
+            CreateDoors(parent);
+            CreateLockers(parent);
+            CreateNoticeBoard(parent);
+            CreateCeilingLights(parent);
+            CreatePillars(parent);
+            CreateBench(parent);
+            CreateVendingMachine(parent);
+            CreateBoundaries(parent);
+
+            CreateStairway(
+                parent,
+                FloorStairDirection.Up,
+                floorIndex,
+                floorIndex + 1,
+                FloorPlanLogic.HasUpStair(
+                    floorIndex,
+                    floorCount));
+
+            CreateStairway(
+                parent,
+                FloorStairDirection.Down,
+                floorIndex,
+                floorIndex - 1,
+                FloorPlanLogic.HasDownStair(
+                    floorIndex));
+
+            CreateFloorSign(
+                parent,
+                floorIndex);
         }
 
         private static void CreateFloorTiles(Transform parent)
@@ -71,7 +162,7 @@ namespace ProjectTheta.Core
 
         private static void CreateWindows(Transform parent)
         {
-            float[] xs = { -13.2f, -7.8f, 7.8f, 13.2f };
+            float[] xs = { -7.8f, 7.8f, 13.2f };
 
             for (int i = 0; i < xs.Length; i++)
             {
@@ -166,6 +257,151 @@ namespace ProjectTheta.Core
             CreateVisual(parent, "VendingSlot", new Vector2(-10.2f, -0.28f), new Vector2(0.62f, 0.15f), new Color(0.11f, 0.17f, 0.20f), CharacterOrderForY(0.12f) + 2);
         }
 
+        /// <summary>
+        /// 벽면 계단이다. 갈 수 없는 방향이면 막힌 계단실로 그린다.
+        /// 막힌 쪽도 그려 두어야 "여기가 계단실"이라는 인상이 층마다 일정하다.
+        /// </summary>
+        private static void CreateStairway(
+            Transform parent,
+            FloorStairDirection direction,
+            int sourceFloor,
+            int targetFloor,
+            bool enabled)
+        {
+            bool up =
+                direction == FloorStairDirection.Up;
+
+            string name =
+                up
+                    ? "StairUp"
+                    : "StairDown";
+
+            float x =
+                up
+                    ? FloorLayout.UpStairX
+                    : FloorLayout.DownStairX;
+
+            Color openingColor =
+                enabled
+                    ? new Color(0.11f, 0.12f, 0.16f)
+                    : new Color(0.34f, 0.33f, 0.31f);
+
+            CreateVisual(parent, name + "_Frame", new Vector2(x, 2.05f), new Vector2(2.95f, 4.35f), new Color(0.21f, 0.26f, 0.27f), -42);
+            CreateVisual(parent, name + "_Opening", new Vector2(x, 1.95f), new Vector2(2.55f, 3.95f), openingColor, -38);
+
+            // 계단참을 층계 모양으로 쌓아 올라가는지 내려가는지 눈으로 알 수 있게 한다.
+            for (int i = 0; i < 5; i++)
+            {
+                float stepWidth = 2.25f - (i * 0.27f);
+
+                float stepY =
+                    up
+                        ? 0.5f + (i * 0.54f)
+                        : 3.16f - (i * 0.54f);
+
+                float offsetX =
+                    up
+                        ? -0.12f + (i * 0.08f)
+                        : 0.12f - (i * 0.08f);
+
+                Color stepColor =
+                    enabled
+                        ? new Color(0.60f, 0.62f, 0.64f, 1f - (i * 0.14f))
+                        : new Color(0.40f, 0.40f, 0.39f, 0.5f - (i * 0.07f));
+
+                CreateVisual(
+                    parent,
+                    $"{name}_Step_{i}",
+                    new Vector2(x + offsetX, stepY),
+                    new Vector2(stepWidth, 0.22f),
+                    stepColor,
+                    -36);
+            }
+
+            CreateVisual(parent, name + "_SignPlate", new Vector2(x, 4.22f), new Vector2(1.95f, 0.46f), new Color(0.20f, 0.30f, 0.32f), -24);
+
+            Color arrowColor =
+                enabled
+                    ? new Color(0.98f, 0.86f, 0.42f)
+                    : new Color(0.45f, 0.45f, 0.44f);
+
+            // 화살표는 사각형 세 개로 삼각형 느낌만 낸다.
+            for (int i = 0; i < 3; i++)
+            {
+                float width = 0.46f - (i * 0.15f);
+
+                float y =
+                    up
+                        ? 4.10f + (i * 0.09f)
+                        : 4.34f - (i * 0.09f);
+
+                CreateVisual(
+                    parent,
+                    $"{name}_Arrow_{i}",
+                    new Vector2(x, y),
+                    new Vector2(width, 0.09f),
+                    arrowColor,
+                    -22);
+            }
+
+            if (!enabled)
+            {
+                return;
+            }
+
+            GameObject trigger =
+                new GameObject(
+                    name + "_Trigger");
+
+            trigger.transform.SetParent(
+                parent,
+                false);
+
+            trigger.transform.position =
+                new Vector3(
+                    x,
+                    FloorLayout.StairStandY + _originY,
+                    0f);
+
+            trigger.AddComponent<FloorStairway>().Configure(
+                direction,
+                sourceFloor,
+                targetFloor);
+        }
+
+        /// <summary>벽에 붙은 층 표지다. 층수만큼 눈금을 긋는다.</summary>
+        private static void CreateFloorSign(
+            Transform parent,
+            int floorIndex)
+        {
+            float x =
+                (FloorLayout.UpStairX +
+                 FloorLayout.DownStairX) *
+                0.5f;
+
+            CreateVisual(parent, "FloorSign_Plate", new Vector2(x, 3.30f), new Vector2(1.62f, 0.95f), new Color(0.15f, 0.19f, 0.21f), -20);
+
+            int marks =
+                Mathf.Clamp(
+                    floorIndex + 1,
+                    1,
+                    6);
+
+            float start =
+                -0.12f * (marks - 1);
+
+            for (int i = 0; i < marks; i++)
+            {
+                CreateVisual(
+                    parent,
+                    $"FloorSign_Mark_{i}",
+                    new Vector2(x + start + (i * 0.24f), 3.30f),
+                    new Vector2(0.11f, 0.54f),
+                    new Color(0.98f, 0.86f, 0.42f),
+                    -18);
+            }
+        }
+
         private static void CreateBoundaries(Transform parent)
         {
             float verticalCenter = (WalkMinY + WalkMaxY) * 0.5f;
@@ -181,7 +417,7 @@ namespace ProjectTheta.Core
         {
             GameObject boundary = new GameObject(name);
             boundary.transform.SetParent(parent, false);
-            boundary.transform.position = position;
+            boundary.transform.position = new Vector3(position.x, position.y + _originY, 0f);
             boundary.AddComponent<BoxCollider2D>().size = size;
         }
 
@@ -194,12 +430,19 @@ namespace ProjectTheta.Core
         {
             GameObject visual = new GameObject(name);
             visual.transform.SetParent(parent, false);
-            visual.transform.position = new Vector3(position.x, position.y, 0f);
+            visual.transform.position = new Vector3(position.x, position.y + _originY, 0f);
             visual.transform.localScale = new Vector3(size.x, size.y, 1f);
 
             SpriteRenderer renderer = visual.AddComponent<SpriteRenderer>();
             renderer.sprite = GetSquareSprite();
-            renderer.color = color;
+
+            // 층 색조를 곱해 층마다 분위기를 다르게 한다.
+            renderer.color = new Color(
+                color.r * _floorTint.r,
+                color.g * _floorTint.g,
+                color.b * _floorTint.b,
+                color.a);
+
             renderer.sortingOrder = sortingOrder;
             return visual;
         }

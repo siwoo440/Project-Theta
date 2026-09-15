@@ -1,0 +1,108 @@
+using NUnit.Framework;
+using UnityEngine;
+using ProjectTheta.Balance;
+
+namespace ProjectTheta.Tests.EditMode
+{
+    /// <summary>
+    /// 실제 밸런스 자산 파일이 제대로 읽히는지 검사한다.
+    ///
+    /// 14일차에 자산의 배열 값이 잘못된 형식으로 기록되어 있었는데,
+    /// 로직 테스트는 자산을 읽지 않으므로 아무도 잡지 못했다.
+    /// 이 테스트는 Unity가 자산을 불러와야 하므로 Test Runner에서만 돈다.
+    /// </summary>
+    public sealed class BalanceAssetConsistencyTests
+    {
+        private static StageBalanceValues LoadStage()
+        {
+            StageBalanceDatabase database =
+                Resources.Load<StageBalanceDatabase>(
+                    BalanceBootstrap.StageBalancePath);
+
+            Assert.IsNotNull(
+                database,
+                "Resources/Balance/StageBalanceDatabase.asset을 찾지 못했습니다");
+
+            return database.StageValues;
+        }
+
+        [Test]
+        public void Stage_Asset_Arrays_Match_Code_Defaults()
+        {
+            StageBalanceValues asset =
+                LoadStage();
+
+            StageBalanceValues defaults =
+                new StageBalanceValues();
+
+            AssertArray(
+                defaults.SimultaneousMultipliers,
+                asset.SimultaneousMultipliers,
+                nameof(StageBalanceValues.SimultaneousMultipliers));
+
+            AssertArray(
+                defaults.ChainSpeedMultipliers,
+                asset.ChainSpeedMultipliers,
+                nameof(StageBalanceValues.ChainSpeedMultipliers));
+
+            AssertArray(
+                defaults.ChainFocusCosts,
+                asset.ChainFocusCosts,
+                nameof(StageBalanceValues.ChainFocusCosts));
+        }
+
+        [Test]
+        public void Stage_Asset_Arrays_Are_Ordered_Sensibly()
+        {
+            // 자산을 고치다 순서를 뒤집어도 잡히도록, 기본값과 무관한 규칙도 확인한다.
+            StageBalanceValues asset =
+                LoadStage();
+
+            for (int i = 1;
+                 i < asset.SimultaneousMultipliers.Length;
+                 i++)
+            {
+                Assert.GreaterOrEqual(
+                    asset.SimultaneousMultipliers[i],
+                    asset.SimultaneousMultipliers[i - 1],
+                    "동시 회수 배율은 인원이 늘수록 줄어들면 안 됩니다");
+            }
+
+            for (int i = 1;
+                 i < asset.ChainSpeedMultipliers.Length;
+                 i++)
+            {
+                Assert.LessOrEqual(
+                    asset.ChainSpeedMultipliers[i],
+                    asset.ChainSpeedMultipliers[i - 1],
+                    "체인 속도는 단계가 올라갈수록 늘어나면 안 됩니다");
+            }
+        }
+
+        private static void AssertArray(
+            float[] expected,
+            float[] actual,
+            string field)
+        {
+            Assert.IsNotNull(
+                actual,
+                field + " 배열이 비어 있습니다");
+
+            Assert.AreEqual(
+                expected.Length,
+                actual.Length,
+                field + " 길이가 다릅니다");
+
+            for (int i = 0;
+                 i < expected.Length;
+                 i++)
+            {
+                Assert.AreEqual(
+                    expected[i],
+                    actual[i],
+                    0.0001f,
+                    $"{field}[{i}] 값이 다릅니다");
+            }
+        }
+    }
+}

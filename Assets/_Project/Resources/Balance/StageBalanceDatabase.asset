@@ -20,7 +20,12 @@ MonoBehaviour:
     ComboStepMultiplier: 0.1
     ComboMaximumMultiplier: 3
     RecoveryBatchWindowSeconds: 1.5
-    SimultaneousMultipliers: 0100000000000000
+    SimultaneousMultipliers:
+    - 1
+    - 1.2
+    - 1.4
+    - 1.7
+    - 2
     WaveChargeSeconds: 0.4
     WaveRadius: 3.5
     WaveImpulseRelief: 35
@@ -29,8 +34,14 @@ MonoBehaviour:
     WaveFocusCost: 30
     WaveCooldownSeconds: 4
     ChainRadius: 2.2
-    ChainSpeedMultipliers: 0100000000000000
-    ChainFocusCosts: 0100000000000000
+    ChainSpeedMultipliers:
+    - 1
+    - 0.7
+    - 0.5
+    ChainFocusCosts:
+    - 0
+    - 15
+    - 25
     ContractEssenceRatio: 0.5
     ContractOverflowRatio: 0.3
     ContractRankBonusB: 20
