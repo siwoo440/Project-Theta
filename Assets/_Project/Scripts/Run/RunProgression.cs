@@ -43,11 +43,14 @@ namespace ProjectTheta.Run
         /// <summary>첫 선택은 레벨업이 아니라 시작 계약이므로 제목이 다르다.</summary>
         private bool _startChoicePending;
 
-        public RunLevelState Level { get; } =
+        /// <summary>레벨이다. 21일차부터 판(<see cref="RunSession"/>)이 들고 있어 구역을 넘어 이어진다.</summary>
+        public RunLevelState Level { get; private set; } =
             new RunLevelState();
 
-        public RunUpgradeState Upgrades { get; } =
+        public RunUpgradeState Upgrades { get; private set; } =
             new RunUpgradeState();
+
+        private RunSession _session;
 
         /// <summary>이번 판의 뽑기 시드다. 버그 제보 시 같은 카드 순서를 재현하는 데 쓴다.</summary>
         public int Seed { get; private set; }
@@ -59,8 +62,17 @@ namespace ProjectTheta.Run
             StageSessionController stage,
             StageScoreTracker tracker,
             FloorTransitionController floors,
-            RunUpgradeChoicePanel panel)
+            RunUpgradeChoicePanel panel,
+            RunSession session = null)
         {
+            _session = session;
+
+            if (session != null)
+            {
+                Level = session.Level;
+                Upgrades = session.Upgrades;
+            }
+
             _stage = stage;
             _tracker = tracker;
             _floors = floors;
@@ -72,8 +84,11 @@ namespace ProjectTheta.Run
             _duel =
                 GetComponent<OpponentDuelController>();
 
+            // 구역마다 뽑기 순서가 달라지게 판 시드에 지난 구역 수를 섞는다.
             Seed =
-                Environment.TickCount;
+                session == null
+                    ? Environment.TickCount
+                    : unchecked(session.Seed + session.NextStep * 104729);
 
             _random =
                 new System.Random(
@@ -84,9 +99,23 @@ namespace ProjectTheta.Run
 
             Subscribe();
 
-            // 판을 시작하자마자 카드 한 장을 고른다.
-            _pendingChoices = 1;
-            _startChoicePending = true;
+            // 판을 시작하자마자 카드 한 장을 고른다. 두 번째 구역부터는 시작 계약이 없다.
+            bool startContract =
+                session == null ||
+                !session.StartContractTaken;
+
+            _startChoicePending = startContract;
+
+            _pendingChoices =
+                (startContract ? 1 : 0) +
+                (session == null
+                    ? 0
+                    : session.CarriedChoices);
+
+            if (session != null)
+            {
+                session.CarriedChoices = 0;
+            }
         }
 
         private void OnDestroy()
@@ -231,6 +260,18 @@ namespace ProjectTheta.Run
             if (_stage != null &&
                 !_stage.IsRunning)
             {
+                // 21일차: 구역을 클리어하는 순간 오른 레벨의 카드는 다음 구역 시작 때 이어서 고른다.
+                // 시작 계약은 다음 구역에서 따로 다시 나오므로 여기서 세지 않는다.
+                if (_session != null &&
+                    _stage.State == StageState.Cleared)
+                {
+                    _session.CarriedChoices +=
+                        Math.Max(
+                            0,
+                            _pendingChoices -
+                            (_startChoicePending ? 1 : 0));
+                }
+
                 _pendingChoices = 0;
 
                 if (_panel.IsOpen)
@@ -313,6 +354,12 @@ namespace ProjectTheta.Run
                 Math.Max(
                     0,
                     _pendingChoices - 1);
+
+            if (_startChoicePending &&
+                _session != null)
+            {
+                _session.StartContractTaken = true;
+            }
 
             _startChoicePending = false;
         }

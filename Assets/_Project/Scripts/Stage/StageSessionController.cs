@@ -123,6 +123,29 @@ namespace ProjectTheta.Stage
                 GetComponent<StageScoreTracker>();
         }
 
+        /// <summary>
+        /// 장소별 제한 시간과 목표 정기를 적용한다 (21일차).
+        /// 부트스트랩이 컴포넌트를 붙인 직후, 판이 흐르기 전에 부른다.
+        /// </summary>
+        public void ApplyObjective(
+            float timeLimitSeconds,
+            int targetEssence)
+        {
+            _timeLimitSeconds =
+                Mathf.Max(
+                    1f,
+                    timeLimitSeconds);
+
+            _targetEssence =
+                Mathf.Max(
+                    1,
+                    targetEssence);
+
+            RemainingTime =
+                _timeLimitSeconds *
+                PlayerUpgradeMultipliers.TimeLimit;
+        }
+
         public void Configure(
             PlayerHealth playerHealth,
             FollowerManager followers)

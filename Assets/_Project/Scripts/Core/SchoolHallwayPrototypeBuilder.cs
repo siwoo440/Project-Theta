@@ -37,10 +37,28 @@ namespace ProjectTheta.Core
                 FloorPlanLogic.DefaultFloorCount);
         }
 
+        /// <summary>지금 짓는 장소의 색이다 (21일차). 층 색조에 곱해 장소마다 분위기를 다르게 한다.</summary>
+        private static Color _locationTint = Color.white;
+
         /// <summary>건물 전체를 짓는다. 이미 지어져 있으면 아무것도 하지 않는다.</summary>
         public static void Build(
             int floorCount)
         {
+            Build(
+                floorCount,
+                Color.white);
+        }
+
+        /// <summary>
+        /// 장소 색을 입혀 건물 전체를 짓는다 (21일차).
+        /// 연수원이 아닌 장소는 아직 같은 복도 구조에 색만 다른 임시 장소다. 장소별 지형은 23일차부터 만든다.
+        /// </summary>
+        public static void Build(
+            int floorCount,
+            Color locationTint)
+        {
+            _locationTint = locationTint;
+
             if (GameObject.Find(RootName) != null)
             {
                 return;
@@ -66,6 +84,7 @@ namespace ProjectTheta.Core
 
             _originY = 0f;
             _floorTint = Color.white;
+            _locationTint = Color.white;
         }
 
         private static void BuildFloor(
@@ -79,7 +98,8 @@ namespace ProjectTheta.Core
 
             _floorTint =
                 FloorPlanLogic.GetWallTint(
-                    floorIndex);
+                    floorIndex) *
+                _locationTint;
 
             GameObject root =
                 new GameObject(
