@@ -15,7 +15,27 @@ namespace ProjectTheta.Presentation
         ClaimTick,
 
         /// <summary>업그레이드 구매음.</summary>
-        Purchase
+        Purchase,
+
+        // --- 19일차 ---
+
+        /// <summary>최면 성공. 부드러운 종소리.</summary>
+        HypnosisSuccess,
+
+        /// <summary>회수 확정. 화음이 차례로 쌓인다.</summary>
+        Recovery,
+
+        /// <summary>레벨업. 빠른 상승 아르페지오.</summary>
+        LevelUp,
+
+        /// <summary>폭주 회피. 바람 가르는 소리.</summary>
+        Dodge,
+
+        /// <summary>힘겨루기 승리. 묵직한 타격음.</summary>
+        DuelWin,
+
+        /// <summary>층 도착. 계단 발소리.</summary>
+        FloorArrive
     }
 
     /// <summary>
@@ -31,8 +51,11 @@ namespace ProjectTheta.Presentation
         /// <summary>정식 사운드를 넣을 Resources 경로다.</summary>
         public const string ResourceFolder = "Audio";
 
+        /// <summary>효과음 종류 수만큼 칸을 둔다. 종류를 추가해도 여기를 고칠 필요가 없다.</summary>
         private static readonly AudioClip[] Clips =
-            new AudioClip[4];
+            new AudioClip[
+                System.Enum.GetValues(
+                    typeof(GameSfx)).Length];
 
         private static AudioSource _source;
 
@@ -174,6 +197,56 @@ namespace ProjectTheta.Presentation
                         0.10f,
                         0.22f,
                         3.0f);
+
+                // 19일차 효과음: Resources/Audio에 파일이 있으면 위에서 이미 반환된다.
+                // 파일이 빠졌을 때를 대비한 합성음이다.
+                case GameSfx.HypnosisSuccess:
+                    return RuntimeToneFactory.CreateTone(
+                        "HypnosisSuccess",
+                        660f,
+                        0.35f,
+                        0.24f,
+                        1.6f);
+
+                case GameSfx.Recovery:
+                    return RuntimeToneFactory.CreateTone(
+                        "Recovery",
+                        784f,
+                        0.45f,
+                        0.24f,
+                        1.2f);
+
+                case GameSfx.LevelUp:
+                    return RuntimeToneFactory.CreateTone(
+                        "LevelUp",
+                        1047f,
+                        0.40f,
+                        0.24f,
+                        1.4f);
+
+                case GameSfx.Dodge:
+                    return RuntimeToneFactory.CreateTone(
+                        "Dodge",
+                        1480f,
+                        0.12f,
+                        0.16f,
+                        3.0f);
+
+                case GameSfx.DuelWin:
+                    return RuntimeToneFactory.CreateTone(
+                        "DuelWin",
+                        110f,
+                        0.30f,
+                        0.34f,
+                        2.0f);
+
+                case GameSfx.FloorArrive:
+                    return RuntimeToneFactory.CreateTone(
+                        "FloorArrive",
+                        180f,
+                        0.10f,
+                        0.26f,
+                        4.0f);
 
                 case GameSfx.UiTick:
                 default:

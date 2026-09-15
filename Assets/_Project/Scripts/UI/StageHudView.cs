@@ -160,6 +160,11 @@ namespace ProjectTheta.UI
 
         private void OnDestroy()
         {
+            if (GameVfx.EssenceTarget == _essenceBar.Root)
+            {
+                GameVfx.EssenceTarget = null;
+            }
+
             if (_run != null)
             {
                 _run.XpGained -= HandleXpGained;
@@ -601,6 +606,10 @@ namespace ProjectTheta.UI
                 new Vector2(0f, -62f),
                 new Vector2(640f, 30f));
 
+            // 회수한 정기 숫자가 이 게이지로 날아온다 (19일차).
+            GameVfx.EssenceTarget =
+                _essenceBar.Root;
+
             // 수치는 게이지 위에 겹쳐 적어 시선 이동을 줄인다.
             _essenceText =
                 UiFactory.CreateText(
@@ -903,16 +912,18 @@ namespace ProjectTheta.UI
                             ? 1
                             : 0)))
             {
+                // 19일차: 집중력은 최면 가속이다. 바닥나도 최면은 계속된다는 것을 글자로 알린다.
                 _focusText.text =
                     _focus.IsExhausted
-                        ? $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}   고갈 - {_focus.ResumeThreshold:0} 필요"
-                        : $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}";
+                        ? $"집중력  0 / {_focus.MaximumFocus:0}   기본 속도"
+                        : $"집중력  {_focus.CurrentFocus:0} / {_focus.MaximumFocus:0}   최면 가속 ×{_focus.HypnosisSpeedMultiplier:0.0}";
             }
 
+            // 바닥나도 막히는 게 아니므로 경고색(빨강)을 쓰지 않는다.
             _focusText.color =
                 _focus.IsExhausted
-                    ? UiTheme.Danger
-                    : UiTheme.TextMuted;
+                    ? UiTheme.TextDisabled
+                    : UiTheme.Focus;
         }
 
         private void RefreshObjective()

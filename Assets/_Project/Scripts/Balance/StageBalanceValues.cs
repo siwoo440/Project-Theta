@@ -61,6 +61,26 @@ namespace ProjectTheta.Balance
         public int XpFloorFirstVisit = 25;
         public int XpRampageSurvived = 20;
 
+        // --- 연출 (19일차) ---
+        // 화면 흔들림 세기는 월드 칸 단위다. 0.1이면 화면이 0.1칸 흔들린다.
+        public float VfxShakeSmall = 0.06f;
+        public float VfxShakeMedium = 0.14f;
+        public float VfxShakeLarge = 0.26f;
+        public float VfxShakeSeconds = 0.22f;
+        public float VfxHitStopSeconds = 0.06f;
+        public float VfxHitStopScale = 0.05f;
+        public float VfxRippleRadius = 1.3f;
+        public float VfxFadeSeconds = 0.28f;
+
+        // --- 집중력 (19일차) ---
+        // 집중력이 남아 있을 때 최면 속도에 더하는 비율이다. 0.6이면 1.6배.
+        public float FocusHypnosisSpeedBonus = 0.6f;
+
+        // --- 최면 속도 (19일차) ---
+        // 플레이어 최면 전체에 곱하는 기본 배율이다. 등급별 속도 표는 그대로 두고 전체만 올린다.
+        // 1.3이면 모든 등급이 1.3배 빨라진다 (일반 40/초 → 52/초). 되찾기에도 똑같이 걸린다.
+        public float PlayerHypnosisSpeedScale = 1.3f;
+
         // --- 런 레벨 곡선 ---
         // 1→2 필요 경험치 = LevelBaseXp, 이후 레벨마다 LevelXpGrowth씩 늘어난다.
         public int LevelBaseXp = 60;
@@ -106,6 +126,16 @@ namespace ProjectTheta.Balance
                 XpDuelWin = XpDuelWin,
                 XpFloorFirstVisit = XpFloorFirstVisit,
                 XpRampageSurvived = XpRampageSurvived,
+                VfxShakeSmall = VfxShakeSmall,
+                VfxShakeMedium = VfxShakeMedium,
+                VfxShakeLarge = VfxShakeLarge,
+                VfxShakeSeconds = VfxShakeSeconds,
+                VfxHitStopSeconds = VfxHitStopSeconds,
+                VfxHitStopScale = VfxHitStopScale,
+                VfxRippleRadius = VfxRippleRadius,
+                VfxFadeSeconds = VfxFadeSeconds,
+                FocusHypnosisSpeedBonus = FocusHypnosisSpeedBonus,
+                PlayerHypnosisSpeedScale = PlayerHypnosisSpeedScale,
                 LevelBaseXp = LevelBaseXp,
                 LevelXpGrowth = LevelXpGrowth,
                 LevelMaximum = LevelMaximum

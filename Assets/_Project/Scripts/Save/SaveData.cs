@@ -57,6 +57,14 @@ namespace ProjectTheta.Save
         /// </summary>
         public bool TutorialCompleted;
 
+        // --- 19일차 ---
+        /// <summary>
+        /// 화면 흔들림을 끈 상태인지다.
+        /// "켜짐"이 아니라 "꺼짐"으로 저장하는 이유: 예전 세이브에는 이 항목이 없어서
+        /// JsonUtility가 false로 채운다. "켜짐"으로 두면 예전 세이브는 흔들림이 꺼진 채 시작된다.
+        /// </summary>
+        public bool ScreenShakeDisabled;
+
         public SaveData Clone()
         {
             SaveData copy =
@@ -69,6 +77,7 @@ namespace ProjectTheta.Save
                     BestRankLabel = BestRankLabel,
                     ContractEssence = ContractEssence,
                     TutorialCompleted = TutorialCompleted,
+                    ScreenShakeDisabled = ScreenShakeDisabled,
                     UpgradeLevels = new int[UpgradeLevels?.Length ?? 4]
                 };
 
