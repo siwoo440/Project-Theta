@@ -129,7 +129,26 @@ namespace ProjectTheta.Hypnosis
             PlayerHypnosisSpeedScale *
             // 22일차: 구역 경계도가 주의 이상이면 중립 NPC가 경계해 최면이 조금 느려진다.
             Disruptors.ZoneAlert.PlayerHypnosisMultiplier *
+            // 23일차: 라이프가드 반장의 호루라기를 들은 NPC는 경계해 최면이 절반으로 느려진다.
+            WhistleAlarmMultiplier *
             PlayerUpgradeMultipliers.HypnosisSpeed;
+
+        private Disruptors.WhistleAlarm _whistleAlarm;
+
+        private float WhistleAlarmMultiplier
+        {
+            get
+            {
+                // 경보는 반장이 분 뒤에야 붙으므로, 없으면 필요할 때 다시 찾는다.
+                if (_whistleAlarm == null &&
+                    !TryGetComponent(out _whistleAlarm))
+                {
+                    return 1f;
+                }
+
+                return _whistleAlarm.HypnosisMultiplier;
+            }
+        }
 
         private static float PlayerHypnosisSpeedScale =>
             Mathf.Max(

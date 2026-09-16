@@ -268,6 +268,9 @@ namespace ProjectTheta.Stage
                         ? NpcGradeTable.ReferenceEssenceValue
                         : profile.EssenceValue) *
                     Disruptors.AttendanceMark.GetEssenceMultiplier(
+                        follower) *
+                    // 23일차: 소매치기에게 털린 동행자는 정기가 덜 들어온다.
+                    Disruptors.PickpocketMark.GetEssenceMultiplier(
                         follower));
 
             AddToPendingBatch(
@@ -345,12 +348,16 @@ namespace ProjectTheta.Stage
             }
 
             // 동시 회수 배율을 먼저 적용한 뒤, 런 강화 "정기 흡수"를 곱한다.
+            // 23일차: 해변가 동시 운반은 한 번에 데려온 인원에 따라 배율이 붙는다.
             int confirmed =
                 Mathf.RoundToInt(
                     EssenceRecoveryLogic.ComputeBatchEssence(
                         _pendingEssence,
                         _pendingCount) *
-                    RunUpgradeMultipliers.RecoveryEssence);
+                    RunUpgradeMultipliers.RecoveryEssence *
+                    Locations.LocationObjectiveLogic.GetBatchMultiplier(
+                        Locations.LocationContext.Current.Objective,
+                        _pendingCount));
 
             int count =
                 _pendingCount;

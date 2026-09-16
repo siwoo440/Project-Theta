@@ -135,6 +135,8 @@ namespace ProjectTheta.Tests.EditMode
             Assert.AreEqual(d.AlertDashRise, asset.AlertDashRise, 0.0001f, nameof(d.AlertDashRise));
             Assert.AreEqual(d.AlertDecayPerSecond, asset.AlertDecayPerSecond, 0.0001f, nameof(d.AlertDecayPerSecond));
             Assert.AreEqual(d.WatcherSightScale, asset.WatcherSightScale, 0.0001f, nameof(d.WatcherSightScale));
+            Assert.AreEqual(d.DarkHypnosisRangeScale, asset.DarkHypnosisRangeScale, 0.0001f, nameof(d.DarkHypnosisRangeScale));
+            Assert.AreEqual(d.ContestRiseScale, asset.ContestRiseScale, 0.0001f, nameof(d.ContestRiseScale));
         }
 
         [Test]
