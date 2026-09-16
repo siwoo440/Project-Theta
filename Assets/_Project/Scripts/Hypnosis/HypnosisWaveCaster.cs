@@ -181,6 +181,52 @@ namespace ProjectTheta.Hypnosis
             RelieveFollowerImpulse();
             StunNearbyOpponents();
             SuppressNearbyAuras();
+            StunNearbyDisruptors();
+        }
+
+        private readonly System.Collections.Generic.List<Disruptors.DisruptorBase> _disruptorBuffer =
+            new System.Collections.Generic.List<Disruptors.DisruptorBase>();
+
+        /// <summary>방해 세력은 파동을 맞으면 멍해진다 (22일차). 감시자를 맞히면 구역 경계도도 내려간다.</summary>
+        private void StunNearbyDisruptors()
+        {
+            Disruptors.DisruptorBase.CopyActive(
+                _disruptorBuffer);
+
+            bool hitWatcher = false;
+
+            for (int i = 0;
+                 i < _disruptorBuffer.Count;
+                 i++)
+            {
+                Disruptors.DisruptorBase disruptor =
+                    _disruptorBuffer[i];
+
+                if (disruptor == null ||
+                    !disruptor.isActiveAndEnabled ||
+                    !IsInRadius(
+                        disruptor.transform.position))
+                {
+                    continue;
+                }
+
+                disruptor.Stun(
+                    Disruptors.ZoneAlertLogic.WaveStunSeconds);
+
+                if (disruptor.Profile != null &&
+                    disruptor.Profile.Role == Disruptors.DisruptorRole.Watcher)
+                {
+                    hitWatcher = true;
+                }
+            }
+
+            if (hitWatcher &&
+                Disruptors.ZoneAlert.Current != null)
+            {
+                Disruptors.ZoneAlert.Current.Add(
+                    -Disruptors.ZoneAlertLogic.WaveRelief,
+                    transform.position);
+            }
         }
 
         /// <summary>내 동행 NPC의 충동을 낮춘다. 동시 폭주 위기를 끊는 핵심 효과다.</summary>

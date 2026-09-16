@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using ProjectTheta.Companion;
+using ProjectTheta.Disruptors;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
 using ProjectTheta.NPC;
@@ -50,6 +51,14 @@ namespace ProjectTheta.UI.DebugTools
         private Text _impulseText;
         private Text _rampageText;
         private Text _captureText;
+
+        // 22일차: 방해 세력
+        private readonly List<DisruptorBase> _disruptorBuffer =
+            new List<DisruptorBase>();
+
+        private UiBar _alertBar;
+        private Text _alertText;
+        private Text _disruptorText;
 
         public DebugStatusTab(
             DebugPanelContext context)
@@ -144,6 +153,18 @@ namespace ProjectTheta.UI.DebugTools
 
             DebugUi.Label(root, "포획", 0f, y, labelWidth, UiTheme.TextMuted);
             _captureText = DebugUi.Label(root, string.Empty, valueX, y, DebugUi.ContentWidth - valueX, UiTheme.TextPrimary);
+            y += row + DebugUi.SectionGap;
+
+            // 방해 세력 (22일차)
+            y = DebugUi.Section(root, "방해 세력", y);
+
+            DebugUi.Label(root, "경계도", 0f, y, labelWidth, UiTheme.TextMuted);
+            _alertBar = DebugUi.Bar(root, valueX, y, barWidth, UiTheme.Gold);
+            _alertText = DebugUi.Label(root, string.Empty, afterBarX, y, afterBarWidth, UiTheme.TextPrimary);
+            y += row;
+
+            DebugUi.Label(root, "가까운 적", 0f, y, labelWidth, UiTheme.TextMuted);
+            _disruptorText = DebugUi.Label(root, string.Empty, valueX, y, DebugUi.ContentWidth - valueX, UiTheme.TextPrimary);
         }
 
         public void Refresh()
@@ -153,6 +174,93 @@ namespace ProjectTheta.UI.DebugTools
             RefreshTarget();
             RefreshOpponents();
             RefreshImpulse();
+            RefreshDisruptors();
+        }
+
+        private void RefreshDisruptors()
+        {
+            ZoneAlert alert =
+                ZoneAlert.Current;
+
+            if (alert == null)
+            {
+                _alertBar.SetValue(0f);
+                _alertText.text = "없음";
+                _disruptorText.text = "이 장소에는 방해 세력이 없습니다";
+
+                return;
+            }
+
+            _alertBar.SetValue(alert.Normalized);
+            _alertBar.SetColor(StageHudView.GetAlertColor(alert.Level));
+
+            _alertText.text =
+                $"{alert.Value:0}  {ZoneAlertLogic.GetLabel(alert.Level)}  증원 {alert.ReinforcementsUsed}/{ZoneAlertLogic.MaximumReinforcements}";
+
+            DisruptorBase.CopyActive(
+                _disruptorBuffer);
+
+            Vector2 player =
+                _context.Caster == null
+                    ? Vector2.zero
+                    : (Vector2)_context.Caster.transform.position;
+
+            DisruptorBase nearest = null;
+            float nearestDistance = float.MaxValue;
+
+            for (int i = 0;
+                 i < _disruptorBuffer.Count;
+                 i++)
+            {
+                DisruptorBase body = _disruptorBuffer[i];
+
+                if (body == null)
+                {
+                    continue;
+                }
+
+                float distance =
+                    ((Vector2)body.transform.position - player).sqrMagnitude;
+
+                if (distance < nearestDistance)
+                {
+                    nearestDistance = distance;
+                    nearest = body;
+                }
+            }
+
+            if (nearest == null ||
+                nearest.Profile == null)
+            {
+                _disruptorText.text = "-";
+
+                return;
+            }
+
+            WatcherRole watcher =
+                nearest.GetComponent<WatcherRole>();
+
+            SpecialAbility ability =
+                nearest.GetComponent<SpecialAbility>();
+
+            string state =
+                nearest.IsStunned
+                    ? $"멍함 {nearest.StunRemaining:0.0}초"
+                    : watcher != null && watcher.IsSpotting
+                        ? "발각!"
+                        : watcher != null && watcher.SuspicionProgress > 0f
+                            ? $"의심 {DebugUi.Percent(watcher.SuspicionProgress)}"
+                            : "순찰";
+
+            string abilityState =
+                ability == null
+                    ? string.Empty
+                    : ability.Phase == AbilityPhase.Cooldown
+                        ? $"   {ability.DisplayName} 대기 {ability.CooldownRemaining:0}초"
+                        : $"   {ability.DisplayName} {ability.Phase}";
+
+            _disruptorText.text =
+                $"{nearest.Profile.DisplayName} {nearest.Floor + 1}F   {state}{abilityState}";
         }
 
         private void RefreshRun()

@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using ProjectTheta.Companion;
 using ProjectTheta.Core;
+using ProjectTheta.Disruptors;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
 using ProjectTheta.NPC;
@@ -139,6 +140,17 @@ namespace ProjectTheta.UI.DebugTools
 
             DebugUi.Button(root, "가장 가까운 동행 폭주", 0f, y, half, height, TriggerRampage);
             DebugUi.Button(root, "동행 충동 0", half + gap, y, half, height, ClearImpulse);
+            y += height + DebugUi.SectionGap + 4f;
+
+            // 방해 세력 (22일차)
+            y = DebugUi.Section(root, "방해 세력", y);
+
+            DebugUi.Button(root, "경계도 +30", 0f, y, half, height, () => AddAlert(30f));
+            DebugUi.Button(root, "경계도 0", half + gap, y, half, height, ClearAlert);
+            y += height + gap;
+
+            DebugUi.Button(root, "가까운 특수 능력 발동", 0f, y, half, height, TriggerNearestAbility);
+            DebugUi.Button(root, "방해 세력 전부 멍함", half + gap, y, half, height, StunAllDisruptors);
             y += height + DebugUi.SectionGap + 4f;
 
             // 시간
@@ -483,6 +495,112 @@ namespace ProjectTheta.UI.DebugTools
             DebugCheats.MarkUsed();
 
             ShowMessage($"{nearest.name} 충동을 가득 채웠습니다");
+        }
+
+        private readonly List<DisruptorBase> _disruptorBuffer =
+            new List<DisruptorBase>();
+
+        private void AddAlert(
+            float amount)
+        {
+            if (ZoneAlert.Current == null)
+            {
+                ShowMessage("이 장소에는 경계도가 없습니다", false);
+
+                return;
+            }
+
+            ZoneAlert.Current.Add(
+                amount,
+                _context.Caster == null
+                    ? Vector2.zero
+                    : (Vector2)_context.Caster.transform.position);
+
+            DebugCheats.MarkUsed();
+        }
+
+        private void ClearAlert()
+        {
+            if (ZoneAlert.Current == null)
+            {
+                return;
+            }
+
+            ZoneAlert.Current.DebugSet(0f);
+
+            DebugCheats.MarkUsed();
+        }
+
+        /// <summary>플레이어와 가장 가까운 특수 개체의 능력을 조건 없이 예고부터 시작한다. 예고는 건너뛰지 않는다.</summary>
+        private void TriggerNearestAbility()
+        {
+            DisruptorBase.CopyActive(
+                _disruptorBuffer);
+
+            Vector2 player =
+                _context.Caster == null
+                    ? Vector2.zero
+                    : (Vector2)_context.Caster.transform.position;
+
+            SpecialAbility nearest = null;
+            float nearestDistance = float.MaxValue;
+
+            for (int i = 0;
+                 i < _disruptorBuffer.Count;
+                 i++)
+            {
+                SpecialAbility ability =
+                    _disruptorBuffer[i] == null
+                        ? null
+                        : _disruptorBuffer[i].GetComponent<SpecialAbility>();
+
+                if (ability == null)
+                {
+                    continue;
+                }
+
+                float distance =
+                    ((Vector2)ability.transform.position - player).sqrMagnitude;
+
+                if (distance < nearestDistance)
+                {
+                    nearestDistance = distance;
+                    nearest = ability;
+                }
+            }
+
+            if (nearest == null)
+            {
+                ShowMessage("특수 능력을 가진 방해 세력이 없습니다", false);
+
+                return;
+            }
+
+            nearest.DebugTrigger();
+
+            DebugCheats.MarkUsed();
+
+            ShowMessage($"{nearest.DisplayName} 예고를 시작했습니다");
+        }
+
+        private void StunAllDisruptors()
+        {
+            DisruptorBase.CopyActive(
+                _disruptorBuffer);
+
+            for (int i = 0;
+                 i < _disruptorBuffer.Count;
+                 i++)
+            {
+                if (_disruptorBuffer[i] != null)
+                {
+                    _disruptorBuffer[i].Stun(10f);
+                }
+            }
+
+            DebugCheats.MarkUsed();
+
+            ShowMessage($"{_disruptorBuffer.Count}명을 10초 멍하게 했습니다");
         }
 
         private void ClearImpulse()

@@ -12,6 +12,11 @@ namespace ProjectTheta.NPC
     public sealed class NpcAgent : MonoBehaviour
     {
         [SerializeField] private float _moveSpeed = 1.65f;
+
+        /// <summary>22일차: 기업 연수원 쉬는 시간에는 복도 NPC가 빨라진다.</summary>
+        private float CurrentMoveSpeed =>
+            _moveSpeed *
+            Stage.Locations.BreakTimeBell.NpcSpeedMultiplier;
         [SerializeField] private float _alertDistance = 3.2f;
         [SerializeField] private float _alertExitDistance = 4.2f;
         [SerializeField] private float _minimumIdleTime = 0.55f;
@@ -270,11 +275,11 @@ namespace ProjectTheta.NPC
 
             float speed =
                 _isFleeing
-                    ? _moveSpeed *
+                    ? CurrentMoveSpeed *
                       Mathf.Max(
                           1f,
                           _fleeSpeedMultiplier)
-                    : _moveSpeed;
+                    : CurrentMoveSpeed;
 
             Vector2 movementVelocity =
                 direction.normalized *
@@ -332,7 +337,7 @@ namespace ProjectTheta.NPC
             }
 
             return delta.normalized *
-                   (_moveSpeed *
+                   (CurrentMoveSpeed *
                     Mathf.Max(
                         0f,
                         _idleWanderSpeedMultiplier));
