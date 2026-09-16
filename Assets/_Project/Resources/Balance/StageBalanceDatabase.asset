@@ -77,6 +77,7 @@ MonoBehaviour:
     HeartRateImpulseScale: 1
     SurvivalTrainCount: 3
     DisruptorRampSeconds: 20
+    ClosingTimeScale: 1.3
     PlayerHypnosisSpeedScale: 1.3
     LevelBaseXp: 60
     LevelXpGrowth: 35

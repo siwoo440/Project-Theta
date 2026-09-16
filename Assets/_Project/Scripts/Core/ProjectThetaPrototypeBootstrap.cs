@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using ProjectTheta.Capture;
 using ProjectTheta.Duel;
@@ -141,13 +142,22 @@ namespace ProjectTheta.Core
                  floor < floorCount;
                  floor++)
             {
-                // 24일차: 헬스장은 층마다 운동 구역에 "대회 앞둔 선수"를 한 명 둔다.
-                CreateNpcs(
-                    player,
+                // 24일차: 헬스장은 층마다 "대회 앞둔 선수", 25일차: 오피스 최상층에 "대표 비서"를 둔다.
+                List<GameObject> npcs =
+                    CreateNpcs(
+                        player,
+                        floor,
+                        GetSpecialTargetX(
+                            location.Id,
+                            floor,
+                            floorCount));
+
+                // 25일차: 쇼핑몰 보안실 직원, 오피스 직원 · 방문객 · 출입증 신분을 붙인다.
+                AssignNpcRoles(
+                    location.Id,
                     floor,
-                    location.Id == LocationId.FitnessCenter
-                        ? GymLayout.GetAthleteX(floor)
-                        : (float?)null);
+                    floorCount,
+                    npcs);
 
                 CreateRecoveryPoint(
                     stage,
@@ -185,6 +195,10 @@ namespace ProjectTheta.Core
                 player.transform,
                 followers);
 
+            // 25일차: 오피스 여부도 정적 값이라 구역마다 다시 정한다.
+            OfficeLayout.Active =
+                location.Id == LocationId.OfficeTower;
+
             // 23일차: 어둠은 야시장에서만 켠다. 정적 값이라 구역이 바뀔 때마다 다시 정한다.
             LanternLight.SetDarkness(
                 location.Id == LocationId.NightMarket);
@@ -218,6 +232,22 @@ namespace ProjectTheta.Core
 
                 case LocationId.FitnessCenter:
                     CreateFitnessCenterRules(
+                        floorCount);
+                    break;
+
+                case LocationId.ShoppingMall:
+                    CreateMallRules(
+                        stage,
+                        player,
+                        followers,
+                        floorCount);
+                    break;
+
+                case LocationId.OfficeTower:
+                    CreateOfficeRules(
+                        stage,
+                        player,
+                        followers,
                         floorCount);
                     break;
             }
@@ -536,6 +566,273 @@ namespace ProjectTheta.Core
             }
         }
 
+        private static float? GetSpecialTargetX(
+            LocationId location,
+            int floor,
+            int floorCount)
+        {
+            switch (location)
+            {
+                case LocationId.FitnessCenter:
+                    return GymLayout.GetAthleteX(floor);
+
+                case LocationId.OfficeTower:
+                    return floor == floorCount - 1
+                        ? OfficeLayout.ExecutiveX
+                        : (float?)null;
+
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>장소 NPC에게 신분을 붙인다 (25일차).</summary>
+        private static void AssignNpcRoles(
+            LocationId location,
+            int floor,
+            int floorCount,
+            List<GameObject> npcs)
+        {
+            if (npcs == null ||
+                npcs.Count == 0)
+            {
+                return;
+            }
+
+            if (location == LocationId.ShoppingMall)
+            {
+                GameObject staff =
+                    FindClosest(
+                        npcs,
+                        MallLayout.SecurityRoomX,
+                        null);
+
+                staff.AddComponent<NpcRoleMark>().Configure(NpcRole.SecurityRoom);
+                staff.AddComponent<SecurityRoomLink>();
+
+                return;
+            }
+
+            if (location != LocationId.OfficeTower)
+            {
+                return;
+            }
+
+            bool top = floor == floorCount - 1;
+
+            GameObject passHolder =
+                top
+                    ? null
+                    : FindClosest(
+                        npcs,
+                        OfficeLayout.PassHolderX,
+                        null);
+
+            for (int i = 0;
+                 i < npcs.Count;
+                 i++)
+            {
+                GameObject npc = npcs[i];
+
+                AthleteMark executive = npc.GetComponent<AthleteMark>();
+
+                if (executive != null)
+                {
+                    executive.Configure(
+                        "★ 대표 비서",
+                        MallOfficeValues.ExecutiveSecretaryBonus);
+                }
+
+                // 세 명 중 한 명은 외부 방문객이다. 긴급 회의에 끌려가지 않는다.
+                NpcRole role =
+                    npc == passHolder
+                        ? NpcRole.PassHolder
+                        : executive == null && i % 3 == 2
+                            ? NpcRole.Visitor
+                            : NpcRole.Employee;
+
+                npc.AddComponent<NpcRoleMark>().Configure(role);
+            }
+        }
+
+        private static GameObject FindClosest(
+            List<GameObject> npcs,
+            float x,
+            GameObject exclude)
+        {
+            GameObject best = null;
+            float bestDistance = float.MaxValue;
+
+            for (int i = 0;
+                 i < npcs.Count;
+                 i++)
+            {
+                if (npcs[i] == null ||
+                    npcs[i] == exclude ||
+                    npcs[i].GetComponent<AthleteMark>() != null)
+                {
+                    continue;
+                }
+
+                float distance = Mathf.Abs(npcs[i].transform.position.x - x);
+
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = npcs[i];
+                }
+            }
+
+            return best ?? npcs[0];
+        }
+
+        /// <summary>
+        /// 쇼핑몰 환경 규칙을 붙인다 (25일차).
+        ///   셔터     층마다 두 곳. 보안팀장이 봉쇄한다
+        ///   기둥     층마다 두 곳. CCTV · 보안요원 시야를 가린다
+        ///   폐점     제한 시간 70%에 방송, 이후 시간이 빨리 흐른다
+        /// </summary>
+        private void CreateMallRules(
+            StageSessionController stage,
+            PlayerSideViewController player,
+            FollowerManager followers,
+            int floorCount)
+        {
+            GameObject rules =
+                new GameObject(
+                    "MallRules");
+
+            rules.AddComponent<MallClosing>().Configure(
+                stage);
+
+            Rigidbody2D playerBody =
+                player.GetComponent<Rigidbody2D>();
+
+            for (int floor = 0;
+                 floor < floorCount;
+                 floor++)
+            {
+                for (int i = 0;
+                     i < MallLayout.ShutterX.Length;
+                     i++)
+                {
+                    GameObject shutter =
+                        new GameObject(
+                            $"Shutter_{floor + 1}F_{i + 1}");
+
+                    shutter.transform.SetParent(
+                        rules.transform,
+                        false);
+
+                    shutter.AddComponent<ShutterGate>().Configure(
+                        floor,
+                        MallLayout.ShutterX[i],
+                        playerBody,
+                        followers);
+                }
+
+                for (int i = 0;
+                     i < MallLayout.PillarX.Length;
+                     i++)
+                {
+                    GameObject pillar =
+                        new GameObject(
+                            $"Pillar_{floor + 1}F_{i + 1}");
+
+                    pillar.transform.SetParent(
+                        rules.transform,
+                        false);
+
+                    pillar.AddComponent<ParasolShade>().ConfigurePillar(
+                        floor,
+                        MallLayout.PillarX[i],
+                        i % 2 == 0 ? -2.2f : -0.8f);
+                }
+
+                LocationProps.Sign(
+                    rules.transform,
+                    floor,
+                    new Vector2(MallLayout.SecurityRoomX, FloorSpace.WalkMaxY + 1.2f),
+                    "보안실",
+                    new Color(0.65f, 0.80f, 1.00f));
+            }
+        }
+
+        /// <summary>
+        /// 오피스 타워 환경 규칙을 붙인다 (25일차).
+        ///   출입증 게이트  맨 위층을 뺀 층마다 위층 계단을 잠근다
+        ///   정전          제한 시간 35% · 70%에 8초
+        ///   탕비실 · 회의실 표지
+        /// </summary>
+        private void CreateOfficeRules(
+            StageSessionController stage,
+            PlayerSideViewController player,
+            FollowerManager followers,
+            int floorCount)
+        {
+            GameObject rules =
+                new GameObject(
+                    "OfficeRules");
+
+            rules.AddComponent<Blackout>().Configure(
+                stage,
+                floorCount);
+
+            for (int floor = 0;
+                 floor < floorCount;
+                 floor++)
+            {
+                if (floor < floorCount - 1)
+                {
+                    GameObject gate =
+                        new GameObject(
+                            $"PassGate_{floor + 1}F");
+
+                    gate.transform.SetParent(
+                        rules.transform,
+                        false);
+
+                    gate.AddComponent<PassGate>().Configure(
+                        floor,
+                        player.transform,
+                        followers);
+                }
+
+                float pantryX = OfficeLayout.GetPantryX(floor);
+                float meetingX = OfficeLayout.GetMeetingRoomX(floor);
+
+                LocationProps.Box(
+                    rules.transform,
+                    "Pantry",
+                    FloorSpace.ToWorld(floor, new Vector2(pantryX, FloorSpace.WalkMaxY + 0.35f)),
+                    new Vector2(2.4f, 0.8f),
+                    new Color(0.55f, 0.45f, 0.35f),
+                    -45);
+
+                LocationProps.Sign(
+                    rules.transform,
+                    floor,
+                    new Vector2(pantryX, FloorSpace.WalkMaxY + 1.2f),
+                    "탕비실",
+                    new Color(0.85f, 0.70f, 0.50f));
+
+                LocationProps.Box(
+                    rules.transform,
+                    "MeetingRoom",
+                    FloorSpace.ToWorld(floor, new Vector2(meetingX, (FloorSpace.WalkMinY + FloorSpace.WalkMaxY) * 0.5f)),
+                    new Vector2(Disruptors.MeetingLogic.RoomHalfWidth * 2f, FloorSpace.WalkMaxY - FloorSpace.WalkMinY),
+                    new Color(0.45f, 0.55f, 0.85f, 0.12f),
+                    -57);
+
+                LocationProps.Sign(
+                    rules.transform,
+                    floor,
+                    new Vector2(meetingX, FloorSpace.WalkMaxY + 1.2f),
+                    "회의실",
+                    new Color(0.70f, 0.80f, 1.00f));
+            }
+        }
+
         /// <summary>한 판 기록을 붙인다 (20일차). 층 이동·레벨 알림을 구독하므로 둘 다 만들어진 뒤에 부른다.</summary>
         private RunStatsRecorder CreateRunStatsRecorder(
             PlayerSideViewController player,
@@ -732,11 +1029,14 @@ namespace ProjectTheta.Core
         /// 한 층의 NPC를 배치한다.
         /// 층마다 인원과 등급 구성이 다르고, 위층일수록 고급 NPC가 섞인다.
         /// </summary>
-        private void CreateNpcs(
+        private List<GameObject> CreateNpcs(
             PlayerSideViewController player,
             int floorIndex,
             float? athleteX = null)
         {
+            List<GameObject> created =
+                new List<GameObject>();
+
             Collider2D playerCollider =
                 player.GetComponent<Collider2D>();
 
@@ -847,7 +1147,11 @@ namespace ProjectTheta.Core
                 agent.Configure(
                     player.transform,
                     animator);
+
+                created.Add(npc);
             }
+
+            return created;
         }
 
         private static int FindClosestSpawnIndex(

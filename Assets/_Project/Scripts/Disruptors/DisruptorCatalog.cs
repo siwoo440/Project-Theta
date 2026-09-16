@@ -47,7 +47,19 @@ namespace ProjectTheta.Disruptors
         SwimCoach = 16,
 
         // 해변가 (24일차, 23일차에서 넘어옴)
-        DronePhotographer = 17
+        DronePhotographer = 17,
+
+        // 쇼핑몰 (25일차)
+        SecurityGuard = 18,
+        SecurityCamera = 19,
+        PromoStaff = 20,
+        SecurityChief = 21,
+
+        // 오피스 타워 (25일차)
+        OfficeManager = 22,
+        NightGuard = 23,
+        OfficeRomeo = 24,
+        ChiefSecretary = 25
     }
 
     /// <summary>특수 능력 종류다 (부록 C.4).</summary>
@@ -61,7 +73,9 @@ namespace ProjectTheta.Disruptors
         PlatformChange = 5,
         GroupPt = 6,
         AllIn = 7,
-        DroneTracking = 8
+        DroneTracking = 8,
+        ShutterLock = 9,
+        EmergencyMeeting = 10
     }
 
     /// <summary>
@@ -110,6 +124,9 @@ namespace ProjectTheta.Disruptors
 
         /// <summary>사람이 아닌 고정 사물이다 (24일차, 안내 방송실). 캐릭터 그림 대신 상자를 그린다.</summary>
         public bool IsObject;
+
+        /// <summary>정전 중에도 본다 (25일차, 손전등을 든 야근 경비원).</summary>
+        public bool SeesInBlackout;
     }
 
     /// <summary>한 장소에 어떤 방해 세력을 몇 층에 둘지다.</summary>
@@ -423,11 +440,144 @@ namespace ProjectTheta.Disruptors
         /// <summary>해변가 망루 자리다. 라이프가드 반장이 선다.</summary>
         public const float BeachTowerX = 0.5f;
 
+        /// <summary>쇼핑몰 · 오피스 타워 기본 표다 (25일차). 기본 표 뒤에 이어 붙는다.</summary>
+        private static readonly DisruptorProfile[] MallOfficeDefaults =
+        {
+            // 쇼핑몰 ------------------------------------------------------
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.SecurityGuard,
+                Role = DisruptorRole.Watcher,
+                DisplayName = "보안요원",
+                SpriteRoot = "Characters/Geumtaeyang",
+                Tint = new Color(0.45f, 0.48f, 0.58f),
+                SightHalfAngle = 30f,
+                SightRange = 7f,
+                // 추적 · 무전 출동은 1.5배라 3.4m/s에 가깝다.
+                MoveSpeed = 2.5f,
+                ChaseSeconds = 3f
+            },
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.SecurityCamera,
+                Role = DisruptorRole.Watcher,
+                DisplayName = "CCTV",
+                IsObject = true,
+                SightHalfAngle = 25f,
+                SightRange = 6f,
+                MoveSpeed = 0f,
+                Stationary = true,
+                // 6초 주기로 좌우를 번갈아 본다.
+                LookAroundSeconds = 3f,
+                ChaseSeconds = 0f
+            },
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.PromoStaff,
+                Role = DisruptorRole.Contester,
+                DisplayName = "판촉 직원",
+                SpriteRoot = "Characters/NPC_Female",
+                Tint = new Color(1.00f, 0.75f, 0.85f),
+                SightHalfAngle = 0f,
+                SightRange = 0f,
+                MoveSpeed = 0f,
+                Stationary = true,
+                LookAroundSeconds = 4f
+            },
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.SecurityChief,
+                Role = DisruptorRole.Gate,
+                DisplayName = "보안팀장",
+                IsSpecial = true,
+                Ability = SpecialAbilityKind.ShutterLock,
+                SpriteRoot = "Characters/PopularGuy",
+                Tint = new Color(0.40f, 0.42f, 0.55f),
+                SightHalfAngle = 0f,
+                SightRange = 0f,
+                MoveSpeed = 1.6f,
+                TelegraphSeconds = 1.5f,
+                CooldownSeconds = 30f
+            },
+
+            // 오피스 타워 --------------------------------------------------
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.OfficeManager,
+                Role = DisruptorRole.Rescuer,
+                DisplayName = "꼰대 부장",
+                SpriteRoot = "Characters/Geumtaeyang",
+                Tint = new Color(0.75f, 0.68f, 0.60f),
+                SightHalfAngle = 0f,
+                SightRange = 0f,
+                MoveSpeed = 1.4f
+            },
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.NightGuard,
+                Role = DisruptorRole.Watcher,
+                DisplayName = "야근 경비원",
+                SeesInBlackout = true,
+                SpriteRoot = "Characters/Geumtaeyang",
+                Tint = new Color(0.40f, 0.45f, 0.65f),
+                SightHalfAngle = 20f,
+                SightRange = 8f,
+                MoveSpeed = 2.2f,
+                ChaseSeconds = 3f
+            },
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.OfficeRomeo,
+                Role = DisruptorRole.Contester,
+                DisplayName = "사내 인기남",
+                SpriteRoot = "Characters/PopularGuy",
+                Tint = new Color(0.80f, 0.85f, 1.00f),
+                SightHalfAngle = 0f,
+                SightRange = 0f,
+                MoveSpeed = 2.0f
+            },
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.ChiefSecretary,
+                Role = DisruptorRole.Gate,
+                DisplayName = "비서실장",
+                IsSpecial = true,
+                Ability = SpecialAbilityKind.EmergencyMeeting,
+                SpriteRoot = "Characters/NPC_Female",
+                Tint = new Color(0.70f, 0.70f, 0.85f),
+                SightHalfAngle = 0f,
+                SightRange = 0f,
+                MoveSpeed = 0f,
+                Stationary = true,
+                LookAroundSeconds = 6f,
+                TelegraphSeconds = 1.5f,
+                CooldownSeconds = 35f
+            }
+        };
+
+        private static DisruptorProfile[] _builtIn;
+
+        /// <summary>기본 표 전체다. 날마다 붙인 표를 한 번만 이어 붙인다.</summary>
+        private static DisruptorProfile[] BuiltIn
+        {
+            get
+            {
+                if (_builtIn == null)
+                {
+                    _builtIn = new DisruptorProfile[Defaults.Length + MallOfficeDefaults.Length];
+                    Defaults.CopyTo(_builtIn, 0);
+                    MallOfficeDefaults.CopyTo(_builtIn, Defaults.Length);
+                }
+
+                return _builtIn;
+            }
+        }
+
         public static IReadOnlyList<DisruptorProfile> All =>
             Override != null &&
             Override.Length > 0
                 ? Override
-                : Defaults;
+                : BuiltIn;
 
         public static DisruptorProfile Get(
             DisruptorKind kind)
@@ -485,6 +635,14 @@ namespace ProjectTheta.Disruptors
                 case LocationId.FitnessCenter:
                     AddFitnessCenter(result, floorCount);
                     break;
+
+                case LocationId.ShoppingMall:
+                    AddMall(result, floorCount);
+                    break;
+
+                case LocationId.OfficeTower:
+                    AddOffice(result, floorCount);
+                    break;
             }
 
             return result;
@@ -507,6 +665,12 @@ namespace ProjectTheta.Disruptors
 
                 case LocationId.FitnessCenter:
                     return DisruptorKind.PersonalTrainer;
+
+                case LocationId.ShoppingMall:
+                    return DisruptorKind.SecurityGuard;
+
+                case LocationId.OfficeTower:
+                    return DisruptorKind.NightGuard;
 
                 default:
                     return null;
@@ -562,6 +726,82 @@ namespace ProjectTheta.Disruptors
             result.Add(new DisruptorPlacement(DisruptorKind.GymDirector, top, 2.5f));
         }
 
+        /// <summary>
+        /// 쇼핑몰: 층마다 보안요원 2명(1F는 판촉 직원 포함), 2F 보안팀장, 층마다 CCTV(사물, 인원에 세지 않음).
+        /// </summary>
+        private static void AddMall(
+            List<DisruptorPlacement> result,
+            int floorCount)
+        {
+            int floors = Math.Max(1, floorCount);
+
+            for (int floor = 0;
+                 floor < floors;
+                 floor++)
+            {
+                float[] cameras = Stage.Locations.MallLayout.GetCameraX(floor);
+
+                for (int i = 0;
+                     i < cameras.Length;
+                     i++)
+                {
+                    result.Add(new DisruptorPlacement(DisruptorKind.SecurityCamera, floor, cameras[i]));
+                }
+
+                switch (floor)
+                {
+                    case 0:
+                        result.Add(new DisruptorPlacement(DisruptorKind.SecurityGuard, floor, -4f));
+                        result.Add(new DisruptorPlacement(DisruptorKind.PromoStaff, floor, 2f));
+                        result.Add(new DisruptorPlacement(DisruptorKind.SecurityGuard, floor, 10f));
+                        break;
+
+                    case 1:
+                        result.Add(new DisruptorPlacement(DisruptorKind.SecurityGuard, floor, -6f));
+                        result.Add(new DisruptorPlacement(DisruptorKind.SecurityChief, floor, 1f));
+                        result.Add(new DisruptorPlacement(DisruptorKind.SecurityGuard, floor, 7f));
+                        break;
+
+                    default:
+                        result.Add(new DisruptorPlacement(DisruptorKind.SecurityGuard, floor, -2f));
+                        result.Add(new DisruptorPlacement(DisruptorKind.SecurityGuard, floor, 8f));
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 오피스 타워: 층마다 꼰대 부장, 사내 인기남(1F · 2F), 야근 경비원(2F · 3F), 최상층 비서실장.
+        /// 출입증 게이트는 방해 세력이 아니라 장소 규칙이다.
+        /// </summary>
+        private static void AddOffice(
+            List<DisruptorPlacement> result,
+            int floorCount)
+        {
+            int floors = Math.Max(1, floorCount);
+            int top = floors - 1;
+
+            for (int floor = 0;
+                 floor < floors;
+                 floor++)
+            {
+                result.Add(new DisruptorPlacement(DisruptorKind.OfficeManager, floor, floor % 2 == 0 ? -2f : 3f));
+
+                if (floor >= 1)
+                {
+                    result.Add(new DisruptorPlacement(DisruptorKind.NightGuard, floor, floor % 2 == 0 ? 4f : -5f));
+                }
+
+                if (floor < top ||
+                    floors == 1)
+                {
+                    result.Add(new DisruptorPlacement(DisruptorKind.OfficeRomeo, floor, floor % 2 == 0 ? 4f : -9f));
+                }
+            }
+
+            result.Add(new DisruptorPlacement(DisruptorKind.ChiefSecretary, top, 10.5f));
+        }
+
         private static void AddNightMarket(
             List<DisruptorPlacement> result)
         {
@@ -606,6 +846,7 @@ namespace ProjectTheta.Disruptors
         private static void ResetOnPlayModeEnter()
         {
             Override = null;
+            _builtIn = null;
         }
     }
 }
