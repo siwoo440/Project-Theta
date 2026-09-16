@@ -261,10 +261,17 @@ namespace ProjectTheta.Stage
             NpcProfile profile =
                 follower.GetComponent<NpcProfile>();
 
+            // 22일차: 근태 체크 표식이 붙은 채 회수하면 그 동행자의 정기가 깎인다.
+            int essenceValue =
+                Mathf.RoundToInt(
+                    (profile == null
+                        ? NpcGradeTable.ReferenceEssenceValue
+                        : profile.EssenceValue) *
+                    Disruptors.AttendanceMark.GetEssenceMultiplier(
+                        follower));
+
             AddToPendingBatch(
-                profile == null
-                    ? NpcGradeTable.ReferenceEssenceValue
-                    : profile.EssenceValue,
+                essenceValue,
                 wasHighImpulse,
                 profile != null &&
                 IsHighGrade(

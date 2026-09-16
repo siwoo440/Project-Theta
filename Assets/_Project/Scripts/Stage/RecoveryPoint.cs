@@ -13,6 +13,61 @@ namespace ProjectTheta.Stage
         private SpriteRenderer _renderer;
         private static Sprite _squareSprite;
 
+        private static readonly Color NormalColor =
+            new Color(0.72f, 0.25f, 1.00f, 0.24f);
+
+        private static readonly Color LockedColor =
+            new Color(0.95f, 0.30f, 0.30f, 0.30f);
+
+        /// <summary>
+        /// 모든 회수 지점이 잠겨 있는 끝 시각이다 (22일차). 구역 경계도가 비상에 닿으면 잠긴다.
+        /// 게임 시간 기준이라 카드 화면으로 멈춘 동안에는 잠김도 멈춘다.
+        /// </summary>
+        private static float _lockedUntil = -1f;
+
+        public static bool IsLocked =>
+            Time.time < _lockedUntil;
+
+        public static float LockRemaining =>
+            Mathf.Max(
+                0f,
+                _lockedUntil - Time.time);
+
+        public static void LockAll(
+            float seconds)
+        {
+            _lockedUntil =
+                Mathf.Max(
+                    _lockedUntil,
+                    Time.time + Mathf.Max(0f, seconds));
+        }
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnPlayModeEnter()
+        {
+            _lockedUntil = -1f;
+        }
+
+        /// <summary>잠긴 동안 붉게 칠해 "지금은 못 넣는다"를 보여준다.</summary>
+        private void Update()
+        {
+            if (_renderer == null)
+            {
+                return;
+            }
+
+            Color color =
+                IsLocked
+                    ? LockedColor
+                    : NormalColor;
+
+            if (_renderer.color != color)
+            {
+                _renderer.color = color;
+            }
+        }
+
         private void Awake()
         {
             _collider =
@@ -70,10 +125,19 @@ namespace ProjectTheta.Stage
                 Vector2.one;
         }
 
+        /// <summary>잠김이 풀렸을 때 이미 안에 서 있던 동행자도 회수되게 머무는 동안에도 확인한다.</summary>
+        private void OnTriggerStay2D(
+            Collider2D other)
+        {
+            OnTriggerEnter2D(
+                other);
+        }
+
         private void OnTriggerEnter2D(
             Collider2D other)
         {
-            if (_stage == null ||
+            if (IsLocked ||
+                _stage == null ||
                 !_stage.IsRunning ||
                 other == null)
             {

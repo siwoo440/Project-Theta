@@ -127,6 +127,8 @@ namespace ProjectTheta.Hypnosis
                 ? _buildPerSecond
                 : Profile.HypnosisBuildPerSecond) *
             PlayerHypnosisSpeedScale *
+            // 22일차: 구역 경계도가 주의 이상이면 중립 NPC가 경계해 최면이 조금 느려진다.
+            Disruptors.ZoneAlert.PlayerHypnosisMultiplier *
             PlayerUpgradeMultipliers.HypnosisSpeed;
 
         private static float PlayerHypnosisSpeedScale =>

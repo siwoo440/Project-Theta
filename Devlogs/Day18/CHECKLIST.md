@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 21일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 22일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -153,6 +153,29 @@
 | 93 | 지도에서 `판 포기하고 허브로` 한 번 | "한 번 더 누르면 포기합니다"로 바뀌고, 3초 안에 다시 누르면 허브 | `MapScreen.Abandon` |
 | 94 | 에디터에서 `TestStage` 씬을 바로 재생 | 오류 없이 연수원(구역 1/5)으로 시작 | `GameSession.EnsureRunForStage` |
 | 95 | 기록 폴더의 새 json | `Location`과 `Zone` 항목이 들어 있음 (구역마다 파일 1개) | `RunStatsRecorder` |
+
+## 6-4. 방해 세력 · 구역 경계도 (22일차 추가)
+
+**가장 중요한 줄은 97번과 104번이다.** 걷기만 해서는 들키지 않는지, 예고 없이 능력이 터지지 않는지다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| ---: | --- | --- | --- |
+| 96 | 연수원 1F 시작 | 층마다 **교육 조교**(푸른빛)가 좌우 순찰, 바닥에 옅은 시야 부채꼴. 중상단 "경계도 평온" 막대 | `DisruptorSpawner`, `DisruptorStatusView` |
+| 97 | 조교 시야 안에서 **걷기만** | `?`가 뜨지 않음, 부채꼴만 노랗게 진해짐 | `WatcherRole` 수상한 행동 판정 |
+| 98 | 조교 시야 안에서 최면 유지 | `?`(노랑→주황) 약 0.8초 뒤 `!`(빨강) + 붉은 파문, 조교가 쫓아옴, 경계도 막대 상승 | `DetectionLogic.Advance`, `ZoneAlert.Add` |
+| 99 | 조교 등 뒤에서 최면 | `?`가 뜨지 않음 | `DetectionLogic.IsInSight` |
+| 100 | 경계도 30 이상 | "경계도 주의" 떠오름, 막대 노랑, 조교가 빨라짐 | `ZoneAlertLogic` 단계 효과 |
+| 101 | 파동(우클릭)을 조교에게 맞힘 | 조교 머리 위 `zZ` 3초, 시야 부채꼴 사라짐, 경계도 -15 | `HypnosisWaveCaster.StunNearbyDisruptors` |
+| 102 | 발각 없이 가만히 있음 | 경계도가 천천히 내려감 (초당 4) | `ZoneAlert.LateUpdate` |
+| 103 | F1 → 치트 `경계도 +30` 세 번 | "비상! 증원 · 회수 지점 잠김", 화면 흔들림, **조교 1명 추가**가 복도 끝에서 옴, 회수 지점 붉게 10초 잠김, 막대가 경계(60)로 내려옴 | `ZoneAlert.TriggerEmergency`, `RecoveryPoint.LockAll` |
+| 104 | 3F **인사팀 평가관**(금색 ◆ 이름표) 앞에 동행자를 데려감 | 머리 위 "근태 체크! ■■□□…" **1.2초 예고** → 동행자 머리 위 "근태 체크 10" | `AttendanceCheckAbility`, `SpecialAbilityLogic` |
+| 105 | 표식 붙은 동행자를 가까이 둠 | 유지도가 천천히 줄어듦 (디버그 상태 탭 최저 유지도) | `FollowerController` 표식 처리 |
+| 106 | 표식이 붙은 채 회수 | 그 동행자 정기 20% 적게 들어옴 | `StageSessionController.TryRecoverFollower` |
+| 107 | 평가관 예고 중 파동 맞힘 | 예고가 멈추고 멍함이 끝나면 이어서 진행 (예고를 건너뛰지 않음) | `SpecialAbilityLogic.Tick` |
+| 108 | 연수원에서 40초 대기 | "쉬는 시간!" + 8초 동안 복도 NPC가 빨라짐 | `BreakTimeBell` |
+| 109 | 2F 이상 "자습실 · 뛰지 마세요" 구역에서 대시 | "쉿!" + 경계도 +10 (감시자가 안 봐도) | `QuietRoomZone` |
+| 110 | 지도로 다른 장소(해변가 등) 이동 | 방해 세력 · 경계도 막대 · 쉬는 시간 **없음** | `DisruptorCatalog.GetPlacements` |
+| 111 | F1 상태 탭 | "방해 세력" 묶음에 경계도 수치 · 증원 횟수 · 가까운 적 상태 | `DebugStatusTab.RefreshDisruptors` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

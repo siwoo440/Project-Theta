@@ -200,6 +200,23 @@ namespace ProjectTheta.Balance
                 v => v.ComboTimeoutSeconds,
                 (v, x) => v.ComboTimeoutSeconds = x),
 
+            // 방해 세력 (22일차)
+            new TuningParameter(
+                nameof(StageBalanceValues.AlertRisePerSecond),
+                TuningGroup.Danger, "경계도 상승(초당)", 0f, 40f, false,
+                v => v.AlertRisePerSecond,
+                (v, x) => v.AlertRisePerSecond = x),
+            new TuningParameter(
+                nameof(StageBalanceValues.AlertDecayPerSecond),
+                TuningGroup.Danger, "경계도 감소(초당)", 0f, 20f, false,
+                v => v.AlertDecayPerSecond,
+                (v, x) => v.AlertDecayPerSecond = x),
+            new TuningParameter(
+                nameof(StageBalanceValues.WatcherSightScale),
+                TuningGroup.Danger, "감시 시야 배율", 0.3f, 2f, false,
+                v => v.WatcherSightScale,
+                (v, x) => v.WatcherSightScale = x),
+
             // 연출
             new TuningParameter(
                 nameof(StageBalanceValues.VfxShakeMedium),

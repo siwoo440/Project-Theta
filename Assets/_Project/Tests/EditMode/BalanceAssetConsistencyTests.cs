@@ -131,6 +131,10 @@ namespace ProjectTheta.Tests.EditMode
             Assert.AreEqual(d.FocusHypnosisDrainPerSecond, asset.FocusHypnosisDrainPerSecond, 0.0001f, nameof(d.FocusHypnosisDrainPerSecond));
             Assert.AreEqual(d.FocusRecoveryPerSecond, asset.FocusRecoveryPerSecond, 0.0001f, nameof(d.FocusRecoveryPerSecond));
             Assert.AreEqual(d.ImpulseBuildScale, asset.ImpulseBuildScale, 0.0001f, nameof(d.ImpulseBuildScale));
+            Assert.AreEqual(d.AlertRisePerSecond, asset.AlertRisePerSecond, 0.0001f, nameof(d.AlertRisePerSecond));
+            Assert.AreEqual(d.AlertDashRise, asset.AlertDashRise, 0.0001f, nameof(d.AlertDashRise));
+            Assert.AreEqual(d.AlertDecayPerSecond, asset.AlertDecayPerSecond, 0.0001f, nameof(d.AlertDecayPerSecond));
+            Assert.AreEqual(d.WatcherSightScale, asset.WatcherSightScale, 0.0001f, nameof(d.WatcherSightScale));
         }
 
         [Test]
