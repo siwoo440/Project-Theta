@@ -52,6 +52,9 @@ namespace ProjectTheta.Core
 
             CursorScale = SettingsLogic.GetCursorScale(save.CursorSize);
 
+            // 32일차: 키 설정.
+            GameInput.Load(save.KeyBindings);
+
             ApplyScreen(save);
 
             Changed?.Invoke();

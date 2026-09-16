@@ -140,6 +140,11 @@ namespace ProjectTheta.Save
                 stats.SRanks++;
             }
 
+            if (result.StolenCount <= 0)
+            {
+                stats.CleanClears++;
+            }
+
             if (result.PlaySeconds > 0f &&
                 (record.BestClearSeconds <= 0f ||
                  result.PlaySeconds < record.BestClearSeconds))

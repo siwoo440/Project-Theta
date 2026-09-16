@@ -107,7 +107,7 @@ namespace ProjectTheta.Presentation
             switch (step)
             {
                 case TutorialStep.Hypnosis:
-                    return "E 또는 좌클릭을 유지해 NPC를 최면하세요";
+                    return $"{Core.InputBindingLogic.GetShortName(Core.GameInput.Table.Get(Core.GameAction.Hypnosis, 0))}을 유지해 NPC를 최면하세요";
 
                 case TutorialStep.Follow:
                     return "두 명 이상을 동행시켜 보세요";

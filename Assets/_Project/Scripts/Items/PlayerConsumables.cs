@@ -211,23 +211,10 @@ namespace ProjectTheta.Items
         private static bool ReadSlotPressed(
             int slotIndex)
         {
-#if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current == null)
-            {
-                return false;
-            }
-
-            return slotIndex == 0
-                ? Keyboard.current.digit1Key.
-                    wasPressedThisFrame
-                : Keyboard.current.digit2Key.
-                    wasPressedThisFrame;
-#else
-            return Input.GetKeyDown(
+            return GameInput.WasPressed(
                 slotIndex == 0
-                    ? KeyCode.Alpha1
-                    : KeyCode.Alpha2);
-#endif
+                    ? GameAction.Item1
+                    : GameAction.Item2);
         }
     }
 }

@@ -282,63 +282,15 @@ namespace ProjectTheta.Player
 
         private Vector2 ReadMovement()
         {
-#if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current == null)
-            {
-                return Vector2.zero;
-            }
-
-            float x = 0f;
-            float y = 0f;
-
-            if (Keyboard.current.aKey.isPressed ||
-                Keyboard.current.leftArrowKey.isPressed)
-            {
-                x -= 1f;
-            }
-
-            if (Keyboard.current.dKey.isPressed ||
-                Keyboard.current.rightArrowKey.isPressed)
-            {
-                x += 1f;
-            }
-
-            if (Keyboard.current.wKey.isPressed ||
-                Keyboard.current.upArrowKey.isPressed)
-            {
-                y += 1f;
-            }
-
-            if (Keyboard.current.sKey.isPressed ||
-                Keyboard.current.downArrowKey.isPressed)
-            {
-                y -= 1f;
-            }
-
+            // 32일차: 키 설정(GameInput)을 따른다.
             return PlayerMovementMath.NormalizeInput(
-                new Vector2(
-                    x,
-                    y));
-#else
-            return PlayerMovementMath.NormalizeInput(
-                new Vector2(
-                    Input.GetAxisRaw("Horizontal"),
-                    Input.GetAxisRaw("Vertical")));
-#endif
+                GameInput.GetMove());
         }
 
         private bool ReadDashPressed()
         {
-#if ENABLE_INPUT_SYSTEM
-            return
-                Keyboard.current != null &&
-                (Keyboard.current.leftShiftKey.wasPressedThisFrame ||
-                 Keyboard.current.spaceKey.wasPressedThisFrame);
-#else
-            return
-                Input.GetKeyDown(KeyCode.LeftShift) ||
-                Input.GetKeyDown(KeyCode.Space);
-#endif
+            return GameInput.WasPressed(
+                GameAction.Dash);
         }
     }
 }

@@ -268,15 +268,8 @@ namespace ProjectTheta.Stage
         /// <summary>상호작용 키 F다. 계단이 어느 방향인지는 선 자리의 계단이 정한다.</summary>
         private static bool ReadInteractPressed()
         {
-#if ENABLE_INPUT_SYSTEM
-            Keyboard keyboard =
-                Keyboard.current;
-
-            return keyboard != null &&
-                   keyboard.fKey.wasPressedThisFrame;
-#else
-            return Input.GetKeyDown(KeyCode.F);
-#endif
+            return GameInput.WasPressed(
+                GameAction.Interact);
         }
 
         /// <summary>계단을 타고 이동한다. 동행 NPC도 함께 옮긴다.</summary>
