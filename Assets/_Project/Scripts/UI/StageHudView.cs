@@ -88,7 +88,7 @@ namespace ProjectTheta.UI
         private Image[] _floorMarks;
         private Text _floorLabel;
 
-        // 21일차: 층 표시 위의 "구역 2/5 · 해변가 · 낮"
+        // 21일차: 층 표시 위의 "해변가 · 낮" (29일차: 구역 번호 제거)
         private Text _zoneText;
 
         // 22일차: 중상단 구역 경계도
@@ -1774,24 +1774,17 @@ namespace ProjectTheta.UI
             session.WriteSave();
         }
 
-        /// <summary>"구역 2/5 · 해변가 · 낮"이다. 구역 안에서는 바뀌지 않으므로 만들 때 한 번만 쓴다.</summary>
+        /// <summary>"해변가 · 낮"이다. 장소 안에서는 바뀌지 않으므로 만들 때 한 번만 쓴다.</summary>
         private static string BuildZoneLabel()
         {
             LocationDefinition location =
                 LocationContext.Current;
 
-            Run.RunSession session =
-                GameSession.Instance == null
-                    ? null
-                    : GameSession.Instance.Run;
-
             string time =
                 LocationCatalog.GetTimeLabel(
                     location.TimeOfDay);
 
-            return session == null
-                ? $"{location.DisplayName} · {time}"
-                : $"구역 {session.NextStep + 1}/{Run.RunRouteLogic.ZoneCount} · {location.DisplayName} · {time}";
+            return $"{location.DisplayName} · {time}";
         }
 
         /// <summary>층 표시와 계단 안내를 갱신한다.</summary>

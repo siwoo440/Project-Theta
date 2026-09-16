@@ -3,7 +3,8 @@
 namespace ProjectTheta.Save
 {
     /// <summary>
-    /// 한 판의 결과를 스테이지에서 허브로 넘기는 묶음이다.
+    /// 장소 한 번의 결과를 스테이지에서 허브 · 지도로 넘기는 묶음이다.
+    /// 29일차부터 누적 통계(<see cref="PlayStats"/>)에 쓸 숫자도 함께 담는다.
     /// </summary>
     public struct StageResultSummary
     {
@@ -15,6 +16,26 @@ namespace ProjectTheta.Save
         /// <summary>이번 판에서 환산된 계약 정기다.</summary>
         public int ContractEssence;
         public int TargetEssence;
+
+        // --- 29일차: 통계 ---
+        /// <summary>장소 정보가 있는 결과인지다. 없으면 통계에 더하지 않는다.</summary>
+        public bool HasLocation;
+        public int LocationId;
+        public float PlaySeconds;
+        public bool BossDefeated;
+        public bool Cheated;
+
+        public int HypnosisCount;
+        public int MaxFollowers;
+        public int RecoveredFollowers;
+        public int StolenCount;
+        public int ReclaimCount;
+        public int RampageWindups;
+        public int RampageSurvived;
+        public int CaptureCount;
+        public int DuelWins;
+        public int LevelUps;
+        public int CardsPicked;
 
         public static StageResultSummary Empty =>
             new StageResultSummary
@@ -65,6 +86,13 @@ namespace ProjectTheta.Save
         /// </summary>
         public bool ScreenShakeDisabled;
 
+        // --- 29일차 ---
+        /// <summary>지금까지의 누적 통계다. 지도의 [통계] 창이 보여 준다.</summary>
+        public PlayStats Stats = new PlayStats();
+
+        /// <summary>장소별 누적 기록이다. 한 번이라도 도전한 장소만 들어 있다.</summary>
+        public LocationStats[] LocationRecords = new LocationStats[0];
+
         public SaveData Clone()
         {
             SaveData copy =
@@ -78,8 +106,15 @@ namespace ProjectTheta.Save
                     ContractEssence = ContractEssence,
                     TutorialCompleted = TutorialCompleted,
                     ScreenShakeDisabled = ScreenShakeDisabled,
-                    UpgradeLevels = new int[UpgradeLevels?.Length ?? 4]
+                    UpgradeLevels = new int[UpgradeLevels?.Length ?? 4],
+                    Stats = Stats == null ? new PlayStats() : Stats.Clone(),
+                    LocationRecords = new LocationStats[LocationRecords?.Length ?? 0]
                 };
+
+            for (int i = 0; i < copy.LocationRecords.Length; i++)
+            {
+                copy.LocationRecords[i] = LocationRecords[i]?.Clone();
+            }
 
             if (UpgradeLevels != null)
             {

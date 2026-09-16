@@ -7,19 +7,20 @@ using UnityEngine.InputSystem;
 using ProjectTheta.Core;
 using ProjectTheta.Presentation;
 using ProjectTheta.Run;
+using ProjectTheta.Save;
 using ProjectTheta.Stage.Locations;
 using ProjectTheta.UI.Framework;
 
 namespace ProjectTheta.UI
 {
     /// <summary>
-    /// 도시 지도 화면이다 (21일차). 한 판 안에서 다음 장소를 고른다.
+    /// 도시 지도 화면이다 (21일차).
     ///
-    ///   허브 → [지도] 연수원 → 스테이지 → [지도] 후보 2곳 중 선택 → 스테이지 → … → [지도] 루프탑 클럽
+    /// 29일차: 판이 없다. 장소 8곳 중 어디든 몇 번이든 골라 들어간다.
+    ///   허브 ⇄ [지도] ⇄ 스테이지
     ///
-    /// 왼쪽은 장소 8곳과 길, 오른쪽은 고른 장소의 정보와 출발 버튼이다.
-    /// 이번 구역 후보만 누를 수 있고, 간 곳은 "완료", 나머지는 잠겨 보인다.
-    /// 후보는 판 시드로 정해져서 지도를 다시 열어도 바뀌지 않는다.
+    /// 왼쪽은 장소 8곳과 길, 오른쪽은 고른 장소의 정보 · 내 기록 · 출발 버튼이다.
+    /// 오른쪽 위 [통계] 버튼은 지금까지의 누적 기록 창(<see cref="StatsPanel"/>)을 연다.
     /// </summary>
     public sealed class MapScreen : MonoBehaviour
     {
@@ -27,7 +28,6 @@ namespace ProjectTheta.UI
         private const float MapHeight = 800f;
         private const float NodeWidth = 236f;
         private const float NodeHeight = 96f;
-        private const float AbandonConfirmSeconds = 3f;
 
         /// <summary>지도 위 길이다. 기획서 부록 B.2의 연결을 따른다. 지금은 보기용이며 이동 제약은 없다.</summary>
         private static readonly LocationId[,] Roads =
@@ -45,9 +45,8 @@ namespace ProjectTheta.UI
 
         private enum NodeState
         {
-            Locked,
-            Visited,
-            Candidate,
+            Open,
+            Cleared,
             Selected
         }
 
@@ -62,16 +61,14 @@ namespace ProjectTheta.UI
             public Text Badge;
         }
 
-        private RunSession _session;
         private List<LocationId> _candidates = new List<LocationId>();
         private LocationId? _selected;
+        private StatsPanel _stats;
 
         private readonly Dictionary<LocationId, NodeView> _nodes =
             new Dictionary<LocationId, NodeView>();
 
         private Text _subtitle;
-        private readonly Text[] _routeSlots = new Text[RunRouteLogic.ZoneCount];
-        private readonly Image[] _routeSlotBackgrounds = new Image[RunRouteLogic.ZoneCount];
 
         private Text _infoTime;
         private Text _infoName;
@@ -80,35 +77,21 @@ namespace ProjectTheta.UI
         private Text _infoDisruptors;
         private Text _runStatus;
         private UiButton _departButton;
-        private UiButton _abandonButton;
-
-        private float _abandonConfirmRemaining;
 
         private void Start()
         {
+            _candidates =
+                RunRouteLogic.GetLocations();
+
+            // 마지막으로 도전한 장소를 미리 골라 둔다. 바로 다시 도전하기 쉽다.
             GameSession game =
                 GameSession.Instance;
 
-            // 지도 씬을 바로 재생한 경우처럼 판이 없으면 새 판을 만든다.
             if (game != null &&
-                (game.Run == null ||
-                 game.Run.IsFinished))
+                game.Run != null &&
+                _candidates.Contains(game.Run.Location))
             {
-                game.BeginRun();
-            }
-
-            _session =
-                game == null
-                    ? new RunSession(System.Environment.TickCount)
-                    : game.Run;
-
-            _candidates =
-                _session.GetCandidates();
-
-            // 후보가 하나뿐이면(첫 구역 · 마지막 구역) 미리 골라 둔다.
-            if (_candidates.Count == 1)
-            {
-                _selected = _candidates[0];
+                _selected = game.Run.Location;
             }
 
             Build();
@@ -117,15 +100,11 @@ namespace ProjectTheta.UI
 
         private void Update()
         {
-            if (_abandonConfirmRemaining > 0f)
+            // 통계 창이 열려 있으면 지도 단축키를 받지 않는다.
+            if (_stats != null &&
+                _stats.IsOpen)
             {
-                _abandonConfirmRemaining -=
-                    Time.unscaledDeltaTime;
-
-                if (_abandonConfirmRemaining <= 0f)
-                {
-                    _abandonButton.SetText("판 포기하고 허브로");
-                }
+                return;
             }
 
             ReadKeyboard();
@@ -181,6 +160,11 @@ namespace ProjectTheta.UI
             {
                 Depart();
             }
+
+            if (keyboard.tabKey.wasPressedThisFrame)
+            {
+                OpenStats();
+            }
 #endif
         }
 
@@ -215,32 +199,44 @@ namespace ProjectTheta.UI
 
         private void Depart()
         {
+            GameSession game =
+                GameSession.Instance;
+
             if (_selected == null ||
-                !_session.Select(_selected.Value))
+                game == null)
+            {
+                return;
+            }
+
+            // 29일차: 출발할 때마다 새 도전을 만든다. 레벨 · 카드는 장소마다 처음부터다.
+            game.BeginLocation(
+                _selected.Value);
+
+            GameAudio.Play(
+                GameSfx.UiStamp);
+
+            game.GoTo(
+                SceneDestination.Stage);
+        }
+
+        private void OpenStats()
+        {
+            if (_stats == null)
             {
                 return;
             }
 
             GameAudio.Play(
-                GameSfx.UiStamp);
+                GameSfx.UiTick);
 
-            GameSession.Instance?.GoTo(
-                SceneDestination.Stage);
+            _stats.Open(
+                GameSession.Instance == null
+                    ? null
+                    : GameSession.Instance.Save);
         }
 
-        /// <summary>실수로 누르지 않게 두 번 눌러야 포기된다.</summary>
-        private void Abandon()
+        private void GoToHub()
         {
-            if (_abandonConfirmRemaining <= 0f)
-            {
-                _abandonConfirmRemaining =
-                    AbandonConfirmSeconds;
-
-                _abandonButton.SetText("한 번 더 누르면 포기합니다");
-
-                return;
-            }
-
             GameSession game =
                 GameSession.Instance;
 
@@ -249,9 +245,7 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            _session.Abandon();
-
-            game.EndRun();
+            game.ClearRun();
 
             game.GoTo(
                 SceneDestination.Hub);
@@ -290,13 +284,20 @@ namespace ProjectTheta.UI
             BuildHeader(
                 canvas.transform);
 
-            BuildRouteStrip(
+            BuildTopButtons(
                 canvas.transform);
 
             BuildMap(
                 canvas.transform);
 
             BuildInfoPanel(
+                canvas.transform);
+
+            // 통계 창은 지도 위에 덮는다.
+            _stats =
+                gameObject.AddComponent<StatsPanel>();
+
+            _stats.Build(
                 canvas.transform);
         }
 
@@ -338,84 +339,44 @@ namespace ProjectTheta.UI
                 new Vector2(900f, 32f));
         }
 
-        /// <summary>오른쪽 위의 "연수원 → 해변가 → ? → ? → 클럽" 경로 줄이다.</summary>
-        private void BuildRouteStrip(
+        /// <summary>오른쪽 위의 [통계] · [허브로] 버튼이다 (29일차).</summary>
+        private void BuildTopButtons(
             Transform parent)
         {
-            const float slotWidth = 150f;
-            const float slotHeight = 44f;
-            const float gap = 26f;
-
-            float totalWidth =
-                RunRouteLogic.ZoneCount * slotWidth +
-                (RunRouteLogic.ZoneCount - 1) * gap;
-
-            RectTransform strip =
-                UiFactory.CreateRect(
+            UiButton stats =
+                UiFactory.CreateButton(
                     parent,
-                    "RouteStrip");
+                    "StatsButton",
+                    "통계  (Tab)",
+                    UiTheme.FontSubheading,
+                    true);
 
             UiFactory.Place(
-                strip,
+                stats.Background.rectTransform,
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
-                new Vector2(-60f, -52f),
-                new Vector2(totalWidth, slotHeight));
+                new Vector2(-260f, -48f),
+                new Vector2(200f, 52f));
 
-            for (int i = 0;
-                 i < RunRouteLogic.ZoneCount;
-                 i++)
-            {
-                float x = i * (slotWidth + gap);
+            stats.Button.onClick.AddListener(
+                OpenStats);
 
-                Image background =
-                    UiFactory.CreateImage(
-                        strip,
-                        $"Slot{i}",
-                        UiTheme.RowFill);
+            UiButton hub =
+                UiFactory.CreateButton(
+                    parent,
+                    "HubButton",
+                    "허브로",
+                    UiTheme.FontSubheading);
 
-                UiFactory.Place(
-                    background.rectTransform,
-                    new Vector2(0f, 0.5f),
-                    new Vector2(0f, 0.5f),
-                    new Vector2(x, 0f),
-                    new Vector2(slotWidth, slotHeight));
+            UiFactory.Place(
+                hub.Background.rectTransform,
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-60f, -48f),
+                new Vector2(180f, 52f));
 
-                Text label =
-                    UiFactory.CreateText(
-                        background.transform,
-                        "Label",
-                        "?",
-                        UiTheme.FontSmall,
-                        UiTheme.TextMuted,
-                        TextAnchor.MiddleCenter,
-                        FontStyle.Bold);
-
-                UiFactory.Stretch(
-                    label.rectTransform);
-
-                _routeSlots[i] = label;
-                _routeSlotBackgrounds[i] = background;
-
-                if (i < RunRouteLogic.ZoneCount - 1)
-                {
-                    Text arrow =
-                        UiFactory.CreateText(
-                            strip,
-                            "Arrow",
-                            "›",
-                            UiTheme.FontHeading,
-                            UiTheme.TextDisabled,
-                            TextAnchor.MiddleCenter);
-
-                    UiFactory.Place(
-                        arrow.rectTransform,
-                        new Vector2(0f, 0.5f),
-                        new Vector2(0.5f, 0.5f),
-                        new Vector2(x + slotWidth + gap * 0.5f, 0f),
-                        new Vector2(gap, slotHeight));
-                }
-            }
+            hub.Button.onClick.AddListener(
+                GoToHub);
         }
 
         private void BuildMap(
@@ -524,7 +485,7 @@ namespace ProjectTheta.UI
                 GetNodePosition(
                     location);
 
-            // 후보일 때만 보이는 맥동 빛. 노드보다 먼저 만들어 뒤에 깐다.
+            // 고른 장소에만 보이는 맥동 빛. 노드보다 먼저 만들어 뒤에 깐다.
             Image glow =
                 UiDecor.CreateGlow(
                     map,
@@ -714,7 +675,7 @@ namespace ProjectTheta.UI
                 padding);
 
             _runStatus =
-                CreateInfoText(panel, padding, 526f, inner, 60f, UiTheme.FontBody, UiTheme.TextPrimary, false);
+                CreateInfoText(panel, padding, 526f, inner, 120f, UiTheme.FontBody, UiTheme.TextPrimary, false);
 
             _runStatus.alignment = TextAnchor.UpperLeft;
             _runStatus.lineSpacing = 1.3f;
@@ -731,28 +692,11 @@ namespace ProjectTheta.UI
                 _departButton.Background.rectTransform,
                 new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f),
-                new Vector2(0f, 104f),
+                new Vector2(0f, 40f),
                 new Vector2(inner, 70f));
 
             _departButton.Button.onClick.AddListener(
                 Depart);
-
-            _abandonButton =
-                UiFactory.CreateButton(
-                    panel,
-                    "Abandon",
-                    "판 포기하고 허브로",
-                    UiTheme.FontSmall);
-
-            UiFactory.Place(
-                _abandonButton.Background.rectTransform,
-                new Vector2(0.5f, 0f),
-                new Vector2(0.5f, 0f),
-                new Vector2(0f, 36f),
-                new Vector2(inner, 44f));
-
-            _abandonButton.Button.onClick.AddListener(
-                Abandon);
         }
 
         private static Text CreateInfoText(
@@ -791,86 +735,38 @@ namespace ProjectTheta.UI
 
         private void Refresh()
         {
-            int step =
-                _session.NextStep;
-
             _subtitle.text =
-                _candidates.Count > 1
-                    ? $"구역 {step + 1} / {RunRouteLogic.ZoneCount}   ·   다음 장소를 고르세요  (숫자 키 1~{_candidates.Count})"
-                    : RunRouteLogic.IsFinalStep(step) ||
-                      RunRouteLogic.OpenAllLocations
-                        ? $"구역 {step + 1} / {RunRouteLogic.ZoneCount}   ·   마지막 장소입니다"
-                        : $"구역 {step + 1} / {RunRouteLogic.ZoneCount}   ·   첫 장소에서 시작합니다";
+                $"가고 싶은 장소를 고르세요  (숫자 키 1~{_candidates.Count} · Enter 출발)   ·   몇 번이든 다시 도전할 수 있습니다";
 
-            RefreshRouteStrip(step);
             RefreshNodes();
             RefreshInfo();
             RefreshRunStatus();
         }
 
-        private void RefreshRouteStrip(
-            int step)
-        {
-            for (int i = 0;
-                 i < RunRouteLogic.ZoneCount;
-                 i++)
-            {
-                Text label = _routeSlots[i];
-                Image background = _routeSlotBackgrounds[i];
-
-                if (i < _session.Records.Count)
-                {
-                    ZoneRecord record = _session.Records[i];
-
-                    label.text = $"{LocationCatalog.Get(record.Location).DisplayName}  {record.RankLabel}";
-                    label.color = UiTheme.Gold;
-                    background.color = new Color(0.20f, 0.16f, 0.08f, 0.95f);
-
-                    continue;
-                }
-
-                if (i == step)
-                {
-                    label.text =
-                        _selected == null
-                            ? "선택 중"
-                            : LocationCatalog.Get(_selected.Value).DisplayName;
-
-                    label.color = UiTheme.TextPrimary;
-                    background.color = UiTheme.PrimaryButtonNormal;
-
-                    continue;
-                }
-
-                // 모든 장소 열기에서는 마지막 구역도 정해져 있지 않다.
-                label.text =
-                    i == RunRouteLogic.ZoneCount - 1 &&
-                    !RunRouteLogic.OpenAllLocations
-                        ? LocationCatalog.Get(LocationCatalog.FinalLocation).DisplayName
-                        : "?";
-
-                label.color = UiTheme.TextDisabled;
-                background.color = UiTheme.RowFill;
-            }
-        }
+        private SaveData CurrentSave =>
+            GameSession.Instance == null
+                ? null
+                : GameSession.Instance.Save;
 
         private void RefreshNodes()
         {
+            SaveData save = CurrentSave;
+
             foreach (KeyValuePair<LocationId, NodeView> pair in _nodes)
             {
                 NodeView view = pair.Value;
-                NodeState state = GetState(pair.Key);
+                LocationStats record = PlayStatsLogic.Get(save, (int)pair.Key);
+                NodeState state = GetState(pair.Key, record);
 
-                bool clickable =
-                    state == NodeState.Candidate ||
-                    state == NodeState.Selected;
-
-                view.Button.Button.interactable = clickable;
-                view.Glow.gameObject.SetActive(clickable);
+                view.Button.Button.interactable = true;
+                view.Glow.gameObject.SetActive(state == NodeState.Selected);
 
                 Color timeColor =
                     LocationCatalog.GetTimeColor(
                         view.Location.TimeOfDay);
+
+                string number =
+                    $"[{_candidates.IndexOf(pair.Key) + 1}]";
 
                 switch (state)
                 {
@@ -878,42 +774,40 @@ namespace ProjectTheta.UI
                         view.Edge.color = UiTheme.Gold;
                         view.Name.color = UiTheme.Gold;
                         view.Detail.color = UiTheme.TextPrimary;
-                        view.Badge.text = "선택됨";
+                        view.Badge.text = $"{number} 선택됨";
                         view.Badge.color = UiTheme.Gold;
                         break;
 
-                    case NodeState.Candidate:
+                    case NodeState.Cleared:
                         view.Edge.color = timeColor;
                         view.Name.color = UiTheme.TextPrimary;
                         view.Detail.color = UiTheme.TextMuted;
-                        view.Badge.text = $"[{_candidates.IndexOf(pair.Key) + 1}] 선택 가능";
-                        view.Badge.color = timeColor;
-                        break;
-
-                    case NodeState.Visited:
-                        view.Edge.color = new Color(0.46f, 0.38f, 0.18f, 1f);
-                        view.Name.color = UiTheme.TextMuted;
-                        view.Detail.color = UiTheme.TextDisabled;
-                        view.Badge.text = "완료";
+                        view.Badge.text = $"{number} 클리어 {record.Clears}회 · 최고 {record.BestRank}";
                         view.Badge.color = UiTheme.Gold;
                         break;
 
                     default:
-                        view.Edge.color = new Color(0.20f, 0.20f, 0.28f, 1f);
-                        view.Name.color = UiTheme.TextDisabled;
-                        view.Detail.color = UiTheme.TextDisabled;
+                        view.Edge.color = new Color(timeColor.r, timeColor.g, timeColor.b, 0.7f);
+                        view.Name.color = UiTheme.TextPrimary;
+                        view.Detail.color = UiTheme.TextMuted;
                         view.Badge.text =
+                            record.Attempts > 0
+                                ? $"{number} 도전 {record.Attempts}회"
+                                : pair.Key == LocationCatalog.FinalLocation
+                                    ? $"{number} 보스"
+                                    : $"{number} 새 장소";
+                        view.Badge.color =
                             pair.Key == LocationCatalog.FinalLocation
-                                ? "최종"
-                                : string.Empty;
-                        view.Badge.color = UiTheme.Danger;
+                                ? UiTheme.Danger
+                                : timeColor;
                         break;
                 }
             }
         }
 
         private NodeState GetState(
-            LocationId id)
+            LocationId id,
+            LocationStats record)
         {
             if (_selected != null &&
                 _selected.Value == id)
@@ -921,22 +815,9 @@ namespace ProjectTheta.UI
                 return NodeState.Selected;
             }
 
-            if (_candidates.Contains(id))
-            {
-                return NodeState.Candidate;
-            }
-
-            for (int i = 0;
-                 i < _session.Visited.Count;
-                 i++)
-            {
-                if (_session.Visited[i] == id)
-                {
-                    return NodeState.Visited;
-                }
-            }
-
-            return NodeState.Locked;
+            return record.Clears > 0
+                ? NodeState.Cleared
+                : NodeState.Open;
         }
 
         private void RefreshInfo()
@@ -951,7 +832,7 @@ namespace ProjectTheta.UI
             {
                 _infoTime.text = string.Empty;
                 _infoName.text = "장소를 고르세요";
-                _infoSummary.text = "빛나는 장소가 이번 구역에서 갈 수 있는 곳입니다.";
+                _infoSummary.text = "지도의 장소를 누르거나 숫자 키로 고르세요. 모든 장소에 언제든 갈 수 있습니다.";
                 _infoRows.text = string.Empty;
                 _infoDisruptors.text = "-";
 
@@ -986,9 +867,27 @@ namespace ProjectTheta.UI
 
         private void RefreshRunStatus()
         {
+            SaveData save = CurrentSave;
+            int essence = save == null ? 0 : save.ContractEssence;
+
+            if (_selected == null)
+            {
+                _runStatus.text =
+                    $"보유 계약 정기  {essence}\n" +
+                    "레벨 · 강화 카드는 장소마다 처음부터 시작합니다.";
+
+                return;
+            }
+
+            LocationStats record =
+                PlayStatsLogic.Get(
+                    save,
+                    (int)_selected.Value);
+
             _runStatus.text =
-                $"Lv {_session.Level.Level}   ·   강화 카드 {_session.Upgrades.PickCount}장\n" +
-                $"이번 판 계약 정기  +{_session.TotalContractEssence}";
+                $"내 기록   도전 {record.Attempts} · 클리어 {record.Clears} · 최고 등급 {record.BestRank}\n" +
+                $"최고 정기 {record.BestEssence}   ·   최단 클리어 {PlayStatsLogic.FormatClock(record.BestClearSeconds)}\n" +
+                $"보유 계약 정기  {essence}";
         }
     }
 }
