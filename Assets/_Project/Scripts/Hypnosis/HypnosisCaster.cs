@@ -58,6 +58,22 @@ namespace ProjectTheta.Hypnosis
         public HypnosisTarget CurrentTarget =>
             _currentTarget;
 
+        /// <summary>이번 프레임에 최면 입력을 누르고 있는지다 (26일차, 보스전이 읽는다).</summary>
+        public bool IsHolding { get; private set; }
+
+        /// <summary>
+        /// 최면을 NPC 대신 다른 대상(보스)이 가져갈지 묻는다 (26일차). 플레이어 위치를 받아 true면 NPC를 잡지 않는다.
+        /// 보스전이 설정하고 끝날 때 지운다.
+        /// </summary>
+        public static System.Func<Vector2, bool> FocusOverride { get; set; }
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnPlayModeEnter()
+        {
+            FocusOverride = null;
+        }
+
         public FollowerManager FollowerManager =>
             _followerManager;
 
@@ -108,13 +124,27 @@ namespace ProjectTheta.Hypnosis
                     Time.deltaTime);
 
             // 19일차: 집중력은 더 이상 최면을 막지 않는다. 가속만 준다.
-            if (_interruptRemaining > 0f ||
-                !ReadHypnosisHeld())
+            IsHolding =
+                _interruptRemaining <= 0f &&
+                ReadHypnosisHeld();
+
+            if (!IsHolding)
             {
                 ChangeTarget(null);
 
                 _chainIndex =
                     0;
+
+                return;
+            }
+
+            // 26일차: 보스를 겨누는 동안은 NPC를 잡지 않는다. 보스전이 최면을 가져간다.
+            if (FocusOverride != null &&
+                FocusOverride(transform.position))
+            {
+                ChangeTarget(null);
+
+                _chainIndex = 0;
 
                 return;
             }

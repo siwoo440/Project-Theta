@@ -80,6 +80,23 @@ namespace ProjectTheta.Stage
         /// <summary>쇼핑몰 폐점 방송이 나왔다.</summary>
         public static event Action MallClosing;
 
+        // --- 26일차: 루프탑 클럽 · 보스전 ---
+
+        /// <summary>음악 드롭이 떨어졌다. (템포 단계)</summary>
+        public static event Action<int> ClubDrop;
+
+        /// <summary>템포 단계가 바뀌었다. (새 단계)</summary>
+        public static event Action<int> TempoChanged;
+
+        /// <summary>보스 보호막이 깨졌다. (보스 위치, 남은 장수)</summary>
+        public static event Action<Vector2, int> BossShieldBroken;
+
+        /// <summary>보스를 함락했다. (보스 위치)</summary>
+        public static event Action<Vector2> BossDefeated;
+
+        /// <summary>플레이어 정신력이 무너졌다. (플레이어 위치)</summary>
+        public static event Action<Vector2> MindCollapsed;
+
         public static void RaiseHypnosisSucceeded(
             Vector2 position,
             bool wasReclaim)
@@ -200,6 +217,37 @@ namespace ProjectTheta.Stage
             MallClosing?.Invoke();
         }
 
+        public static void RaiseClubDrop(
+            int tempo)
+        {
+            ClubDrop?.Invoke(tempo);
+        }
+
+        public static void RaiseTempoChanged(
+            int tempo)
+        {
+            TempoChanged?.Invoke(tempo);
+        }
+
+        public static void RaiseBossShieldBroken(
+            Vector2 position,
+            int remaining)
+        {
+            BossShieldBroken?.Invoke(position, remaining);
+        }
+
+        public static void RaiseBossDefeated(
+            Vector2 position)
+        {
+            BossDefeated?.Invoke(position);
+        }
+
+        public static void RaiseMindCollapsed(
+            Vector2 position)
+        {
+            MindCollapsed?.Invoke(position);
+        }
+
         public static void RaiseTideWarning()
         {
             TideWarning?.Invoke();
@@ -246,6 +294,11 @@ namespace ProjectTheta.Stage
             SpecialTargetRecovered = null;
             BlackoutStarted = null;
             MallClosing = null;
+            ClubDrop = null;
+            TempoChanged = null;
+            BossShieldBroken = null;
+            BossDefeated = null;
+            MindCollapsed = null;
         }
     }
 }

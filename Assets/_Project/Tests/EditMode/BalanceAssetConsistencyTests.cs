@@ -141,6 +141,9 @@ namespace ProjectTheta.Tests.EditMode
             Assert.AreEqual(d.SurvivalTrainCount, asset.SurvivalTrainCount, nameof(d.SurvivalTrainCount));
             Assert.AreEqual(d.DisruptorRampSeconds, asset.DisruptorRampSeconds, 0.0001f, nameof(d.DisruptorRampSeconds));
             Assert.AreEqual(d.ClosingTimeScale, asset.ClosingTimeScale, 0.0001f, nameof(d.ClosingTimeScale));
+            Assert.AreEqual(d.DropHypnosisScale, asset.DropHypnosisScale, 0.0001f, nameof(d.DropHypnosisScale));
+            Assert.AreEqual(d.BossAdvantageRatio, asset.BossAdvantageRatio, 0.0001f, nameof(d.BossAdvantageRatio));
+            Assert.AreEqual(d.MindDamageScale, asset.MindDamageScale, 0.0001f, nameof(d.MindDamageScale));
         }
 
         [Test]

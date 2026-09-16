@@ -480,6 +480,16 @@ namespace ProjectTheta.Stage
                 objective = Locations.LocationObjective.EssenceQuota;
             }
 
+            // 26일차: 보스전이 없는 곳에서 보스 목표를 쓰면 끝날 수 없으므로 정기 목표로 돌린다.
+            Boss.BossBattle battle =
+                Boss.BossBattle.Current;
+
+            if (objective == Locations.LocationObjective.Boss &&
+                battle == null)
+            {
+                objective = Locations.LocationObjective.EssenceQuota;
+            }
+
             State =
                 Locations.ObjectiveStateLogic.Resolve(
                     objective,
@@ -493,7 +503,9 @@ namespace ProjectTheta.Stage
                     SurvivalTrainsRequired,
                     _followers == null
                         ? 0
-                        : _followers.Count);
+                        : _followers.Count,
+                    battle != null &&
+                    battle.IsDefeated);
         }
     }
 }

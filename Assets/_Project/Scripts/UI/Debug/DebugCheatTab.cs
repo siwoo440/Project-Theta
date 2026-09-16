@@ -170,6 +170,11 @@ namespace ProjectTheta.UI.DebugTools
             // 25일차: 오피스
             DebugUi.Button(root, "정전 즉시 (오피스)", 0f, y, half, height, StartBlackout);
             DebugUi.Button(root, "게이트 모두 열기", half + gap, y, half, height, OpenGates);
+            y += height + gap;
+
+            // 26일차: 루프탑 클럽 · 보스전
+            DebugUi.Button(root, "드롭 즉시 · 템포 +1", 0f, y, half, height, DropAndTempo);
+            DebugUi.Button(root, "보스 진행 (보호막/지배)", half + gap, y, half, height, AdvanceBoss);
             y += height + DebugUi.SectionGap + 4f;
 
             // 시간
@@ -600,6 +605,39 @@ namespace ProjectTheta.UI.DebugTools
             DebugCheats.MarkUsed();
 
             ShowMessage($"{nearest.DisplayName} 예고를 시작했습니다");
+        }
+
+        private void DropAndTempo()
+        {
+            if (Stage.Locations.ClubBeat.Current == null)
+            {
+                ShowMessage("루프탑 클럽이 아닙니다", false);
+
+                return;
+            }
+
+            Stage.Locations.ClubBeat.Current.TempoUp();
+            Stage.Locations.ClubBeat.Current.DebugDrop();
+
+            DebugCheats.MarkUsed();
+
+            ShowMessage($"드롭 · 템포 {Stage.Locations.ClubBeat.Current.Tempo}단계");
+        }
+
+        private void AdvanceBoss()
+        {
+            if (Boss.BossBattle.Current == null)
+            {
+                ShowMessage("보스전이 없습니다", false);
+
+                return;
+            }
+
+            Boss.BossBattle.Current.DebugAdvance();
+
+            DebugCheats.MarkUsed();
+
+            ShowMessage($"보호막 {Boss.BossBattle.Current.ShieldsLeft}장 · 지배 {Mathf.RoundToInt(Boss.BossBattle.Current.DominanceNormalized * 100f)}%");
         }
 
         private void AnnounceClosing()

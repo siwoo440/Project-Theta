@@ -105,6 +105,11 @@ namespace ProjectTheta.Presentation
             StageMoments.SpecialTargetRecovered += HandleSpecialTargetRecovered;
             StageMoments.BlackoutStarted += HandleBlackoutStarted;
             StageMoments.MallClosing += HandleMallClosing;
+            StageMoments.ClubDrop += HandleClubDrop;
+            StageMoments.TempoChanged += HandleTempoChanged;
+            StageMoments.BossShieldBroken += HandleBossShieldBroken;
+            StageMoments.BossDefeated += HandleBossDefeated;
+            StageMoments.MindCollapsed += HandleMindCollapsed;
 
             if (_run != null)
             {
@@ -138,6 +143,11 @@ namespace ProjectTheta.Presentation
             StageMoments.SpecialTargetRecovered -= HandleSpecialTargetRecovered;
             StageMoments.BlackoutStarted -= HandleBlackoutStarted;
             StageMoments.MallClosing -= HandleMallClosing;
+            StageMoments.ClubDrop -= HandleClubDrop;
+            StageMoments.TempoChanged -= HandleTempoChanged;
+            StageMoments.BossShieldBroken -= HandleBossShieldBroken;
+            StageMoments.BossDefeated -= HandleBossDefeated;
+            StageMoments.MindCollapsed -= HandleMindCollapsed;
 
             if (_run != null)
             {
@@ -658,6 +668,101 @@ namespace ProjectTheta.Presentation
 
             GameVfx.Shake(
                 Tuning.VfxShakeMedium * 0.5f,
+                Tuning.VfxShakeSeconds);
+        }
+
+        // 26일차: 루프탑 클럽 · 보스전 -----------------------------------
+
+        private void HandleClubDrop(
+            int tempo)
+        {
+            GameVfx.Shake(
+                Tuning.VfxShakeMedium * (0.3f + 0.15f * tempo),
+                Tuning.VfxShakeSeconds * 0.6f);
+
+            GameVfx.FloatText(
+                "♪ DROP",
+                PlayerPosition + new Vector2(0f, 2.6f),
+                Stage.Locations.ClubBeat.GetTempoColor(tempo) + new Color(0f, 0f, 0f, 1f),
+                UiTheme.FontHeading,
+                0.6f);
+
+            GameAudio.Play(
+                GameSfx.UiStamp,
+                0.5f + 0.15f * tempo);
+        }
+
+        private void HandleTempoChanged(
+            int tempo)
+        {
+            GameVfx.FloatText(
+                $"템포 {tempo}단계",
+                PlayerPosition + new Vector2(0f, 3f),
+                new Color(1.00f, 0.70f, 0.90f),
+                UiTheme.FontHeading,
+                1.2f);
+        }
+
+        private void HandleBossShieldBroken(
+            Vector2 position,
+            int remaining)
+        {
+            GameVfx.Shards(
+                position + new Vector2(0f, 1.2f),
+                new Color(0.75f, 0.45f, 1.00f),
+                14);
+
+            GameVfx.FloatText(
+                remaining > 0
+                    ? $"보호막 파괴! 남은 {remaining}장"
+                    : "보호막 전부 파괴! 본체를 최면하세요",
+                position + new Vector2(0f, 3f),
+                UiTheme.Gold,
+                UiTheme.FontHeading,
+                1.4f);
+
+            GameVfx.Shake(
+                Tuning.VfxShakeMedium,
+                Tuning.VfxShakeSeconds);
+
+            GameAudio.Play(
+                GameSfx.DuelWin);
+        }
+
+        private void HandleBossDefeated(
+            Vector2 position)
+        {
+            GameVfx.Pillar(
+                position,
+                new Color(1.00f, 0.60f, 0.90f),
+                1.6f,
+                6f,
+                1.2f);
+
+            GameVfx.HitStop(
+                0.25f,
+                0.1f);
+
+            GameVfx.Shake(
+                Tuning.VfxShakeMedium * 1.5f,
+                Tuning.VfxShakeSeconds * 2f);
+
+            GameAudio.Play(
+                GameSfx.LevelUp);
+        }
+
+        private void HandleMindCollapsed(
+            Vector2 position)
+        {
+            GameVfx.FloatText(
+                "정신력 붕괴! 동행자를 잃었다",
+                position + new Vector2(0f, 2.4f),
+                UiTheme.Danger,
+                UiTheme.FontHeading,
+                1.4f);
+
+            GameVfx.Shake(
+                Tuning.VfxShakeMedium,
                 Tuning.VfxShakeSeconds);
         }
 
