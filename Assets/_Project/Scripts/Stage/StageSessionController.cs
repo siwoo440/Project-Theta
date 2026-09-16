@@ -239,6 +239,23 @@ namespace ProjectTheta.Stage
             EvaluateState();
         }
 
+        /// <summary>
+        /// 도중에 포기한다 (31일차). 더 이상 진행하지 않고 결과 화면으로 넘어간다.
+        /// 계약 정기는 결과 화면이 0으로 정한다.
+        /// </summary>
+        public void Abandon()
+        {
+            if (!IsRunning)
+            {
+                return;
+            }
+
+            State = StageState.Abandoned;
+        }
+
+        public bool IsAbandoned =>
+            State == StageState.Abandoned;
+
         public bool TryRecoverFollower(
             FollowerController follower,
             FollowerManager followerManager)
@@ -453,6 +470,9 @@ namespace ProjectTheta.Stage
                 case StageState.FailedByHealth:
                     return "FAILED - HP";
 
+                case StageState.Abandoned:
+                    return "GAVE UP";
+
                 case StageState.Running:
                 default:
                     return "RUNNING";
@@ -461,6 +481,12 @@ namespace ProjectTheta.Stage
 
         private void EvaluateState()
         {
+            // 31일차: 포기한 뒤에는 상태를 다시 계산하지 않는다.
+            if (State == StageState.Abandoned)
+            {
+                return;
+            }
+
             int health =
                 _playerHealth == null
                     ? 1

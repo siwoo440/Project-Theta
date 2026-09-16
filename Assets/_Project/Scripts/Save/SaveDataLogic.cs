@@ -17,17 +17,24 @@ namespace ProjectTheta.Save
 
         public static SaveData CreateDefault()
         {
-            return new SaveData
-            {
-                Version = CurrentVersion,
-                ClearCount = 0,
-                PlayCount = 0,
-                BestScore = 0,
-                BestRankLabel = "-",
-                ContractEssence = 0,
-                UpgradeLevels =
-                    new int[UpgradeTrackCount]
-            };
+            SaveData data =
+                new SaveData
+                {
+                    Version = CurrentVersion,
+                    ClearCount = 0,
+                    PlayCount = 0,
+                    BestScore = 0,
+                    BestRankLabel = "-",
+                    ContractEssence = 0,
+                    UpgradeLevels =
+                        new int[UpgradeTrackCount]
+                };
+
+            // 31일차: 설정 기본값(음량 80% · 전체화면 · 1920×1080 · 커서 보통).
+            SettingsLogic.ApplyDefaults(
+                data);
+
+            return data;
         }
 
         /// <summary>
@@ -110,6 +117,10 @@ namespace ProjectTheta.Save
 
             // 30일차: 알 수 없는 업적 ID를 지운다.
             AchievementLogic.Normalize(
+                data);
+
+            // 31일차: 설정 칸이 없던 예전 세이브는 기본값으로 채운다.
+            SettingsLogic.Normalize(
                 data);
 
             data.Version =

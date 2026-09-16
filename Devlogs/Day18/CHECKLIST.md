@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 30일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 31일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -363,6 +363,26 @@
 | 230 | 루프탑 클럽 보스 함락(엔딩) 뒤 아무 장소 출발 | 시작 계약 카드가 **4장**(모두 다른 계열), 키 1~4로 고를 수 있음. 허브 카드에 "해금: 시작 계약 카드 4장". 레벨업 카드는 여전히 3장 | `MasteryLogic.GetStartChoiceCount`, `RunProgression.OpenNextChoice`, `RunUpgradeChoicePanel` |
 | 231 | 지도를 거쳐 허브로 | 허브 "직전 도전" 카드에 장소 이름 · 결과 · 계약 정기가 보임(스테이지에서 바로 허브로 오지 않아도) | `GameSession.LastResult` |
 | 232 | 게임 종료 → 다시 실행 | 업적 · ★이 그대로이고 알림이 다시 뜨지 않음 | `SaveData.UnlockedAchievements` |
+
+## 6-13. 일시정지 · 설정 · 조작법 · 종료 (31일차 추가)
+
+**가장 중요한 줄은 235번과 238번이다.** Esc 메뉴를 닫은 뒤 게임이 멈춘 채로 남지 않는지, 포기하면 계약 정기가 0인지다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| --- | --- | --- | --- |
+| 233 | 메인 메뉴 | `시 작` 아래에 `설 정` · `조작법` · `종 료` 세 버튼, 그 아래 기록 패널 | `MainMenuScreen.BuildMenuRow` |
+| 234 | 메인 메뉴 `종 료` | "한 번 더"로 바뀌고 3초 안에 다시 누르면 재생이 멈춤(실행 파일이면 꺼짐). 3초가 지나면 "종 료"로 돌아감 | `MainMenuScreen.Quit` |
+| 235 | 스테이지에서 Esc → `계속하기` 또는 Esc | 게임이 멈추고 "일시정지" 창(장소 · 목표 표시). 닫으면 **바로 다시 움직임**(타이머 · NPC · 이동) | `PauseMenu`, `GameplayPause` |
+| 236 | 카드 선택 중 · 결과 화면 · 보스 엔딩 · 로딩 중 Esc | 일시정지 창이 뜨지 않음 | `PauseMenuLogic.CanOpen` |
+| 237 | 일시정지 → `조작법` → Esc → Esc | 조작법 창(이동 · 대시 · F · 최면 · 파동 · 회수 · 탈출 · 카드 · 지도 · Esc)과 아래에 이번 장소 설명 · 방해 세력. 첫 Esc는 조작법만, 두 번째 Esc는 일시정지를 닫음 | `ControlsPanel`, `UiEscapeStack` |
+| 238 | 일시정지 → `포기하기` 두 번 | "한 번 더 누르면 포기합니다" → 결과 화면 제목 "… — GAVE UP", 계약 정기 **+0**, `지도로` · `허브로`. 통계에 도전 1회 · 클리어 0 | `StageSessionController.Abandon`, `PauseMenuLogic.GetContractEssence` |
+| 239 | 설정 창(메인 메뉴 · 허브 `설정 더 보기` · 일시정지) | 전체 음량 · 효과음 · 음악 슬라이더와 %, 화면(전체화면 · 창 모드), 해상도 3개, 커서 크기 3개, 화면 흔들림 켜짐 · 꺼짐. 고른 값은 보라색 | `SettingsPanel` |
+| 240 | 효과음 · 전체 음량을 끌기 | 끄는 동안 "딱" 소리가 점점 작아짐. 0%면 게임 효과음이 들리지 않음 | `GameAudio.SfxVolume`, `SettingsApplier` |
+| 241 | 스테이지에서 커서 크기 작게 · 크게 | 동전 커서 · 최면 커서가 바로 작아지거나 커짐 | `HypnosisCursorController.HandleSettingsChanged` |
+| 242 | 설정 창 화면 흔들림 끔 → 허브 설정 카드 | 허브의 흔들림 버튼도 "꺼짐"으로 바뀜(같은 값) | `SettingsPanel.Closed`, `HubScreen.Refresh` |
+| 243 | 설정 바꿈 → 게임 종료 → 다시 실행 | 음량 · 커서 · 흔들림이 그대로. 예전 세이브로 시작해도 소리가 남(80%) | `SaveData.SettingsInitialized`, `SettingsLogic.Normalize` |
+| 244 | (실행 파일) 해상도 · 창 모드 바꾸기 | 창 크기가 1280×720 · 1600×900 · 1920×1080으로 바뀌고 UI 배치가 유지됨. 에디터에서는 바뀌지 않음(정상) | `SettingsApplier.ApplyScreen` |
+| 245 | 지도 통계 창 · 허브 업적 창에서 Esc | 창만 닫히고 다른 것은 열리지 않음 | `StatsPanel`, `AchievementPanel` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

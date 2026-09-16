@@ -142,6 +142,10 @@ namespace ProjectTheta.Core
                 _saveData =
                     SaveSystem.Load();
             }
+
+            // 31일차: 음량 · 화면 · 커서 설정을 게임 시작 때 적용한다.
+            SettingsApplier.Apply(
+                _saveData);
         }
 
         /// <summary>스테이지가 끝났을 때 결과를 넘겨둔다. 허브가 이것을 세이브에 반영한다.</summary>

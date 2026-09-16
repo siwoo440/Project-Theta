@@ -327,6 +327,11 @@ namespace ProjectTheta.Core
                     floorTransition,
                     runProgression);
 
+            // 31일차: Esc 일시정지 메뉴(계속 · 조작법 · 설정 · 포기).
+            new GameObject("PauseMenu")
+                .AddComponent<UI.PauseMenu>()
+                .Configure(stage);
+
             CreateDebugPanel(
                 new DebugPanelContext
                 {
