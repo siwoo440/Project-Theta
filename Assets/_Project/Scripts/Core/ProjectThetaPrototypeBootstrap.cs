@@ -114,9 +114,14 @@ namespace ProjectTheta.Core
                 player.GetComponent<
                     StageSessionController>();
 
+            // 30일차: 숙련도(★)마다 목표 정기가 조금씩 오른다.
             stage.ApplyObjective(
                 location.TimeLimitSeconds,
-                location.TargetEssence);
+                Save.MasteryLogic.GetTargetEssence(
+                    location.TargetEssence,
+                    session == null
+                        ? 0
+                        : session.Stars));
 
             FollowerManager followers =
                 player.GetComponent<

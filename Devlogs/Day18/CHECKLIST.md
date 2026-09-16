@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 29일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 30일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -346,6 +346,23 @@
 | 221 | 루프탑 클럽 보스 함락 | 빛기둥 · 흔들림 뒤 1.2초 후 화면이 어두워지고 금색 "ENDING", 문장 4줄이 한 줄씩 뜸 → 잠시 뒤 걷히고 결과 화면(제목 "라이벌 서큐버스 함락") | `EndingSequence`, `EndingLogic` |
 | 222 | 엔딩 문장이 뜨는 중 클릭 · Space | 바로 걷히는 단계로 넘어감. 엔딩 전 1.2초 · 걷히는 중에는 클릭이 무시됨 | `EndingLogic.Skip` |
 | 223 | 엔딩 뒤 `지도로` → 통계 | 엔딩(보스 함락) 1회. 지도에서 계속 다른 장소를 고를 수 있음 | `PlayStats.Endings` |
+
+## 6-12. 업적 · 장소 숙련도 · 엔딩 해금 (30일차 추가)
+
+**가장 중요한 줄은 226번과 230번이다.** 숙련도가 목표 · 보상에 실제로 반영되는지, 엔딩 뒤 시작 계약이 4장으로 늘어나는지다.
+세이브를 지우고 시작하면 첫 업적 알림부터 볼 수 있다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| --- | --- | --- | --- |
+| 224 | 새 세이브로 연수원 클리어 → `지도로` | 위쪽 가운데 금테 알림 "업적 달성! 첫 출근" → 이어서 "첫 계약"이 차례로 뜨고 사라짐. 허브 계약 정기에 보상(+20, +30)이 더해짐 | `AchievementToast`, `GameSession.TakeNewAchievements`, `AchievementLogic.UnlockNew` |
+| 225 | 지도 장소 배지 | "[1] ☆☆☆ 새 장소" / 클리어한 곳 "[1] ★☆☆ 클리어 1 · B". 오른쪽 정보창 첫 줄 "숙련 ★☆☆ (다음 ★까지 클리어 2회)" | `MapScreen.RefreshNodes`, `MasteryLogic` |
+| 226 | ★1 장소를 고름 → 정보창 · 출발 | 목표 정기가 기본값의 105%로 표시되고 "(★1 · 보상 +10%)". 스테이지 HUD 목표 정기도 같은 값. 클리어 시 계약 정기가 10% 더 많음 | `MasteryLogic.GetTargetEssence`, `StageResultPanel.SubmitResultToSession` |
+| 227 | 같은 장소 3번 · 6번 클리어 | ★★☆ → ★★★, 목표 +10% → +15%. ★★★이 되면 "단골 장소" 업적 | `MasteryLogic.StarClears` |
+| 228 | 지도 `통계` 창 | 장소별 표 오른쪽 끝에 "숙련" 열(★) | `PlayStatsLogic.BuildLocationRow` |
+| 229 | 허브 → 왼쪽 "누적 기록" 카드 · `업적 보기` | 카드에 플레이 시간 · 도전 · 클리어(율) · 업적 N/23 · 엔딩 상태. 버튼을 누르면 업적 23개 두 줄 창, 달성은 금색 "달성", 나머지는 진행 막대와 "값 / 목표". Esc · 닫기로 닫힘 | `HubScreen.RefreshStats`, `AchievementPanel` |
+| 230 | 루프탑 클럽 보스 함락(엔딩) 뒤 아무 장소 출발 | 시작 계약 카드가 **4장**(모두 다른 계열), 키 1~4로 고를 수 있음. 허브 카드에 "해금: 시작 계약 카드 4장". 레벨업 카드는 여전히 3장 | `MasteryLogic.GetStartChoiceCount`, `RunProgression.OpenNextChoice`, `RunUpgradeChoicePanel` |
+| 231 | 지도를 거쳐 허브로 | 허브 "직전 도전" 카드에 장소 이름 · 결과 · 계약 정기가 보임(스테이지에서 바로 허브로 오지 않아도) | `GameSession.LastResult` |
+| 232 | 게임 종료 → 다시 실행 | 업적 · ★이 그대로이고 알림이 다시 뜨지 않음 | `SaveData.UnlockedAchievements` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

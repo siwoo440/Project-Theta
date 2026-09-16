@@ -15,6 +15,9 @@ namespace ProjectTheta.Save
         public int Clears;
         public int Endings;
 
+        /// <summary>S등급으로 클리어한 횟수다 (30일차 업적).</summary>
+        public int SRanks;
+
         // 최면 · 동행
         public int Hypnosis;
         public int MaxFollowers;
