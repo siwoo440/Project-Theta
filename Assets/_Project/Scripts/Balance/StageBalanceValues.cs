@@ -112,6 +112,14 @@ namespace ProjectTheta.Balance
         // 쇼핑몰 폐점 방송 뒤 남은 시간이 줄어드는 배율이다.
         public float ClosingTimeScale = 1.3f;
 
+        // --- 루프탑 클럽 · 보스전 (26일차) ---
+        // 드롭 직후 최면 속도 배율이다.
+        public float DropHypnosisScale = 1.5f;
+        // 보호막을 공격하려면 내 세력이 라이벌 세력의 몇 배여야 하는지다.
+        public float BossAdvantageRatio = 1.2f;
+        // 라이벌 기술이 정신력에 주는 피해에 곱한다.
+        public float MindDamageScale = 1f;
+
         // --- 최면 속도 (19일차) ---
         // 플레이어 최면 전체에 곱하는 기본 배율이다. 등급별 속도 표는 그대로 두고 전체만 올린다.
         // 1.3이면 모든 등급이 1.3배 빨라진다 (일반 40/초 → 52/초). 되찾기에도 똑같이 걸린다.
@@ -184,6 +192,9 @@ namespace ProjectTheta.Balance
                 SurvivalTrainCount = SurvivalTrainCount,
                 DisruptorRampSeconds = DisruptorRampSeconds,
                 ClosingTimeScale = ClosingTimeScale,
+                DropHypnosisScale = DropHypnosisScale,
+                BossAdvantageRatio = BossAdvantageRatio,
+                MindDamageScale = MindDamageScale,
                 PlayerHypnosisSpeedScale = PlayerHypnosisSpeedScale,
                 LevelBaseXp = LevelBaseXp,
                 LevelXpGrowth = LevelXpGrowth,

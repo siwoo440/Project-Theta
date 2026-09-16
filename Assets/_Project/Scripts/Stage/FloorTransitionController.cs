@@ -161,6 +161,20 @@ namespace ProjectTheta.Stage
         private void TryUse(
             FloorStairway stairway)
         {
+            // 26일차: 클럽 바운서는 비상 우회가 없다.
+            if (stairway.Direction == FloorStairDirection.Up &&
+                Locations.VipEntrance.IsLocked(stairway.SourceFloor))
+            {
+                GameVfx.FloatText(
+                    $"바운서: 동행 {Locations.BouncerLogic.MaximumGuests}명을 넘으면 입장 불가 · [VIP] 게스트와 오거나 파동으로 따돌리세요",
+                    (Vector2)_player.position + new Vector2(0f, 2.2f),
+                    UI.Framework.UiTheme.Danger,
+                    UI.Framework.UiTheme.FontBody,
+                    1.6f);
+
+                return;
+            }
+
             bool locked =
                 stairway.Direction == FloorStairDirection.Up &&
                 Locations.PassGate.IsLocked(stairway.SourceFloor);

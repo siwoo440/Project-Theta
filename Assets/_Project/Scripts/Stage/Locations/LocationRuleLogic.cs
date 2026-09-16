@@ -186,6 +186,9 @@ namespace ProjectTheta.Stage.Locations
                         ? "특수 대상: 게이트를 열고 최상층 ★ 대표 비서를 회수하면 정기 보너스"
                         : "특수 대상: ★ 대회 앞둔 선수를 회수하면 정기 보너스";
 
+                case LocationObjective.Boss:
+                    return "보스 함락: 세력을 1.2배 넘긴 뒤 라이벌에게 최면을 걸어 보호막 3장을 깨고 지배하세요";
+
                 case LocationObjective.Stealth:
                     return $"잠입: 한 번도 들키지 않고 회수하면 정기 ×{StealthLogic.UndetectedMultiplier:0.0}";
 

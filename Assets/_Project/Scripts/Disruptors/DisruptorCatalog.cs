@@ -59,7 +59,13 @@ namespace ProjectTheta.Disruptors
         OfficeManager = 22,
         NightGuard = 23,
         OfficeRomeo = 24,
-        ChiefSecretary = 25
+        ChiefSecretary = 25,
+
+        // 루프탑 클럽 (26일차)
+        Bouncer = 26,
+        ClubMd = 27,
+        Dj = 28,
+        RivalSuccubus = 29
     }
 
     /// <summary>특수 능력 종류다 (부록 C.4).</summary>
@@ -75,7 +81,9 @@ namespace ProjectTheta.Disruptors
         AllIn = 7,
         DroneTracking = 8,
         ShutterLock = 9,
-        EmergencyMeeting = 10
+        EmergencyMeeting = 10,
+        TempoUp = 11,
+        ReverseGaze = 12
     }
 
     /// <summary>
@@ -552,6 +560,65 @@ namespace ProjectTheta.Disruptors
                 LookAroundSeconds = 6f,
                 TelegraphSeconds = 1.5f,
                 CooldownSeconds = 35f
+            },
+
+            // 루프탑 클럽 (26일차) ------------------------------------------
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.Bouncer,
+                Role = DisruptorRole.Gate,
+                DisplayName = "바운서",
+                SpriteRoot = "Characters/Geumtaeyang",
+                Tint = new Color(0.30f, 0.30f, 0.35f),
+                SightHalfAngle = 0f,
+                SightRange = 0f,
+                MoveSpeed = 0f,
+                Stationary = true,
+                LookAroundSeconds = 999f
+            },
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.ClubMd,
+                Role = DisruptorRole.Contester,
+                DisplayName = "클럽 MD",
+                SpriteRoot = "Characters/PopularGuy",
+                Tint = new Color(1.00f, 0.60f, 0.90f),
+                SightHalfAngle = 0f,
+                SightRange = 0f,
+                MoveSpeed = 2.0f
+            },
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.Dj,
+                Role = DisruptorRole.Gate,
+                DisplayName = "DJ",
+                IsSpecial = true,
+                Ability = SpecialAbilityKind.TempoUp,
+                SpriteRoot = "Characters/NPC_Female",
+                Tint = new Color(0.55f, 0.95f, 1.00f),
+                SightHalfAngle = 0f,
+                SightRange = 0f,
+                MoveSpeed = 0f,
+                Stationary = true,
+                LookAroundSeconds = 999f,
+                TelegraphSeconds = 2f,
+                CooldownSeconds = 30f
+            },
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.RivalSuccubus,
+                Role = DisruptorRole.Duelist,
+                DisplayName = "라이벌 서큐버스",
+                IsSpecial = true,
+                // 기술은 여러 개라 보스전이 직접 붙인다. 표에는 대표 기술만 적는다.
+                Ability = SpecialAbilityKind.ReverseGaze,
+                SpriteRoot = "Characters/NPC_Female",
+                Tint = new Color(0.80f, 0.45f, 1.00f),
+                SightHalfAngle = 0f,
+                SightRange = 0f,
+                MoveSpeed = 1.2f,
+                TelegraphSeconds = 1.5f,
+                CooldownSeconds = 9f
             }
         };
 
@@ -642,6 +709,10 @@ namespace ProjectTheta.Disruptors
 
                 case LocationId.OfficeTower:
                     AddOffice(result, floorCount);
+                    break;
+
+                case LocationId.RooftopClub:
+                    AddClub(result, floorCount);
                     break;
             }
 
@@ -800,6 +871,22 @@ namespace ProjectTheta.Disruptors
             }
 
             result.Add(new DisruptorPlacement(DisruptorKind.ChiefSecretary, top, 10.5f));
+        }
+
+        /// <summary>
+        /// 루프탑 클럽: 1F 바운서(VIP 라운지 계단 앞) · 클럽 MD, 2F DJ · 클럽 MD.
+        /// 라이벌 서큐버스는 배치표가 아니라 보스전이 2F에 세운다.
+        /// </summary>
+        private static void AddClub(
+            List<DisruptorPlacement> result,
+            int floorCount)
+        {
+            int top = Math.Max(0, floorCount - 1);
+
+            result.Add(new DisruptorPlacement(DisruptorKind.Bouncer, 0, Stage.FloorLayout.UpStairX - 2.5f));
+            result.Add(new DisruptorPlacement(DisruptorKind.ClubMd, 0, -5f));
+            result.Add(new DisruptorPlacement(DisruptorKind.Dj, top, Stage.Locations.ClubLayout.DjBoothX));
+            result.Add(new DisruptorPlacement(DisruptorKind.ClubMd, top, 5f));
         }
 
         private static void AddNightMarket(

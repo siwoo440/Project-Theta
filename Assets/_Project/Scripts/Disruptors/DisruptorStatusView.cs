@@ -109,6 +109,9 @@ namespace ProjectTheta.Disruptors
         private WatcherRole _watcher;
         private SpecialAbility _ability;
 
+        /// <summary>기술을 여러 개 가진 개체(보스)는 지금 예고 중인 기술을 보여 준다 (26일차).</summary>
+        private SpecialAbility[] _abilities;
+
         // 23일차 역할 · 능력
         private ContesterRole _contester;
         private StallToutRole _tout;
@@ -138,6 +141,7 @@ namespace ProjectTheta.Disruptors
             _body = body;
             _watcher = GetComponent<WatcherRole>();
             _ability = GetComponent<SpecialAbility>();
+            _abilities = GetComponents<SpecialAbility>();
             _contester = GetComponent<ContesterRole>();
             _tout = GetComponent<StallToutRole>();
             _live = GetComponent<LiveBroadcastAbility>();
@@ -371,19 +375,35 @@ namespace ProjectTheta.Disruptors
 
             string text = string.Empty;
 
-            if (!_body.IsStunned &&
-                _ability.Phase == AbilityPhase.Telegraph)
+            SpecialAbility telegraphing = null;
+
+            for (int i = 0;
+                 _abilities != null && i < _abilities.Length;
+                 i++)
             {
+                if (_abilities[i] != null &&
+                    _abilities[i].Phase == AbilityPhase.Telegraph)
+                {
+                    telegraphing = _abilities[i];
+
+                    break;
+                }
+            }
+
+            if (!_body.IsStunned &&
+                telegraphing != null)
+            {
+
                 // 진행 막대를 글자로 그린다. 이미지 하나 더 만드는 것보다 가볍고 읽기 쉽다.
                 int filled =
                     Mathf.Clamp(
                         Mathf.RoundToInt(
-                            _ability.TelegraphProgress * 8f),
+                            telegraphing.TelegraphProgress * 8f),
                         0,
                         8);
 
                 text =
-                    $"{_ability.DisplayName}!  {new string('■', filled)}{new string('□', 8 - filled)}";
+                    $"{telegraphing.DisplayName}!  {new string('■', filled)}{new string('□', 8 - filled)}";
             }
 
             if (_abilityText.text != text)

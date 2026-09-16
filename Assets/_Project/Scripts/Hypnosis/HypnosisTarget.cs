@@ -134,6 +134,8 @@ namespace ProjectTheta.Hypnosis
             // 24일차: 헬스장 심박 구역 · 단체 PT, 대회 앞둔 선수(고저항).
             Stage.Locations.GymZone.GetHypnosisMultiplier(transform.position) *
             AthleteMultiplier *
+            // 26일차: 루프탑 클럽 드롭 직후에는 최면이 잘 걸린다.
+            Stage.Locations.ClubBeat.HypnosisMultiplier *
             PlayerUpgradeMultipliers.HypnosisSpeed;
 
         private Stage.Locations.AthleteMark _athleteMark;
@@ -469,6 +471,17 @@ namespace ProjectTheta.Hypnosis
             ApplyClaim(
                 opponent.OwnerTag,
                 opponent);
+        }
+
+        /// <summary>
+        /// 라이벌 서큐버스 편으로 넘어간다 (26일차). 경쟁자 몸체가 없어 따라다니지 않는다.
+        /// 플레이어는 다른 경쟁자 소유 NPC처럼 되찾을 수 있다.
+        /// </summary>
+        public void ClaimByRival()
+        {
+            ApplyClaim(
+                NpcOwner.Rival,
+                null);
         }
 
         public void BeginFollowing()

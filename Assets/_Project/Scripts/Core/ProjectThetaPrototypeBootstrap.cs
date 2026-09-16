@@ -172,7 +172,9 @@ namespace ProjectTheta.Core
                     cameraFollow,
                     floorCount);
 
-            if (location.HasRivals)
+            // 26일차: 루프탑 클럽은 라이벌 서큐버스와 싸우므로 기존 경쟁자를 내보내지 않는다.
+            if (location.HasRivals &&
+                location.Id != LocationId.RooftopClub)
             {
                 CreateGeumtaeyang(
                     stage,
@@ -245,6 +247,14 @@ namespace ProjectTheta.Core
 
                 case LocationId.OfficeTower:
                     CreateOfficeRules(
+                        stage,
+                        player,
+                        followers,
+                        floorCount);
+                    break;
+
+                case LocationId.RooftopClub:
+                    CreateClubRules(
                         stage,
                         player,
                         followers,
@@ -613,6 +623,19 @@ namespace ProjectTheta.Core
                 return;
             }
 
+            if (location == LocationId.RooftopClub)
+            {
+                // 1F에 VIP 게스트 한 명. 데리고 있으면 바운서가 막지 않는다.
+                if (floor == 0)
+                {
+                    FindClosest(npcs, ClubLayout.VipGuestX, null)
+                        .AddComponent<NpcRoleMark>()
+                        .Configure(NpcRole.VipGuest);
+                }
+
+                return;
+            }
+
             if (location != LocationId.OfficeTower)
             {
                 return;
@@ -831,6 +854,90 @@ namespace ProjectTheta.Core
                     "회의실",
                     new Color(0.70f, 0.80f, 1.00f));
             }
+        }
+
+        /// <summary>
+        /// 루프탑 클럽 규칙과 보스전을 붙인다 (26일차).
+        ///   음악 박자   드롭 · 조명 점멸 · 템포
+        ///   VIP 입구    1F 위층 계단을 바운서가 지킨다
+        ///   보스전      2F 라이벌 서큐버스, 플레이어 정신력, 보스 HUD
+        /// </summary>
+        private void CreateClubRules(
+            StageSessionController stage,
+            PlayerSideViewController player,
+            FollowerManager followers,
+            int floorCount)
+        {
+            GameObject rules =
+                new GameObject(
+                    "ClubRules");
+
+            rules.AddComponent<ClubBeat>().Configure(
+                stage,
+                followers,
+                floorCount);
+
+            rules.AddComponent<VipEntrance>().Configure(
+                followers);
+
+            int top = Mathf.Max(0, floorCount - 1);
+
+            LocationProps.Box(
+                rules.transform,
+                "EntranceBar",
+                FloorSpace.ToWorld(0, new Vector2(ClubLayout.EntranceBarX, FloorSpace.WalkMaxY + 0.35f)),
+                new Vector2(3f, 0.8f),
+                new Color(0.30f, 0.15f, 0.35f),
+                -45);
+
+            LocationProps.Sign(
+                rules.transform,
+                0,
+                new Vector2(ClubLayout.EntranceBarX, FloorSpace.WalkMaxY + 1.2f),
+                "BAR",
+                new Color(1.00f, 0.60f, 0.90f));
+
+            LocationProps.Box(
+                rules.transform,
+                "DjBooth",
+                FloorSpace.ToWorld(top, new Vector2(ClubLayout.DjBoothX, FloorSpace.WalkMaxY + 0.4f)),
+                new Vector2(2.4f, 1f),
+                new Color(0.15f, 0.20f, 0.30f),
+                -45);
+
+            LocationProps.Sign(
+                rules.transform,
+                top,
+                new Vector2(ClubLayout.DjBoothX, FloorSpace.WalkMaxY + 1.3f),
+                "DJ 부스",
+                new Color(0.55f, 0.95f, 1.00f));
+
+            LocationProps.Box(
+                rules.transform,
+                "TopBar",
+                FloorSpace.ToWorld(top, new Vector2(ClubLayout.BarX, FloorSpace.WalkMaxY + 0.35f)),
+                new Vector2(3f, 0.8f),
+                new Color(0.30f, 0.15f, 0.35f),
+                -45);
+
+            LocationProps.Sign(
+                rules.transform,
+                top,
+                new Vector2((ClubLayout.DanceFloorMinX + ClubLayout.DanceFloorMaxX) * 0.5f, FloorSpace.WalkMaxY + 1.3f),
+                "댄스플로어 · 라이벌 서큐버스의 영역",
+                new Color(0.85f, 0.60f, 1.00f));
+
+            Boss.PlayerMind mind =
+                player.gameObject.AddComponent<Boss.PlayerMind>();
+
+            Boss.BossBattle.Create(
+                stage,
+                player.transform,
+                followers,
+                top);
+
+            BossHudView.Create(
+                mind);
         }
 
         /// <summary>한 판 기록을 붙인다 (20일차). 층 이동·레벨 알림을 구독하므로 둘 다 만들어진 뒤에 부른다.</summary>

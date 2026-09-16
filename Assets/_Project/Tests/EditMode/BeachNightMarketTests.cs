@@ -265,22 +265,13 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
-        public void Other_Locations_Still_Have_No_Disruptors()
+        public void Every_Location_Has_Disruptors()
         {
-            // 루프탑 클럽은 26일차부터 채운다.
+            // 26일차: 루프탑 클럽까지 8곳 모두 채웠다.
             foreach (LocationDefinition location in LocationCatalog.All)
             {
-                bool built =
-                    location.Id == LocationId.TrainingCenter ||
-                    location.Id == LocationId.Beach ||
-                    location.Id == LocationId.NightMarket ||
-                    location.Id == LocationId.SubwayStation ||
-                    location.Id == LocationId.FitnessCenter ||
-                    location.Id == LocationId.ShoppingMall ||
-                    location.Id == LocationId.OfficeTower;
-
                 Assert.AreEqual(
-                    built,
+                    true,
                     DisruptorCatalog.GetPlacements(location.Id, location.FloorCount).Count > 0,
                     location.Id.ToString());
             }

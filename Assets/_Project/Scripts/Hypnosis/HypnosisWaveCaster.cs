@@ -183,6 +183,9 @@ namespace ProjectTheta.Hypnosis
             SuppressNearbyAuras();
             StunNearbyDisruptors();
 
+            // 26일차: 파동이 라이벌의 매혹 게이지를 모두 지운다.
+            Boss.RivalCharm.ClearAll();
+
             // 24일차: 인파 흐름 중에는 파동이 동행자를 붙잡아 둔다.
             Disruptors.CrowdFlow.Anchor(
                 Disruptors.CrowdFlowLogic.AnchorSeconds);
