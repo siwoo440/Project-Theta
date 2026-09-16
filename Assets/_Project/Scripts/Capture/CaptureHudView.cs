@@ -276,7 +276,7 @@ namespace ProjectTheta.Capture
                 UiFactory.CreateText(
                     _panel,
                     "Order",
-                    "입력 순서   좌클릭 → 우클릭 → 좌클릭 → 우클릭",
+                    $"입력 순서   {Core.GameInput.ShortLabel(Core.GameAction.StruggleLeft)} → {Core.GameInput.ShortLabel(Core.GameAction.StruggleRight)} → {Core.GameInput.ShortLabel(Core.GameAction.StruggleLeft)} → {Core.GameInput.ShortLabel(Core.GameAction.StruggleRight)}",
                     UiTheme.FontSmall,
                     UiTheme.TextDisabled,
                     TextAnchor.MiddleCenter);

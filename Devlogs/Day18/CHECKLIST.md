@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 31일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 32일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -28,7 +28,7 @@
 | 5 | `출 격` → 지도에서 `출  발` | **게임이 멈추고 "시작 계약" 카드 3장**, 테두리 색이 서로 다름 | `RunProgression`, `RunUpgradeDrawLogic` |
 | 6 | `1` 키 | 카드 선택 → 게임 재개, 좌상단 `Lv 1` | `RunUpgradeChoicePanel` |
 | 7 | 1층 둘러보기 | **금태양·인기남 없음** | `OpponentFloorPlan` |
-| 8 | 튜토리얼 안내 | 화면 위쪽 "E 또는 좌클릭을 유지해 NPC를 최면하세요" | `StageHudView.RefreshTutorial` |
+| 8 | 튜토리얼 안내 | 화면 위쪽 "좌클릭을 유지해 NPC를 최면하세요" (32일차: 최면 키 설정을 따름, 기본 좌클릭만) | `StageHudView.RefreshTutorial` |
 | 9 | NPC 최면 | 좌상단 `+10`, 경험치 게이지 상승, 안내가 다음 단계로 | `RunExperienceLogic` |
 | 10 | 2명 이상 동행 | 안내 "회수 지점으로 데려가야…" | `TutorialFlowLogic` |
 | 11 | 오른쪽 끝 회수 지점으로 데려감 | 정기 증가, 경험치 `+30` 이상 | `StageSessionController.FlushPendingBatch` |
@@ -359,7 +359,7 @@
 | 226 | ★1 장소를 고름 → 정보창 · 출발 | 목표 정기가 기본값의 105%로 표시되고 "(★1 · 보상 +10%)". 스테이지 HUD 목표 정기도 같은 값. 클리어 시 계약 정기가 10% 더 많음 | `MasteryLogic.GetTargetEssence`, `StageResultPanel.SubmitResultToSession` |
 | 227 | 같은 장소 3번 · 6번 클리어 | ★★☆ → ★★★, 목표 +10% → +15%. ★★★이 되면 "단골 장소" 업적 | `MasteryLogic.StarClears` |
 | 228 | 지도 `통계` 창 | 장소별 표 오른쪽 끝에 "숙련" 열(★) | `PlayStatsLogic.BuildLocationRow` |
-| 229 | 허브 → 왼쪽 "누적 기록" 카드 · `업적 보기` | 카드에 플레이 시간 · 도전 · 클리어(율) · 업적 N/23 · 엔딩 상태. 버튼을 누르면 업적 23개 두 줄 창, 달성은 금색 "달성", 나머지는 진행 막대와 "값 / 목표". Esc · 닫기로 닫힘 | `HubScreen.RefreshStats`, `AchievementPanel` |
+| 229 | 허브 → 왼쪽 "누적 기록" 카드 · `업적 보기` | 카드에 플레이 시간 · 도전 · 클리어(율) · 업적 N/46 · 엔딩 상태. 버튼을 누르면 업적 46개가 한 줄씩 늘어선 창(32일차, 마우스 휠 · 오른쪽 막대로 스크롤), 달성은 금색 "달성", 나머지는 진행 막대와 "값 / 목표". Esc · 닫기로 닫힘 | `HubScreen.RefreshStats`, `AchievementPanel` |
 | 230 | 루프탑 클럽 보스 함락(엔딩) 뒤 아무 장소 출발 | 시작 계약 카드가 **4장**(모두 다른 계열), 키 1~4로 고를 수 있음. 허브 카드에 "해금: 시작 계약 카드 4장". 레벨업 카드는 여전히 3장 | `MasteryLogic.GetStartChoiceCount`, `RunProgression.OpenNextChoice`, `RunUpgradeChoicePanel` |
 | 231 | 지도를 거쳐 허브로 | 허브 "직전 도전" 카드에 장소 이름 · 결과 · 계약 정기가 보임(스테이지에서 바로 허브로 오지 않아도) | `GameSession.LastResult` |
 | 232 | 게임 종료 → 다시 실행 | 업적 · ★이 그대로이고 알림이 다시 뜨지 않음 | `SaveData.UnlockedAchievements` |
@@ -370,7 +370,7 @@
 
 | # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
 | --- | --- | --- | --- |
-| 233 | 메인 메뉴 | `시 작` 아래에 `설 정` · `조작법` · `종 료` 세 버튼, 그 아래 기록 패널 | `MainMenuScreen.BuildMenuRow` |
+| 233 | 메인 메뉴 | `시 작` 아래에 `설 정` · `업 적` · `종 료` 세 버튼, 그 아래 기록 패널 (32일차: 조작법 → 업적) | `MainMenuScreen.BuildMenuRow` |
 | 234 | 메인 메뉴 `종 료` | "한 번 더"로 바뀌고 3초 안에 다시 누르면 재생이 멈춤(실행 파일이면 꺼짐). 3초가 지나면 "종 료"로 돌아감 | `MainMenuScreen.Quit` |
 | 235 | 스테이지에서 Esc → `계속하기` 또는 Esc | 게임이 멈추고 "일시정지" 창(장소 · 목표 표시). 닫으면 **바로 다시 움직임**(타이머 · NPC · 이동) | `PauseMenu`, `GameplayPause` |
 | 236 | 카드 선택 중 · 결과 화면 · 보스 엔딩 · 로딩 중 Esc | 일시정지 창이 뜨지 않음 | `PauseMenuLogic.CanOpen` |
@@ -383,6 +383,28 @@
 | 243 | 설정 바꿈 → 게임 종료 → 다시 실행 | 음량 · 커서 · 흔들림이 그대로. 예전 세이브로 시작해도 소리가 남(80%) | `SaveData.SettingsInitialized`, `SettingsLogic.Normalize` |
 | 244 | (실행 파일) 해상도 · 창 모드 바꾸기 | 창 크기가 1280×720 · 1600×900 · 1920×1080으로 바뀌고 UI 배치가 유지됨. 에디터에서는 바뀌지 않음(정상) | `SettingsApplier.ApplyScreen` |
 | 245 | 지도 통계 창 · 허브 업적 창에서 Esc | 창만 닫히고 다른 것은 열리지 않음 | `StatsPanel`, `AchievementPanel` |
+
+## 6-14. 키 설정 (32일차 추가)
+
+**가장 중요한 줄은 248번과 250번이다.** 바꾼 키로 실제 조작이 되는지, 겹치는 키는 경고만 뜨고 저장되지 않는지다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| --- | --- | --- | --- |
+| 246 | 설정 창 열기 | 위에 `일반` · `키 설정` 탭. 처음엔 `일반`(31일차 내용 그대로) | `SettingsPanel.ShowPage` |
+| 247 | `키 설정` 탭 | 기본(위 · 아래 · 왼쪽 · 오른쪽 이동, 대시, 층 이동) / 최면(최면, 파동) / 위기(탈출 A · B) / 아이템(1 · 2) 줄, 기본 · 보조 칸. 기본값: W/↑ · S/↓ · A/← · D/→ · Shift/Space · F · **마우스 왼쪽(보조 없음)** · 마우스 오른쪽 · 마우스 왼쪽 · 마우스 오른쪽 · 1 · 2 | `InputBindingLogic.CreateDefault` |
+| 248 | 층 이동 기본 칸 → G → 스테이지에서 G | 칸이 "키를 누르세요…"(보라) → "G", 초록 "'층 이동 · 상호작용' → G". 계단 앞 안내가 "[G] 2F로 올라가기", G로 층 이동, F는 반응 없음 | `GameInput`, `FloorTransitionController`, `FloorStairway` |
+| 249 | 최면 보조 칸 → E → 스테이지 | 좌클릭과 E 둘 다로 최면이 됨. 최면 커서도 E에 반응 | `HypnosisCaster`, `HypnosisCursorController` |
+| 250 | 대시 기본 칸 → W | 빨간 경고 "W 키는 이미 '위로 이동'에서 쓰고 있습니다. 저장하지 않았습니다." 대시 칸은 Shift 그대로 | `InputBindingLogic.TrySet` (Conflict) |
+| 251 | 아무 칸 → Esc / 아무 칸 → F1 | Esc: "취소했습니다."(창은 닫히지 않음). F1: "바꿀 수 없는 키" 경고 | `SettingsPanel.UpdateListen`, `ReservedCodes` |
+| 252 | 탈출 A 칸 → 마우스 오른쪽 / → Q | 오른쪽: 탈출 B와 겹쳐 경고. Q: 저장되고, 붙잡혔을 때 안내가 "Q → 우클릭 → …", Q · 우클릭 번갈아 탈출 | `GetContext`, `CaptureHudView`, `PlayerCaptureController` |
+| 253 | 파동 기본 칸 → 마우스 가운데 | HUD "파동(휠클릭 유지)", 휠 버튼을 누르고 있으면 파동 | `HypnosisWaveCaster`, `StageHudView` |
+| 254 | 아이템 1 → Z | 화면 아래 아이템 칸 글자가 "Z", Z로 사용 (스테이지를 다시 들어가면 반영) | `PlayerConsumables`, `StageHudView` |
+| 255 | 보조 칸 옆 `×` | 보조 키가 비워지고 `×`가 사라짐. 기본 칸에는 `×`가 없음 | `InputBindingLogic.Clear` |
+| 256 | `기본값으로 되돌리기` 두 번 | "한 번 더 누르면 되돌립니다" → 모든 칸 기본값, 초록 안내 | `SettingsPanel.ResetKeys` |
+| 257 | 키 바꿈 → 게임 종료 → 다시 실행 | 바꾼 키 그대로. 조작법 창(허브 · 일시정지)에도 바뀐 키가 보임, 아이템 1 · 2 줄 있음 | `SaveData.KeyBindings`, `ControlsCatalog.Build` |
+| 260 | 업적 창의 새 업적(개근상 · 무결점 · 번개 출근 · 모범 연수생 · 루프탑의 주인 · 올 S · 대박 · 계약 부자 · 불굴 · 성장통 등) | 한 줄에 이름 · 설명 · +보상 · 진행 막대 · 값/목표가 겹치지 않음. 휠로 끝까지 내려가면 "밤샘 근무"가 마지막, 다시 열면 맨 위부터. 90초 안에 클리어하면 "번개 출근", 연수원 S면 "모범 연수생", 빼앗김 없이 클리어하면 무결점 진행도가 오름 | `AchievementLogic` (32일차 23개 추가), `AchievementPanel` |
+| 259 | 메인 메뉴 `업 적` | 허브와 같은 업적 창(달성 N/46, 한 줄 목록 · 스크롤, 진행 막대). Esc · 닫기로 닫힘. 메인 메뉴에 조작법 버튼이 없음 | `MainMenuScreen`, `AchievementPanel` |
+| 258 | 일시정지 → 설정 → 키 설정에서 칸을 누르고 마우스 클릭 | 게임이 멈춘 채라 최면 · 탈출 입력이 게임에 들어가지 않음 | `GameplayPause.IsPaused` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

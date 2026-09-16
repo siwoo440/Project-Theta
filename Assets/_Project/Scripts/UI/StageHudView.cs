@@ -1166,7 +1166,10 @@ namespace ProjectTheta.UI
                     UiFactory.CreateText(
                         keyBox.transform,
                         "Key",
-                        (i + 1).ToString(),
+                        Core.GameInput.ShortLabel(
+                            i == 0
+                                ? Core.GameAction.Item1
+                                : Core.GameAction.Item2),
                         UiTheme.FontSubheading,
                         UiTheme.Accent,
                         TextAnchor.MiddleCenter,
@@ -1509,7 +1512,7 @@ namespace ProjectTheta.UI
                                 1)))
                     {
                         _waveText.text =
-                            $"파동(우클릭 유지)  재사용 {_wave.CooldownRemaining:0.0}초";
+                            $"파동({Core.GameInput.ShortLabel(Core.GameAction.Wave)} 유지)  재사용 {_wave.CooldownRemaining:0.0}초";
                     }
 
                     _waveText.color = UiTheme.TextDisabled;
@@ -1558,7 +1561,7 @@ namespace ProjectTheta.UI
                                 3)))
                     {
                         _waveText.text =
-                            $"파동(우클릭 유지)  준비됨   집중력 -{_wave.FocusCost:0}";
+                            $"파동({Core.GameInput.ShortLabel(Core.GameAction.Wave)} 유지)  준비됨   집중력 -{_wave.FocusCost:0}";
                     }
 
                     _waveText.color = UiTheme.TextMuted;

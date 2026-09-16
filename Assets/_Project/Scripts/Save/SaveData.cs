@@ -113,6 +113,10 @@ namespace ProjectTheta.Save
         /// <summary><see cref="Save.CursorSize"/> 번호다.</summary>
         public int CursorSize = (int)Save.CursorSize.Normal;
 
+        // --- 32일차: 키 설정 ---
+        /// <summary>"MoveUp=W,UpArrow" 줄들이다. 비어 있으면 기본 키를 쓴다 (<see cref="Core.InputBindingLogic"/>).</summary>
+        public string[] KeyBindings = new string[0];
+
         public SaveData Clone()
         {
             SaveData copy =
@@ -136,6 +140,9 @@ namespace ProjectTheta.Save
                     Fullscreen = Fullscreen,
                     ResolutionIndex = ResolutionIndex,
                     CursorSize = CursorSize,
+                    KeyBindings = KeyBindings == null
+                        ? new string[0]
+                        : (string[])KeyBindings.Clone(),
                     UnlockedAchievements = UnlockedAchievements == null
                         ? new string[0]
                         : (string[])UnlockedAchievements.Clone()
