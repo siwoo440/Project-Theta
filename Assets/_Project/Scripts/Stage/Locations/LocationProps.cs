@@ -17,6 +17,19 @@ namespace ProjectTheta.Stage.Locations
 
         private static Sprite _solid;
 
+        /// <summary>
+        /// 지금 장소의 맵 테마다 (28일차). 구조물 소품(<see cref="Structure"/>) 색을 맵 톤에 맞출 때 쓴다.
+        /// 정적 값이라 구역을 지을 때마다 부트스트랩이 다시 정한다.
+        /// </summary>
+        public static Map.MapTheme Theme { get; set; }
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnPlayModeEnter()
+        {
+            Theme = null;
+        }
+
         /// <summary>월드 1칸짜리 흰 사각형이다.</summary>
         public static Sprite Solid
         {
@@ -69,6 +82,42 @@ namespace ProjectTheta.Stage.Locations
             return Create(parent, name, Solid, worldCenter, size, color, sortingOrder);
         }
 
+        /// <summary>
+        /// 장소 구조물(노점 · 망루 · 게이트 · 탕비실 · 바 …)이다 (28일차).
+        /// 색을 맵 톤에 맞추고, 불투명한 큰 물건이면 위에 강조색 테두리를 한 줄 두른다.
+        /// </summary>
+        public static SpriteRenderer Structure(
+            Transform parent,
+            string name,
+            Vector2 worldCenter,
+            Vector2 size,
+            Color color,
+            int sortingOrder)
+        {
+            SpriteRenderer body =
+                Create(parent, name, Solid, worldCenter, size, Map.MapPropTint.Apply(color, Theme), sortingOrder);
+
+            if (Theme != null &&
+                color.a >= 0.9f &&
+                size.x >= 0.8f &&
+                size.y >= 0.3f)
+            {
+                Color trim = Theme.Accent;
+                trim.a = 0.85f;
+
+                Create(
+                    parent,
+                    name + "_Trim",
+                    Solid,
+                    worldCenter + new Vector2(0f, size.y * 0.5f - 0.03f),
+                    new Vector2(size.x, 0.06f),
+                    trim,
+                    sortingOrder + 1);
+            }
+
+            return body;
+        }
+
         public static SpriteRenderer Blob(
             Transform parent,
             string name,
@@ -112,7 +161,7 @@ namespace ProjectTheta.Stage.Locations
         {
             float backY = FloorSpace.WalkMaxY;
 
-            Box(parent, "StallCounter",
+            Structure(parent, "StallCounter",
                 FloorSpace.ToWorld(floor, new Vector2(x, backY + 0.35f)),
                 new Vector2(2.6f, 0.9f),
                 new Color(0.35f, 0.24f, 0.18f),
@@ -136,19 +185,19 @@ namespace ProjectTheta.Stage.Locations
         {
             Color wood = new Color(0.85f, 0.70f, 0.50f);
 
-            Box(parent, "TowerLegLeft",
+            Structure(parent, "TowerLegLeft",
                 FloorSpace.ToWorld(floor, new Vector2(x - 0.6f, localY + 1.2f)),
                 new Vector2(0.14f, 2.4f),
                 wood,
                 BackSortOrder);
 
-            Box(parent, "TowerLegRight",
+            Structure(parent, "TowerLegRight",
                 FloorSpace.ToWorld(floor, new Vector2(x + 0.6f, localY + 1.2f)),
                 new Vector2(0.14f, 2.4f),
                 wood,
                 BackSortOrder);
 
-            Box(parent, "TowerPlatform",
+            Structure(parent, "TowerPlatform",
                 FloorSpace.ToWorld(floor, new Vector2(x, localY + 2.5f)),
                 new Vector2(1.8f, 0.3f),
                 new Color(0.95f, 0.30f, 0.28f),

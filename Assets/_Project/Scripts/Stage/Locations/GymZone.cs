@@ -161,7 +161,7 @@ namespace ProjectTheta.Stage.Locations
                     // 안쪽 벽을 따라 러닝머신을 늘어놓는다.
                     for (float x = _spec.MinX + 1f; x < _spec.MaxX - 0.5f; x += 2f)
                     {
-                        LocationProps.Box(
+                        LocationProps.Structure(
                             transform,
                             "Treadmill",
                             FloorSpace.ToWorld(_spec.Floor, new Vector2(x, top + 0.3f)),

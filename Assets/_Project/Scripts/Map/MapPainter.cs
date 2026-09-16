@@ -31,6 +31,9 @@ namespace ProjectTheta.Map
 
         public int Floor { get; }
 
+        /// <summary>이 층에 만든 오브젝트 수다 (28일차). 층당 예산(<see cref="MapBudget"/>) 점검에 쓴다.</summary>
+        public int CreatedCount { get; private set; }
+
         public int FloorCount { get; }
 
         public bool IsTopFloor =>
@@ -53,6 +56,7 @@ namespace ProjectTheta.Map
             int sortingOrder)
         {
             GameObject visual = new GameObject(name);
+            CreatedCount++;
 
             visual.transform.SetParent(_parent, false);
             visual.transform.position = new Vector3(x, y + _originY, 0f);
@@ -118,6 +122,7 @@ namespace ProjectTheta.Map
             float height)
         {
             GameObject blocker = new GameObject(name);
+            CreatedCount++;
 
             blocker.transform.SetParent(_parent, false);
             blocker.transform.position = new Vector3(x, y + _originY, 0f);
@@ -172,6 +177,8 @@ namespace ProjectTheta.Map
                     new Vector2(x, y + _originY),
                     fontSize,
                     color);
+
+            CreatedCount++;
 
             // 머리 위 글자보다 뒤, 캐릭터보다 뒤에 그린다. 간판은 배경이다.
             label.canvas.sortingOrder = -15;

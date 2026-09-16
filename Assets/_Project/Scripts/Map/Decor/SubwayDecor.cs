@@ -77,13 +77,7 @@ namespace ProjectTheta.Map.Decor
             p.Rect("AdBoard", 12.0f, 2.9f, 0.8f, 1.1f, new Color(0.95f, 0.75f, 0.35f), -58);
             p.Label("AdText", "SALE", 12.0f, 2.9f, 14, new Color(0.25f, 0.18f, 0.10f));
 
-            // 노란 점자 블록 · 승강장 경고선.
-            p.Rect("TactileStrip", 0f, 0.3f, MapBaseLayers.Width, 0.35f, new Color(0.95f, 0.80f, 0.20f), -68);
-
-            for (float x = -18f; x <= 18f; x += 0.35f)
-            {
-                p.Rect($"TactileDot_{x:0.##}", x, 0.3f, 0.08f, 0.08f, new Color(0.80f, 0.65f, 0.10f), -67);
-            }
+            // 노란 점자 블록은 바닥 무늬와 함께 구워 깐다 (28일차, FloorPatternLayout).
 
             MapBaseLayers.CeilingLights(p, new Color(0.45f, 0.47f, 0.50f), new Color(0.92f, 0.96f, 1.00f), false);
 

@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 27일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 28일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -315,6 +315,21 @@
 | 204 | 각 장소에서 벽 끝 · 계단 · 벤치 · 자판기 자리로 걸어가기 | 이동 범위 · 계단 [F] · 벤치(5.2) · 자판기(−10.2) 자리 막힘이 **연수원과 똑같음**. 층 이동 · 회수 지점 정상 | `MapBaseLayers` 충돌체, `SchoolHallwayPrototypeBuilder` |
 | 205 | 캐릭터가 소품 앞뒤를 지나감 | 벤치 · 자판기 대체 소품과 앞뒤가 자연스러움. 간판 글자가 캐릭터 · 머리 위 글자보다 뒤 | `MapPainter.Prop`, `Label` |
 | 206 | (선택) `Resources/Maps/Beach/Background.png`를 넣고 재생 | 해변 하늘 · 바다 도형 대신 그 그림이 벽 자리에 깔림 | `MapArtLibrary` |
+
+## 6-10. 로딩창 · 소품 색 · 맵 최적화 (28일차 추가)
+
+**가장 중요한 줄은 207번이다.** 모든 화면 전환이 로딩창을 거치고, 전환 뒤 게임이 멈춘 채로 남지 않는지다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| --- | --- | --- | --- |
+| 207 | 메인 메뉴 → 허브 → 지도 → 스테이지 → 결과 → 지도/허브를 차례로 넘김 | 넘길 때마다 어두운 로딩창이 뜨고, 새 화면이 다 지어진 뒤 0.25초 동안 흐려지며 사라짐. 넘긴 뒤 조작 · 시간 흐름 정상 | `LoadingScreen`, `GameSession.GoTo` |
+| 208 | 로딩창 가운데 | 주인공이 가운데 **로딩 바 위를** 바의 왼쪽 끝에서 오른쪽 끝까지 달림(바가 차오르는 끝과 같은 가로 위치). 바가 100%일 때 바 오른쪽 끝에 도착해 멈춰 서고, 잠깐(0.35초) 보인 뒤 넘어감. 로딩이 빨라도 1.4초쯤은 달리는 모습이 보임 | `LoadingScreenLogic.GetRunnerX` |
+| 209 | 로딩창 서큐버스 | 주인공 **왼쪽 위**에서 살짝 늦게 따라오며 위아래로 둥실거림. 그림이 없으면 보라색 날개 · 뿔 · 꼬리 실루엣 | `LoadingScreen.BuildCompanion` |
+| 210 | 로딩창 아래 · 오른쪽 아래 | 주인공 아래 로딩 바가 줄어들지 않고 100%까지 차고 옆에 %. 오른쪽 아래 "TIP" 패널 문장이 3초마다 바뀌고 같은 문장이 연달아 나오지 않음 | `LoadingScreenLogic`, `LoadingTips` |
+| 211 | 로딩창이 뜬 동안 버튼 · 키를 연타 | 두 번 넘어가거나 오류가 나지 않음 | `LoadingScreen.IsLoading` |
+| 212 | 야시장 · 해변가 · 오피스 · 클럽 · 헬스장 · 쇼핑몰의 규칙 소품 | 노점 · 망루 · 탕비실 · 바 · DJ 부스 · 러닝머신 · 셔터 틀 · 게이트 기둥 색이 맵 톤과 어울리고 바닥에 묻히지 않음. 큰 소품 위에 장소 강조색 테두리 한 줄 | `LocationProps.Structure`, `MapPropTint` |
+| 213 | 각 장소 바닥 무늬 | 27일차와 같은 줄눈 · 모래 알갱이 · 벽돌 · LED 칸 · 지하철 점자 블록이 보임(한 장으로 구운 그림) | `FloorPatternLayout`, `FloorPatternBaker` |
+| 214 | 8곳을 돌며 Console 확인 | `[Map] … 예산 … 초과` 경고가 없음. Profiler에서 스테이지 진입 프레임이 27일차보다 가벼움 | `MapBudget`, `SchoolHallwayPrototypeBuilder` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

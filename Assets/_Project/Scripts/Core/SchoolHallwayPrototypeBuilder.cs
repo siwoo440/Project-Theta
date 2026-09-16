@@ -43,6 +43,9 @@ namespace ProjectTheta.Core
         /// <summary>장소 맵 색 묶음이다 (27일차). null이면 예전 학교 복도로 짓는다.</summary>
         private static Map.MapTheme _theme;
 
+        /// <summary>마지막으로 지은 장소 건물에서 가장 많은 층의 맵 오브젝트 수다 (28일차). 예산 테스트가 읽는다.</summary>
+        public static int MaxThemedFloorObjectCount { get; private set; }
+
         /// <summary>건물 전체를 짓는다. 이미 지어져 있으면 아무것도 하지 않는다.</summary>
         public static void Build(
             int floorCount)
@@ -62,6 +65,7 @@ namespace ProjectTheta.Core
             Stage.Locations.LocationId location)
         {
             _theme = Map.MapThemeCatalog.Get(location);
+            MaxThemedFloorObjectCount = 0;
 
             try
             {
@@ -209,6 +213,19 @@ namespace ProjectTheta.Core
             Map.Decor.MapDecorCatalog.Draw(
                 _theme.Location,
                 painter);
+
+            // 28일차: 한 층 오브젝트 수가 예산을 넘으면 알린다.
+            MaxThemedFloorObjectCount =
+                Mathf.Max(
+                    MaxThemedFloorObjectCount,
+                    painter.CreatedCount);
+
+            if (Map.MapBudget.IsOver(
+                    painter.CreatedCount))
+            {
+                Debug.LogWarning(
+                    $"[Map] {_theme.Location} {floorIndex + 1}F 오브젝트 {painter.CreatedCount}개 — 예산 {Map.MapBudget.MaxObjectsPerFloor}개 초과");
+            }
 
             CreateBoundaries(parent);
 
