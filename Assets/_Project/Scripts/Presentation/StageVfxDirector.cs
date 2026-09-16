@@ -98,6 +98,9 @@ namespace ProjectTheta.Presentation
             StageMoments.AbilityTelegraphed += HandleAbilityTelegraphed;
             StageMoments.AbilityFired += HandleAbilityFired;
             StageMoments.BreakTimeStarted += HandleBreakTime;
+            StageMoments.TideWarning += HandleTideWarning;
+            StageMoments.PickpocketStole += HandlePickpocketStole;
+            StageMoments.PickpocketResolved += HandlePickpocketResolved;
 
             if (_run != null)
             {
@@ -124,6 +127,9 @@ namespace ProjectTheta.Presentation
             StageMoments.AbilityTelegraphed -= HandleAbilityTelegraphed;
             StageMoments.AbilityFired -= HandleAbilityFired;
             StageMoments.BreakTimeStarted -= HandleBreakTime;
+            StageMoments.TideWarning -= HandleTideWarning;
+            StageMoments.PickpocketStole -= HandlePickpocketStole;
+            StageMoments.PickpocketResolved -= HandlePickpocketResolved;
 
             if (_run != null)
             {
@@ -504,6 +510,73 @@ namespace ProjectTheta.Presentation
             GameAudio.Play(
                 GameSfx.UiStamp,
                 0.6f);
+        }
+
+        // 23일차: 해변가 · 야시장 ---------------------------------------
+
+        private void HandleTideWarning()
+        {
+            GameVfx.FloatText(
+                "파도가 온다! 물가에서 떨어지세요",
+                PlayerPosition + new Vector2(0f, 2.4f),
+                new Color(0.45f, 0.75f, 1.00f),
+                UiTheme.FontBody,
+                1.4f);
+
+            GameAudio.Play(
+                GameSfx.UiTick);
+        }
+
+        private void HandlePickpocketStole(
+            Vector2 position,
+            int amount)
+        {
+            GameVfx.FloatText(
+                $"소매치기! 정기 -{amount}  잡아라!",
+                position + new Vector2(0f, 2.2f),
+                UiTheme.Danger,
+                UiTheme.FontHeading,
+                1.4f);
+
+            GameVfx.Shake(
+                Tuning.VfxShakeMedium,
+                Tuning.VfxShakeSeconds);
+
+            GameAudio.Play(
+                GameSfx.UiStamp);
+        }
+
+        private void HandlePickpocketResolved(
+            Vector2 position,
+            bool caught)
+        {
+            if (caught)
+            {
+                GameVfx.Pop(
+                    VfxSprite.Spark,
+                    position + new Vector2(0f, 1f),
+                    UiTheme.Gold,
+                    1.2f);
+
+                GameVfx.FloatText(
+                    $"되찾았다! +{PickpocketLogic.CatchBonus}",
+                    position + new Vector2(0f, 2.2f),
+                    UiTheme.Gold,
+                    UiTheme.FontHeading,
+                    1.2f);
+
+                GameAudio.Play(
+                    GameSfx.Recovery);
+
+                return;
+            }
+
+            GameVfx.FloatText(
+                "소매치기가 인파 속으로 사라졌다",
+                PlayerPosition + new Vector2(0f, 2.4f),
+                UiTheme.TextMuted,
+                UiTheme.FontBody,
+                1.4f);
         }
 
         private void HandleFloorChanged(

@@ -181,12 +181,30 @@ namespace ProjectTheta.Core
                 player.transform,
                 followers);
 
-            if (location.Id == LocationId.TrainingCenter)
+            // 23일차: 어둠은 야시장에서만 켠다. 정적 값이라 구역이 바뀔 때마다 다시 정한다.
+            LanternLight.SetDarkness(
+                location.Id == LocationId.NightMarket);
+
+            switch (location.Id)
             {
-                CreateTrainingCenterRules(
-                    stage,
-                    player,
-                    floorCount);
+                case LocationId.TrainingCenter:
+                    CreateTrainingCenterRules(
+                        stage,
+                        player,
+                        floorCount);
+                    break;
+
+                case LocationId.Beach:
+                    CreateBeachRules(
+                        stage,
+                        player,
+                        followers);
+                    break;
+
+                case LocationId.NightMarket:
+                    CreateNightMarketRules(
+                        followers);
+                    break;
             }
 
             CreateCursorController();
@@ -297,6 +315,124 @@ namespace ProjectTheta.Core
                     floor % 2 == 0
                         ? -7f
                         : 7f);
+            }
+        }
+
+        /// <summary>
+        /// 해변가 환경 규칙을 붙인다 (23일차).
+        ///   밀물 · 썰물  30초마다 바닷가 쪽 줄이 8초 막힌다
+        ///   파라솔 그늘  안에 있으면 라이프가드에게 보이지 않는다
+        ///   망루 · 샤워장 표지 (샤워장 = 회수 지점)
+        /// </summary>
+        private void CreateBeachRules(
+            StageSessionController stage,
+            PlayerSideViewController player,
+            FollowerManager followers)
+        {
+            GameObject rules =
+                new GameObject(
+                    "BeachRules");
+
+            rules.AddComponent<TideCycle>().Configure(
+                stage,
+                player,
+                followers);
+
+            Color[] canopies =
+            {
+                new Color(1.00f, 0.45f, 0.45f, 0.80f),
+                new Color(0.40f, 0.75f, 1.00f, 0.80f),
+                new Color(1.00f, 0.85f, 0.35f, 0.80f),
+                new Color(0.55f, 0.90f, 0.60f, 0.80f)
+            };
+
+            float[] parasols =
+                DisruptorCatalog.BeachParasolX;
+
+            for (int i = 0;
+                 i < parasols.Length;
+                 i++)
+            {
+                GameObject parasol =
+                    new GameObject(
+                        $"Parasol_{i + 1}");
+
+                parasol.transform.SetParent(
+                    rules.transform,
+                    false);
+
+                // 그늘은 밀물에 잠기지 않는 높이에 둔다. 번갈아 앞뒤로 엇갈린다.
+                parasol.AddComponent<ParasolShade>().Configure(
+                    0,
+                    parasols[i],
+                    i % 2 == 0 ? -2.4f : -0.9f,
+                    canopies[i % canopies.Length]);
+            }
+
+            LocationProps.LifeguardTower(
+                rules.transform,
+                0,
+                DisruptorCatalog.BeachTowerX,
+                -1.2f);
+
+            LocationProps.Sign(
+                rules.transform,
+                0,
+                new Vector2(FloorLayout.RecoveryX, FloorSpace.WalkMaxY + 1.2f),
+                "샤워장",
+                new Color(0.55f, 0.85f, 1.00f));
+        }
+
+        /// <summary>
+        /// 야시장 환경 규칙을 붙인다 (23일차).
+        ///   어둠과 등불  노점 등불 아래에서만 최면 사거리가 온전하다
+        ///   좁은 골목    동행자가 한 줄로 따라온다
+        /// </summary>
+        private void CreateNightMarketRules(
+            FollowerManager followers)
+        {
+            GameObject rules =
+                new GameObject(
+                    "NightMarketRules");
+
+            followers.SingleFile = true;
+
+            string[] titles =
+            {
+                "꼬치", "떡볶이", "어묵", "호떡"
+            };
+
+            Color[] awnings =
+            {
+                new Color(0.95f, 0.35f, 0.30f),
+                new Color(1.00f, 0.60f, 0.25f),
+                new Color(0.95f, 0.80f, 0.30f),
+                new Color(0.85f, 0.40f, 0.70f)
+            };
+
+            float[] stalls =
+                DisruptorCatalog.NightMarketStallX;
+
+            for (int i = 0;
+                 i < stalls.Length;
+                 i++)
+            {
+                LocationProps.Stall(
+                    rules.transform,
+                    0,
+                    stalls[i],
+                    awnings[i % awnings.Length],
+                    titles[i % titles.Length]);
+
+                LanternLight.Create(
+                    rules.transform,
+                    $"Lantern_{i + 1}",
+                    FloorSpace.ToWorld(
+                        0,
+                        new Vector2(stalls[i], -1.8f)),
+                    2.2f,
+                    new Color(1.00f, 0.70f, 0.35f, 0.26f),
+                    true);
             }
         }
 

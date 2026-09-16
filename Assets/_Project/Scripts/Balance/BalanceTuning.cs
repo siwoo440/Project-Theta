@@ -217,6 +217,18 @@ namespace ProjectTheta.Balance
                 v => v.WatcherSightScale,
                 (v, x) => v.WatcherSightScale = x),
 
+            // 해변가 · 야시장 (23일차)
+            new TuningParameter(
+                nameof(StageBalanceValues.DarkHypnosisRangeScale),
+                TuningGroup.Danger, "어둠 속 최면 사거리", 0.3f, 1f, false,
+                v => v.DarkHypnosisRangeScale,
+                (v, x) => v.DarkHypnosisRangeScale = x),
+            new TuningParameter(
+                nameof(StageBalanceValues.ContestRiseScale),
+                TuningGroup.Danger, "헌팅 쟁탈 속도 배율", 0f, 3f, false,
+                v => v.ContestRiseScale,
+                (v, x) => v.ContestRiseScale = x),
+
             // 연출
             new TuningParameter(
                 nameof(StageBalanceValues.VfxShakeMedium),
