@@ -65,7 +65,10 @@ namespace ProjectTheta.Disruptors
         Bouncer = 26,
         ClubMd = 27,
         Dj = 28,
-        RivalSuccubus = 29
+        RivalSuccubus = 29,
+
+        // 27일차: 라이벌 분신
+        RivalClone = 30
     }
 
     /// <summary>특수 능력 종류다 (부록 C.4).</summary>
@@ -617,6 +620,22 @@ namespace ProjectTheta.Disruptors
                 SightHalfAngle = 0f,
                 SightRange = 0f,
                 MoveSpeed = 1.2f,
+                TelegraphSeconds = 1.5f,
+                CooldownSeconds = 9f
+            },
+            new DisruptorProfile
+            {
+                Kind = DisruptorKind.RivalClone,
+                Role = DisruptorRole.Duelist,
+                // 본체와 같은 이름이다. 그림자로만 구분한다.
+                DisplayName = "라이벌 서큐버스",
+                IsSpecial = true,
+                Ability = SpecialAbilityKind.ReverseGaze,
+                SpriteRoot = "Characters/NPC_Female",
+                Tint = new Color(0.80f, 0.45f, 1.00f),
+                SightHalfAngle = 0f,
+                SightRange = 0f,
+                MoveSpeed = 1.6f,
                 TelegraphSeconds = 1.5f,
                 CooldownSeconds = 9f
             }

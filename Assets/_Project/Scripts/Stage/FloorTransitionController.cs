@@ -404,6 +404,13 @@ namespace ProjectTheta.Stage
             IReadOnlyList<FollowerController> followers =
                 _followers.Followers;
 
+            // 27일차: 오피스 엘리베이터는 한 번에 4명까지만 탄다.
+            bool limited =
+                Locations.OfficeLayout.Active;
+
+            int riders = 0;
+            int left = 0;
+
             for (int i = 0;
                  i < followers.Count;
                  i++)
@@ -411,10 +418,28 @@ namespace ProjectTheta.Stage
                 FollowerController follower =
                     followers[i];
 
-                if (follower == null)
+                if (follower == null ||
+                    ElevatorWait.IsWaitingFollower(follower))
                 {
                     continue;
                 }
+
+                if (riders >=
+                    Locations.ElevatorLogic.GetRidersAllowed(
+                        limited,
+                        followers.Count))
+                {
+                    ElevatorWait.Begin(
+                        follower,
+                        _followers,
+                        _player);
+
+                    left++;
+
+                    continue;
+                }
+
+                riders++;
 
                 Vector2 offset =
                     (Vector2)follower.transform.position -
@@ -441,6 +466,16 @@ namespace ProjectTheta.Stage
                 SetPosition(
                     follower.transform,
                     target);
+            }
+
+            if (left > 0)
+            {
+                GameVfx.FloatText(
+                    $"엘리베이터 정원 {Locations.ElevatorLogic.Capacity}명 · {left}명은 아래층에서 대기 ({Locations.ElevatorLogic.WaitSeconds:0}초)",
+                    arrival + new Vector2(0f, 2.4f),
+                    UI.Framework.UiTheme.Danger,
+                    UI.Framework.UiTheme.FontBody,
+                    1.8f);
             }
         }
 

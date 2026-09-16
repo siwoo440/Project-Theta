@@ -40,6 +40,9 @@ namespace ProjectTheta.Core
         /// <summary>지금 짓는 장소의 색이다 (21일차). 층 색조에 곱해 장소마다 분위기를 다르게 한다.</summary>
         private static Color _locationTint = Color.white;
 
+        /// <summary>장소 맵 색 묶음이다 (27일차). null이면 예전 학교 복도로 짓는다.</summary>
+        private static Map.MapTheme _theme;
+
         /// <summary>건물 전체를 짓는다. 이미 지어져 있으면 아무것도 하지 않는다.</summary>
         public static void Build(
             int floorCount)
@@ -47,6 +50,29 @@ namespace ProjectTheta.Core
             Build(
                 floorCount,
                 Color.white);
+        }
+
+        /// <summary>
+        /// 장소 맵으로 건물 전체를 짓는다 (27일차).
+        /// 계단 · 이동 범위 벽 · 층 표지 · 벤치 · 자판기 충돌체는 학교 복도와 같은 자리이고,
+        /// 벽 · 바닥 · 소품 · 계단 모양만 장소 테마(<see cref="Map.MapThemeCatalog"/>)로 바뀐다.
+        /// </summary>
+        public static void Build(
+            int floorCount,
+            Stage.Locations.LocationId location)
+        {
+            _theme = Map.MapThemeCatalog.Get(location);
+
+            try
+            {
+                Build(
+                    floorCount,
+                    Color.white);
+            }
+            finally
+            {
+                _theme = null;
+            }
         }
 
         /// <summary>
@@ -97,9 +123,11 @@ namespace ProjectTheta.Core
                     floorIndex);
 
             _floorTint =
-                FloorPlanLogic.GetWallTint(
-                    floorIndex) *
-                _locationTint;
+                _theme == null
+                    ? FloorPlanLogic.GetWallTint(
+                          floorIndex) *
+                      _locationTint
+                    : Color.white;
 
             GameObject root =
                 new GameObject(
@@ -111,6 +139,16 @@ namespace ProjectTheta.Core
 
             Transform parent =
                 root.transform;
+
+            if (_theme != null)
+            {
+                BuildThemedFloor(
+                    parent,
+                    floorIndex,
+                    floorCount);
+
+                return;
+            }
 
             CreateVisual(parent, "BackWall", new Vector2(0f, 2.0f), new Vector2(38f, 5.1f), new Color(0.92f, 0.89f, 0.80f), -120);
             CreateVisual(parent, "LowerWallPanel", new Vector2(0f, 0.55f), new Vector2(38f, 1.1f), new Color(0.49f, 0.63f, 0.62f), -110);
@@ -130,6 +168,48 @@ namespace ProjectTheta.Core
             CreatePillars(parent);
             CreateBench(parent);
             CreateVendingMachine(parent);
+            CreateBoundaries(parent);
+
+            CreateStairway(
+                parent,
+                FloorStairDirection.Up,
+                floorIndex,
+                floorIndex + 1,
+                FloorPlanLogic.HasUpStair(
+                    floorIndex,
+                    floorCount));
+
+            CreateStairway(
+                parent,
+                FloorStairDirection.Down,
+                floorIndex,
+                floorIndex - 1,
+                FloorPlanLogic.HasDownStair(
+                    floorIndex));
+        }
+
+        /// <summary>테마 장소의 한 층이다 (27일차). 꾸미기는 장소마다, 뼈대는 학교 복도와 같다.</summary>
+        private static void BuildThemedFloor(
+            Transform parent,
+            int floorIndex,
+            int floorCount)
+        {
+            Map.MapPainter painter =
+                new Map.MapPainter(
+                    parent,
+                    floorIndex,
+                    floorCount,
+                    _originY,
+                    _theme.GetShade(floorIndex));
+
+            Map.MapBaseLayers.Draw(
+                painter,
+                _theme);
+
+            Map.Decor.MapDecorCatalog.Draw(
+                _theme.Location,
+                painter);
+
             CreateBoundaries(parent);
 
             CreateStairway(
@@ -303,12 +383,20 @@ namespace ProjectTheta.Core
 
             Color openingColor =
                 enabled
-                    ? new Color(0.11f, 0.12f, 0.16f)
+                    ? _theme == null ? new Color(0.11f, 0.12f, 0.16f) : _theme.StairOpening
                     : new Color(0.34f, 0.33f, 0.31f);
 
+            Color frameColor =
+                _theme == null
+                    ? new Color(0.21f, 0.26f, 0.27f)
+                    : _theme.StairFrame;
+
             // 문틀 아래 끝을 교실 문과 같은 높이(-0.12)에 맞춘다.
-            CreateVisual(parent, name + "_Frame", new Vector2(x, 0.97f), new Vector2(1.48f, 2.18f), new Color(0.21f, 0.26f, 0.27f), -42);
+            CreateVisual(parent, name + "_Frame", new Vector2(x, 0.97f), new Vector2(1.48f, 2.18f), frameColor, -42);
             CreateVisual(parent, name + "_Opening", new Vector2(x, 0.92f), new Vector2(1.28f, 1.98f), openingColor, -38);
+
+            // 27일차: 장소마다 입구 모양을 다르게 그린다 (엘리베이터 문 · 에스컬레이터 난간 · 나무 데크).
+            DrawStairStyle(parent, name, x, up, enabled);
 
             // 계단참을 층계 모양으로 쌓아 올라가는지 내려가는지 형태로 구분한다.
             for (int i = 0; i < 5; i++)
@@ -395,6 +483,52 @@ namespace ProjectTheta.Core
                 direction,
                 sourceFloor,
                 targetFloor);
+        }
+
+        private static void DrawStairStyle(
+            Transform parent,
+            string name,
+            float x,
+            bool up,
+            bool enabled)
+        {
+            if (_theme == null)
+            {
+                return;
+            }
+
+            switch (_theme.Stairs)
+            {
+                case Map.StairStyle.Elevator:
+                    // 계단참 위에 닫힌 엘리베이터 문 두 짝을 덮는다.
+                    CreateVisual(parent, name + "_ElevatorDoorL", new Vector2(x - 0.32f, 0.92f), new Vector2(0.6f, 1.95f), new Color(0.70f, 0.72f, 0.76f), -35);
+                    CreateVisual(parent, name + "_ElevatorDoorR", new Vector2(x + 0.32f, 0.92f), new Vector2(0.6f, 1.95f), new Color(0.66f, 0.68f, 0.72f), -35);
+                    CreateVisual(parent, name + "_ElevatorLamp", new Vector2(x, 2.1f), new Vector2(0.3f, 0.12f), enabled ? _theme.Accent : new Color(0.3f, 0.3f, 0.3f), -34);
+                    break;
+
+                case Map.StairStyle.Escalator:
+                    // 비스듬한 난간.
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float step = i * 0.28f;
+
+                        CreateVisual(
+                            parent,
+                            $"{name}_EscalatorRail_{i}",
+                            new Vector2(x + (up ? -0.55f + step * 0.8f : 0.55f - step * 0.8f), 0.2f + step),
+                            new Vector2(0.2f, 0.06f),
+                            _theme.Accent,
+                            -33);
+                    }
+                    break;
+
+                case Map.StairStyle.Deck:
+                    for (int i = 0; i < 4; i++)
+                    {
+                        CreateVisual(parent, $"{name}_DeckPlank_{i}", new Vector2(x, 0.1f + i * 0.5f), new Vector2(1.3f, 0.08f), new Color(0.40f, 0.28f, 0.16f), -33);
+                    }
+                    break;
+            }
         }
 
         /// <summary>계단 위에 붙는 층 표지다. 층수만큼 금색 눈금을 긋는다.</summary>
