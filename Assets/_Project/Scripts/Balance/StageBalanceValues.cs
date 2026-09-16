@@ -94,6 +94,12 @@ namespace ProjectTheta.Balance
         // 모든 감시자 시야 거리에 곱한다.
         public float WatcherSightScale = 1f;
 
+        // --- 해변가 · 야시장 (23일차) ---
+        // 야시장 어둠 속(등불 밖)에서 최면 사거리에 곱한다.
+        public float DarkHypnosisRangeScale = 0.7f;
+        // 헌팅남 쟁탈 게이지가 오르는 속도에 곱한다.
+        public float ContestRiseScale = 1f;
+
         // --- 최면 속도 (19일차) ---
         // 플레이어 최면 전체에 곱하는 기본 배율이다. 등급별 속도 표는 그대로 두고 전체만 올린다.
         // 1.3이면 모든 등급이 1.3배 빨라진다 (일반 40/초 → 52/초). 되찾기에도 똑같이 걸린다.
@@ -160,6 +166,8 @@ namespace ProjectTheta.Balance
                 AlertDashRise = AlertDashRise,
                 AlertDecayPerSecond = AlertDecayPerSecond,
                 WatcherSightScale = WatcherSightScale,
+                DarkHypnosisRangeScale = DarkHypnosisRangeScale,
+                ContestRiseScale = ContestRiseScale,
                 PlayerHypnosisSpeedScale = PlayerHypnosisSpeedScale,
                 LevelBaseXp = LevelBaseXp,
                 LevelXpGrowth = LevelXpGrowth,

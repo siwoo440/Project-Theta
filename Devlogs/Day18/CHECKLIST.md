@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 22일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 23일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -174,8 +174,37 @@
 | 107 | 평가관 예고 중 파동 맞힘 | 예고가 멈추고 멍함이 끝나면 이어서 진행 (예고를 건너뛰지 않음) | `SpecialAbilityLogic.Tick` |
 | 108 | 연수원에서 40초 대기 | "쉬는 시간!" + 8초 동안 복도 NPC가 빨라짐 | `BreakTimeBell` |
 | 109 | 2F 이상 "자습실 · 뛰지 마세요" 구역에서 대시 | "쉿!" + 경계도 +10 (감시자가 안 봐도) | `QuietRoomZone` |
-| 110 | 지도로 다른 장소(해변가 등) 이동 | 방해 세력 · 경계도 막대 · 쉬는 시간 **없음** | `DisruptorCatalog.GetPlacements` |
+| 110 | 지도로 아직 채우지 않은 장소(지하철역 · 헬스장 · 쇼핑몰 등) 이동 | 방해 세력 · 경계도 막대 · 쉬는 시간 **없음** | `DisruptorCatalog.GetPlacements` |
 | 111 | F1 상태 탭 | "방해 세력" 묶음에 경계도 수치 · 증원 횟수 · 가까운 적 상태 | `DebugStatusTab.RefreshDisruptors` |
+
+## 6-5. 해변가 · 야시장 (23일차 추가)
+
+**가장 중요한 줄은 114번과 124번이다.** 그늘에 숨으면 정말 안 들키는지, 소매치기를 쫓아가 되찾을 수 있는지다.
+2구역 지도에서 해변가, 3구역 이후 야시장을 고른다. 경로에 없으면 새 판을 시작해 다시 고른다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| ---: | --- | --- | --- |
+| 112 | 해변가 시작 | 모래빛 바닥, 파라솔 4개(색 천 + 바닥 그늘), 가운데 **망루**와 금색 ◆ **라이프가드 반장**, 오른쪽 끝 "샤워장", 라이프가드 2명 순찰, 중상단 아래 "다음 밀물까지 N초 · 동시 운반 …" | `CreateBeachRules`, `DisruptorCatalog.AddBeach` |
+| 113 | 라이프가드 시야 안에서 최면 | 연수원 조교처럼 `?` → `!` → 경계도 상승 (시야가 더 김) | `WatcherRole` |
+| 114 | **파라솔 그늘 안에서** 라이프가드를 마주 보고 최면 | `?`가 뜨지 않음, 시야 부채꼴도 진해지지 않음 | `ParasolShade.IsShaded`, `WatcherRole` 그늘 판정 |
+| 115 | 반장 시야(넓은 부채꼴)에서 들킴 | "호루라기 경보! ■■…" **1초 예고** → 붉은 큰 파문, 주변 NPC 머리 위 "경계!", 경계도 +25 | `WhistleAlarmAbility` |
+| 116 | "경계!" NPC에게 최면 | 게이지가 평소 절반 속도, 8초 뒤 "경계!"가 사라지면 원래 속도 | `WhistleAlarm`, `HypnosisTarget.BuildPerSecond` |
+| 117 | 동행자 4명 이상을 데리고 헌팅남 근처로 | 헌팅남 2명이 **맨 뒤 두 명** 옆에 붙고 머리 위 "♥ N%"가 오름. 가득 차면 "헌팅당했다!" + 그 동행자 이탈 | `ContesterRole`, `ClaimLogic` |
+| 118 | 헌팅남이 붙은 동행자 곁으로 플레이어가 감 | "♥ N%"가 빠르게 줄어듦 | `ClaimLogic.GuardDistance` |
+| 119 | 20초쯤 기다림 | "파도가 온다!" + 물빛 깜빡임 3초 → "밀물!" 물이 화면 아래쪽 줄을 덮음, 그 줄로 못 내려감, 8초 뒤 빠짐 | `TideCycle`, `TideLogic` |
+| 120 | 동행자 1~2명씩 나눠 회수 / 3명 이상 한 번에 회수 | 나눠 오면 정기가 절반, 한 번에 오면 1.2배 | `LocationObjectiveLogic.GetBatchMultiplier` |
+| 121 | 야시장 시작 | 화면이 어둡고 **노점 4개**(천막 · 이름) 앞에 주황 등불 빛, 등불 사이는 어두움 | `CreateNightMarketRules`, `LanternLight` |
+| 122 | 등불 빛 안 / 어두운 틈에서 NPC를 최면 | 어두운 곳에서는 **더 가까이 가야** 최면이 걸림 | `HypnosisCaster.FindBestTarget` 사거리 배율 |
+| 123 | 동행자를 데리고 걷기 | 동행자가 **한 줄**로 따라옴 | `FollowerManager.SingleFile` |
+| 124 | 동행자를 데리고 이름표 없는 회색 손님(소매치기)에게 다가감 | "✋ 등 뒤!" 1초 → "소매치기! 정기 -N 잡아라!" + 흔들림, 이름표 "◆ 소매치기" 드러남, 동행자 머리 위 "털림 -30%", HUD "소매치기 도주 중 20초" | `PickpocketAbility`, `PickpocketMark` |
+| 125 | 도주하는 소매치기에게 닿음 (대시 추천) | "되찾았다! +50", "털림" 표식 전부 사라짐, 소매치기 퇴장 | `PickpocketAbility.Resolve` |
+| 126 | (새 구역) 124 뒤 20초 동안 쫓지 않음 | "소매치기가 인파 속으로 사라졌다", 표식은 남아 회수 정기 70% | `PickpocketLogic.EscapeSeconds` |
+| 127 | 노점 앞 3m를 동행자와 지나감 | 호객꾼 "시식하고 가세요~", 동행자 하나가 멈추고 "호객 중 6"… 돌아가 1초 곁에 있으면 "되찾았다!", 6초 방치하면 "노점에 붙잡혔다!" + 이탈 | `StallToutRole`, `StallHoldLogic` |
+| 128 | 비틀거리는 **취객**이 동행자와 부딪침 / 취객에게 대시 | "휘청! 충동 +15" / "밀침!" + 취객 1m 밀려나 잠깐 멈춤 | `BlockerRole`, `ImpulseMeter.AddImpulse` |
+| 129 | **촬영팀**(◆, 앞에 흰 조명) 조명 안에서 최면 | "라이브 방송! ■■…" 1초 → 조명이 붉어지고 머리 위 "● LIVE", 경계도 +30, 8초 동안 따라옴. 조명 안에서는 사거리가 온전함 | `LiveBroadcastAbility` |
+| 130 | 촬영팀에게 파동 | `zZ` + 조명이 꺼짐, 방송 중이었다면 끊김 | `LiveBroadcastAbility.LateUpdate` |
+| 131 | 야시장에서 경계도 +30 치트 세 번 | 비상 · 회수 지점 잠금은 걸리지만 **증원은 오지 않음** | `DisruptorCatalog.GetReinforcementKind` |
+| 132 | F1 치트 `밀물 즉시` (해변가) · `소매치기 발동` (야시장, 동행자 데리고) | 바로 119 · 124번 흐름이 시작됨 | `DebugCheatTab.StartTide` · `TriggerPickpocket` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

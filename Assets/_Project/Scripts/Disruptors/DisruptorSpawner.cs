@@ -23,6 +23,7 @@ namespace ProjectTheta.Disruptors
         private FollowerManager _followers;
         private ZoneAlert _alert;
         private int _floorCount;
+        private LocationId _location;
 
         public static DisruptorSpawner Create(
             LocationDefinition location,
@@ -53,6 +54,7 @@ namespace ProjectTheta.Disruptors
             spawner._player = player;
             spawner._followers = followers;
             spawner._floorCount = floorCount;
+            spawner._location = location.Id;
 
             spawner._alert =
                 root.AddComponent<ZoneAlert>();
@@ -70,7 +72,8 @@ namespace ProjectTheta.Disruptors
                 spawner.Spawn(
                     placements[i].Kind,
                     placements[i].Floor,
-                    placements[i].X);
+                    placements[i].X,
+                    placements[i].Variant);
             }
 
             return spawner;
@@ -88,6 +91,16 @@ namespace ProjectTheta.Disruptors
         private void HandleReinforcement(
             Vector2 lastSeen)
         {
+            DisruptorKind? kind =
+                DisruptorCatalog.GetReinforcementKind(
+                    _location);
+
+            // 증원을 보내지 않는 장소(야시장)는 회수 지점 잠금만 걸린다.
+            if (kind == null)
+            {
+                return;
+            }
+
             int floor =
                 FloorPlanLogic.ClampFloor(
                     FloorSpace.FloorAt(
@@ -102,7 +115,7 @@ namespace ProjectTheta.Disruptors
 
             DisruptorBase body =
                 Spawn(
-                    DisruptorKind.TrainingAssistant,
+                    kind.Value,
                     floor,
                     x);
 
@@ -117,7 +130,8 @@ namespace ProjectTheta.Disruptors
         public DisruptorBase Spawn(
             DisruptorKind kind,
             int floor,
-            float x)
+            float x,
+            int variant = 0)
         {
             DisruptorProfile profile =
                 DisruptorCatalog.Get(kind);
@@ -167,7 +181,9 @@ namespace ProjectTheta.Disruptors
                 animator,
                 floor);
 
-            if (profile.Role == DisruptorRole.Watcher)
+            // 촬영팀처럼 부채꼴 대신 조명으로 보는 감시자는 감시 역할을 붙이지 않는다.
+            if (profile.Role == DisruptorRole.Watcher &&
+                profile.SightRange > 0f)
             {
                 WatcherRole watcher =
                     go.AddComponent<WatcherRole>();
@@ -176,14 +192,14 @@ namespace ProjectTheta.Disruptors
                     _player);
             }
 
-            if (profile.Ability == SpecialAbilityKind.AttendanceCheck)
-            {
-                AttendanceCheckAbility ability =
-                    go.AddComponent<AttendanceCheckAbility>();
+            AddRole(
+                go,
+                profile,
+                variant);
 
-                ability.Configure(
-                    _followers);
-            }
+            AddAbility(
+                go,
+                profile);
 
             DisruptorStatusView view =
                 go.AddComponent<DisruptorStatusView>();
@@ -192,6 +208,65 @@ namespace ProjectTheta.Disruptors
                 body);
 
             return body;
+        }
+
+        /// <summary>감시 외 역할을 붙인다 (23일차).</summary>
+        private void AddRole(
+            GameObject go,
+            DisruptorProfile profile,
+            int variant)
+        {
+            switch (profile.Kind)
+            {
+                case DisruptorKind.BeachHunter:
+                    go.AddComponent<ContesterRole>().Configure(
+                        _followers,
+                        _player,
+                        variant);
+                    break;
+
+                case DisruptorKind.StallTout:
+                    go.AddComponent<StallToutRole>().Configure(
+                        _followers,
+                        _player);
+                    break;
+
+                case DisruptorKind.Drunkard:
+                    go.AddComponent<BlockerRole>().Configure(
+                        _followers,
+                        _player);
+                    break;
+            }
+        }
+
+        private void AddAbility(
+            GameObject go,
+            DisruptorProfile profile)
+        {
+            switch (profile.Ability)
+            {
+                case SpecialAbilityKind.AttendanceCheck:
+                    go.AddComponent<AttendanceCheckAbility>().Configure(
+                        _followers);
+                    break;
+
+                case SpecialAbilityKind.WhistleAlarm:
+                    go.AddComponent<WhistleAlarmAbility>().Configure(
+                        _player);
+                    break;
+
+                case SpecialAbilityKind.LiveBroadcast:
+                    go.AddComponent<LiveBroadcastAbility>().Configure(
+                        _player);
+                    break;
+
+                case SpecialAbilityKind.Pickpocket:
+                    go.AddComponent<PickpocketAbility>().Configure(
+                        _player,
+                        _followers,
+                        _stage);
+                    break;
+            }
         }
     }
 }

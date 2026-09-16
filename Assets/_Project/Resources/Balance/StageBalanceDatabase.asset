@@ -72,6 +72,8 @@ MonoBehaviour:
     AlertDashRise: 8
     AlertDecayPerSecond: 4
     WatcherSightScale: 1
+    DarkHypnosisRangeScale: 0.7
+    ContestRiseScale: 1
     PlayerHypnosisSpeedScale: 1.3
     LevelBaseXp: 60
     LevelXpGrowth: 35

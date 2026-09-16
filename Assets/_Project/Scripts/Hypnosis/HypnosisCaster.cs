@@ -368,6 +368,12 @@ namespace ProjectTheta.Hypnosis
 
             HypnosisTarget best = null;
 
+            // 23일차: 야시장 어둠 속에서는 등불 · 조명 밖이면 사거리가 줄어든다.
+            float scanRange =
+                _scanRange *
+                Stage.Locations.LanternLight.GetRangeMultiplier(
+                    transform.position);
+
             float bestDistanceSquared =
                 float.MaxValue;
 
@@ -393,7 +399,7 @@ namespace ProjectTheta.Hypnosis
                 if (!HypnosisTargetingLogic.IsCandidate(
                         delta.x,
                         delta.y,
-                        _scanRange,
+                        scanRange,
                         _verticalTolerance))
                 {
                     continue;

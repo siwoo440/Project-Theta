@@ -383,6 +383,44 @@ namespace ProjectTheta.Impulse
             return true;
         }
 
+        /// <summary>
+        /// 취객과 부딪히는 등 밖에서 충동을 올린다 (23일차).
+        /// 동행 중이고 아직 폭주 흐름에 들어가지 않았을 때만 오른다. 올렸으면 true다.
+        /// </summary>
+        public bool AddImpulse(
+            float amount)
+        {
+            if (!IsFollowingActive)
+            {
+                return false;
+            }
+
+            switch (State)
+            {
+                case ImpulseState.Preparing:
+                case ImpulseState.Rampaging:
+                case ImpulseState.Capturing:
+                case ImpulseState.Recovering:
+                    return false;
+            }
+
+            CurrentImpulse =
+                Mathf.Min(
+                    _maximumImpulse,
+                    CurrentImpulse +
+                    Mathf.Max(
+                        0f,
+                        amount));
+
+            State =
+                ImpulseLogic.ClassifyBand(
+                    CurrentImpulse,
+                    _warningThreshold,
+                    _dangerThreshold);
+
+            return true;
+        }
+
         public void RelieveImpulse(
             float amount)
         {

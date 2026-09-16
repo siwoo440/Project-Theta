@@ -53,6 +53,17 @@ namespace ProjectTheta.Stage
         /// <summary>기업 연수원 쉬는 시간 종이 울렸다.</summary>
         public static event Action BreakTimeStarted;
 
+        // --- 23일차: 해변가 · 야시장 ---
+
+        /// <summary>해변가 밀물 예고가 시작됐다.</summary>
+        public static event Action TideWarning;
+
+        /// <summary>소매치기가 정기를 훔쳤다. (소매치기 위치, 훔친 양)</summary>
+        public static event Action<Vector2, int> PickpocketStole;
+
+        /// <summary>소매치기 도주가 끝났다. (위치, 잡았는지)</summary>
+        public static event Action<Vector2, bool> PickpocketResolved;
+
         public static void RaiseHypnosisSucceeded(
             Vector2 position,
             bool wasReclaim)
@@ -147,6 +158,29 @@ namespace ProjectTheta.Stage
             BreakTimeStarted?.Invoke();
         }
 
+        public static void RaiseTideWarning()
+        {
+            TideWarning?.Invoke();
+        }
+
+        public static void RaisePickpocketStole(
+            Vector2 position,
+            int amount)
+        {
+            PickpocketStole?.Invoke(
+                position,
+                amount);
+        }
+
+        public static void RaisePickpocketResolved(
+            Vector2 position,
+            bool caught)
+        {
+            PickpocketResolved?.Invoke(
+                position,
+                caught);
+        }
+
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetOnPlayModeEnter()
@@ -163,6 +197,9 @@ namespace ProjectTheta.Stage
             AbilityTelegraphed = null;
             AbilityFired = null;
             BreakTimeStarted = null;
+            TideWarning = null;
+            PickpocketStole = null;
+            PickpocketResolved = null;
         }
     }
 }

@@ -28,6 +28,9 @@ namespace ProjectTheta.Disruptors
                 _timer,
                 TelegraphSeconds);
 
+        /// <summary>한 번이라도 발동했는지다. 이름표를 숨겼다가 드러내는 개체(소매치기)가 쓴다.</summary>
+        public bool HasFired { get; private set; }
+
         public float CooldownRemaining =>
             _timer.Phase == AbilityPhase.Cooldown
                 ? _timer.Remaining
@@ -103,6 +106,8 @@ namespace ProjectTheta.Disruptors
 
             if (fired)
             {
+                HasFired = true;
+
                 Fire();
             }
         }

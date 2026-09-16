@@ -22,6 +22,12 @@ namespace ProjectTheta.Companion
 
         private float _contestWardRemaining;
 
+        /// <summary>한 줄 대형 칸 간격이다 (23일차, 야시장 좁은 골목).</summary>
+        private const float SingleFileSpacing = 0.75f;
+
+        /// <summary>좁은 골목에서는 동행자가 한 줄로만 따라온다. 부트스트랩이 장소마다 정한다.</summary>
+        public bool SingleFile { get; set; }
+
         /// <summary>차단 부적으로 플레이어 동행 NPC가 쟁탈 면역인 상태다.</summary>
         public bool IsContestWarded =>
             _contestWardRemaining > 0f;
@@ -174,15 +180,19 @@ namespace ProjectTheta.Companion
                     : _playerController.FacingDirection;
 
             int rows =
-                Mathf.Max(
-                    1,
-                    _rowsPerColumn);
+                SingleFile
+                    ? 1
+                    : Mathf.Max(
+                        1,
+                        _rowsPerColumn);
 
             float horizontalDistance =
                 FollowerFormationLogic.
                     GetCompactHorizontalDistance(
                         slotIndex,
-                        _horizontalSpacing,
+                        SingleFile
+                            ? SingleFileSpacing
+                            : _horizontalSpacing,
                         rows);
 
             float verticalOffset =

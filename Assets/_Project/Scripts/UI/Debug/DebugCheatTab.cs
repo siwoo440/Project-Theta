@@ -151,6 +151,11 @@ namespace ProjectTheta.UI.DebugTools
 
             DebugUi.Button(root, "가까운 특수 능력 발동", 0f, y, half, height, TriggerNearestAbility);
             DebugUi.Button(root, "방해 세력 전부 멍함", half + gap, y, half, height, StunAllDisruptors);
+            y += height + gap;
+
+            // 23일차: 해변가 · 야시장
+            DebugUi.Button(root, "밀물 즉시 (해변가)", 0f, y, half, height, StartTide);
+            DebugUi.Button(root, "소매치기 발동 (야시장)", half + gap, y, half, height, TriggerPickpocket);
             y += height + DebugUi.SectionGap + 4f;
 
             // 시간
@@ -581,6 +586,62 @@ namespace ProjectTheta.UI.DebugTools
             DebugCheats.MarkUsed();
 
             ShowMessage($"{nearest.DisplayName} 예고를 시작했습니다");
+        }
+
+        private void StartTide()
+        {
+            if (Stage.Locations.TideCycle.Current == null)
+            {
+                ShowMessage("해변가가 아닙니다", false);
+
+                return;
+            }
+
+            Stage.Locations.TideCycle.Current.DebugStartWarning();
+
+            DebugCheats.MarkUsed();
+
+            ShowMessage("밀물 예고를 시작했습니다");
+        }
+
+        /// <summary>소매치기 능력을 조건 없이 예고부터 시작한다. 가까이 있지 않으면 예고 뒤 놓친다.</summary>
+        private void TriggerPickpocket()
+        {
+            DisruptorBase.CopyActive(
+                _disruptorBuffer);
+
+            for (int i = 0;
+                 i < _disruptorBuffer.Count;
+                 i++)
+            {
+                PickpocketAbility thief =
+                    _disruptorBuffer[i] == null
+                        ? null
+                        : _disruptorBuffer[i].GetComponent<PickpocketAbility>();
+
+                if (thief == null)
+                {
+                    continue;
+                }
+
+                // 플레이어 곁으로 옮겨 두어야 예고 뒤 실제로 훔친다.
+                if (_context.Caster != null)
+                {
+                    thief.transform.position =
+                        _context.Caster.transform.position +
+                        new Vector3(-1.2f, 0f, 0f);
+                }
+
+                thief.DebugTrigger();
+
+                DebugCheats.MarkUsed();
+
+                ShowMessage("소매치기가 다가옵니다 (동행자가 있어야 훔칩니다)");
+
+                return;
+            }
+
+            ShowMessage("야시장이 아니거나 이미 퇴장했습니다", false);
         }
 
         private void StunAllDisruptors()

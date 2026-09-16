@@ -109,6 +109,13 @@ namespace ProjectTheta.Disruptors
         private WatcherRole _watcher;
         private SpecialAbility _ability;
 
+        // 23일차 역할 · 능력
+        private ContesterRole _contester;
+        private StallToutRole _tout;
+        private LiveBroadcastAbility _live;
+        private PickpocketAbility _pickpocket;
+        private string _nameLabel = string.Empty;
+
         private Text _nameText;
         private Text _stateText;
         private Text _abilityText;
@@ -121,6 +128,10 @@ namespace ProjectTheta.Disruptors
             _body = body;
             _watcher = GetComponent<WatcherRole>();
             _ability = GetComponent<SpecialAbility>();
+            _contester = GetComponent<ContesterRole>();
+            _tout = GetComponent<StallToutRole>();
+            _live = GetComponent<LiveBroadcastAbility>();
+            _pickpocket = GetComponent<PickpocketAbility>();
 
             DisruptorProfile profile =
                 body.Profile;
@@ -137,12 +148,17 @@ namespace ProjectTheta.Disruptors
                     special ? 22 : 18,
                     special ? UiTheme.Gold : new Color(0.80f, 0.84f, 0.95f, 0.85f));
 
-            _nameText.text =
+            _nameLabel =
                 profile == null
                     ? string.Empty
                     : special
                         ? $"◆ {profile.DisplayName}"
                         : profile.DisplayName;
+
+            _nameText.text =
+                IsNameHidden
+                    ? string.Empty
+                    : _nameLabel;
 
             _stateText =
                 WorldLabel.Create(
@@ -166,6 +182,14 @@ namespace ProjectTheta.Disruptors
                 CreateCone();
             }
         }
+
+        /// <summary>소매치기는 능력을 쓰기 전까지 손님처럼 보인다.</summary>
+        private bool IsNameHidden =>
+            _body != null &&
+            _body.Profile != null &&
+            _body.Profile.HiddenUntilFired &&
+            (_ability == null ||
+             !_ability.HasFired);
 
         private void CreateCone()
         {
@@ -194,9 +218,23 @@ namespace ProjectTheta.Disruptors
                 return;
             }
 
+            UpdateName();
             UpdateState();
             UpdateAbility();
             UpdateCone();
+        }
+
+        private void UpdateName()
+        {
+            string text =
+                IsNameHidden
+                    ? string.Empty
+                    : _nameLabel;
+
+            if (_nameText.text != text)
+            {
+                _nameText.text = text;
+            }
         }
 
         private void UpdateState()
@@ -214,6 +252,35 @@ namespace ProjectTheta.Disruptors
             {
                 state = "!";
                 color = UiTheme.Danger;
+            }
+            else if (_pickpocket != null &&
+                     _pickpocket.IsFleeing)
+            {
+                state = $"도주 {Mathf.CeilToInt(_pickpocket.FleeRemaining)}";
+                color = new Color(1.00f, 0.75f, 0.35f);
+            }
+            else if (_live != null &&
+                     _live.IsLive)
+            {
+                state = "● LIVE";
+                color = UiTheme.Danger;
+            }
+            else if (_tout != null &&
+                     _tout.IsHolding)
+            {
+                state = "어서 오세요~";
+                color = new Color(1.00f, 0.70f, 0.35f);
+            }
+            else if (_contester != null &&
+                     _contester.ClaimProgress > 0.01f)
+            {
+                state = $"♥ {Mathf.RoundToInt(_contester.ClaimProgress * 100f)}%";
+
+                color =
+                    Color.Lerp(
+                        new Color(1.00f, 0.75f, 0.85f),
+                        UiTheme.Danger,
+                        _contester.ClaimProgress);
             }
             else if (_watcher != null &&
                      _watcher.SuspicionProgress > 0.01f)

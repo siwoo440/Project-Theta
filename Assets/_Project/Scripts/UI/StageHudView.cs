@@ -211,6 +211,7 @@ namespace ProjectTheta.UI
             RefreshSurvival();
             RefreshObjective();
             RefreshAlert();
+            RefreshLocationRule();
             RefreshTools();
             RefreshFollowers();
             RefreshCombo();
@@ -319,6 +320,9 @@ namespace ProjectTheta.UI
                 canvas.transform);
 
             BuildAlert(
+                canvas.transform);
+
+            BuildLocationRule(
                 canvas.transform);
 
             BuildObjective(
@@ -788,6 +792,127 @@ namespace ProjectTheta.UI
                         ? UiTheme.Danger
                         : color;
             }
+        }
+
+        // 23일차: 장소 규칙 한 줄 (밀물 · 소매치기 · 동시 운반) ---------
+
+        private Text _locationRuleText;
+        private long _locationRuleKey = UiChangeKey.Unset;
+
+        private void BuildLocationRule(
+            Transform parent)
+        {
+            _locationRuleText =
+                UiFactory.CreateText(
+                    parent,
+                    "LocationRule",
+                    string.Empty,
+                    UiTheme.FontSmall,
+                    UiTheme.TextPrimary,
+                    TextAnchor.MiddleCenter,
+                    FontStyle.Bold);
+
+            UiFactory.Place(
+                _locationRuleText.rectTransform,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -244f),
+                new Vector2(760f, 24f));
+        }
+
+        private void RefreshLocationRule()
+        {
+            if (_locationRuleText == null)
+            {
+                return;
+            }
+
+            PickpocketAbility thief =
+                PickpocketAbility.Fleeing;
+
+            TideCycle tide =
+                TideCycle.Current;
+
+            // 0: 없음, 1: 소매치기 도주, 2: 밀물 예고, 3: 밀물, 4: 썰물
+            int state = 0;
+            int seconds = 0;
+            int extra = 0;
+
+            if (thief != null &&
+                thief.IsFleeing)
+            {
+                state = 1;
+                seconds = Mathf.CeilToInt(thief.FleeRemaining);
+                extra = thief.StolenAmount;
+            }
+            else if (tide != null)
+            {
+                switch (tide.Phase)
+                {
+                    case TidePhase.Warning:
+                        state = 2;
+                        seconds = Mathf.CeilToInt(tide.SecondsUntilHigh);
+                        break;
+
+                    case TidePhase.High:
+                        state = 3;
+                        seconds = Mathf.CeilToInt(tide.SecondsUntilLow);
+                        break;
+
+                    default:
+                        state = 4;
+                        seconds = Mathf.CeilToInt(tide.SecondsUntilHigh);
+                        break;
+                }
+            }
+
+            if (!UiChangeKey.Changed(
+                    ref _locationRuleKey,
+                    UiChangeKey.Of(
+                        seconds,
+                        extra,
+                        state)))
+            {
+                return;
+            }
+
+            string hint =
+                LocationObjectiveLogic.GetHint(
+                    LocationContext.Current.Objective);
+
+            string text;
+            Color color;
+
+            switch (state)
+            {
+                case 1:
+                    text = $"소매치기 도주 중 {seconds}초  ·  털린 정기 {extra}  ·  잡으면 되찾고 +{PickpocketLogic.CatchBonus}";
+                    color = UiTheme.Danger;
+                    break;
+
+                case 2:
+                    text = $"파도가 온다! {seconds}초 뒤 물가 줄이 막힙니다";
+                    color = new Color(0.55f, 0.80f, 1.00f);
+                    break;
+
+                case 3:
+                    text = $"밀물 · 물가 줄 막힘  {seconds}초";
+                    color = new Color(0.45f, 0.70f, 1.00f);
+                    break;
+
+                case 4:
+                    text = $"다음 밀물까지 {seconds}초   ·   {hint}";
+                    color = UiTheme.TextMuted;
+                    break;
+
+                default:
+                    text = hint;
+                    color = UiTheme.TextMuted;
+                    break;
+            }
+
+            _locationRuleText.text = text;
+            _locationRuleText.color = color;
         }
 
         private void BuildObjective(

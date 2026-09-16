@@ -4,6 +4,7 @@ using ProjectTheta.Companion;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Player;
 using ProjectTheta.Stage;
+using ProjectTheta.Stage.Locations;
 
 namespace ProjectTheta.Disruptors
 {
@@ -125,6 +126,16 @@ namespace ProjectTheta.Disruptors
                     player.y,
                     SightHalfAngle,
                     SightRange);
+
+            // 23일차: 해변가 파라솔 그늘 안은 보이지 않는다.
+            if (PlayerInSight &&
+                _body.Profile != null &&
+                !_body.Profile.IgnoresShade &&
+                ParasolShade.ActiveCount > 0 &&
+                ParasolShade.IsShaded(player))
+            {
+                PlayerInSight = false;
+            }
 
             bool casting =
                 _caster != null &&
