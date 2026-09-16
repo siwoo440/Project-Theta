@@ -13,7 +13,10 @@ namespace ProjectTheta.Stage.Locations
         SecurityRoom = 3,
 
         /// <summary>루프탑 클럽 VIP 게스트다 (26일차). 데리고 있으면 바운서가 막지 않는다.</summary>
-        VipGuest = 4
+        VipGuest = 4,
+
+        /// <summary>루프탑 클럽 바텐더다 (27일차). 최면하면 라이벌의 샴페인 타워가 무너진다.</summary>
+        Bartender = 5
     }
 
     /// <summary>
@@ -86,6 +89,9 @@ namespace ProjectTheta.Stage.Locations
                 case NpcRole.VipGuest:
                     return "[VIP]";
 
+                case NpcRole.Bartender:
+                    return "[바텐더]";
+
                 default:
                     return string.Empty;
             }
@@ -104,6 +110,9 @@ namespace ProjectTheta.Stage.Locations
 
                 case NpcRole.VipGuest:
                     return new Color(0.85f, 0.60f, 1.00f);
+
+                case NpcRole.Bartender:
+                    return new Color(1.00f, 0.90f, 0.55f);
 
                 default:
                     return new Color(0.80f, 0.80f, 0.85f, 0.8f);

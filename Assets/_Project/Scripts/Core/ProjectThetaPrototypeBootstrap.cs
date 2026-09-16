@@ -99,9 +99,10 @@ namespace ProjectTheta.Core
                     1,
                     location.FloorCount);
 
+            // 27일차: 장소마다 배경 · 바닥 · 소품이 다른 맵을 짓는다.
             SchoolHallwayPrototypeBuilder.Build(
                 floorCount,
-                location.Tint);
+                location.Id);
 
             PlayerSideViewController player =
                 CreatePlayer();
@@ -631,6 +632,14 @@ namespace ProjectTheta.Core
                     FindClosest(npcs, ClubLayout.VipGuestX, null)
                         .AddComponent<NpcRoleMark>()
                         .Configure(NpcRole.VipGuest);
+                }
+
+                // 27일차: 2F 바텐더. 최면하면 샴페인 타워가 무너진다.
+                if (floor == floorCount - 1)
+                {
+                    FindClosest(npcs, ClubLayout.BarX, null)
+                        .AddComponent<NpcRoleMark>()
+                        .Configure(NpcRole.Bartender);
                 }
 
                 return;

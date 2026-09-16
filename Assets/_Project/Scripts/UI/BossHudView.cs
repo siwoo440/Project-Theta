@@ -29,6 +29,7 @@ namespace ProjectTheta.UI
         private UiBar _mindBar;
         private Text _mindText;
         private Text _beatText;
+        private Text _skillText;
 
         private long _phaseKey = UiChangeKey.Unset;
         private long _forceKey = UiChangeKey.Unset;
@@ -125,6 +126,9 @@ namespace ProjectTheta.UI
                 new Vector2(340f, 30f));
 
             _beatText = AddText(beatGroup, "BeatText", Vector2.zero, UiTheme.FontBody, UiTheme.TextPrimary);
+
+            // 27일차: 진행 중인 라이벌 기술 — 보스 패널 아래
+            _skillText = AddText(panel, "Skills", new Vector2(0f, -122f), UiTheme.FontSmall, new Color(0.85f, 0.60f, 1.00f));
         }
 
         private static Text AddText(
@@ -159,6 +163,44 @@ namespace ProjectTheta.UI
             RefreshBattle();
             RefreshMind();
             RefreshBeat();
+            RefreshSkills();
+        }
+
+        private void RefreshSkills()
+        {
+            BossBattle battle = BossBattle.Current;
+
+            if (battle == null ||
+                battle.Boss == null)
+            {
+                return;
+            }
+
+            ChampagneTowerAbility tower = battle.Boss.GetComponent<ChampagneTowerAbility>();
+            VipZoneAbility zone = VipZoneAbility.ActiveZone;
+
+            string text = string.Empty;
+
+            if (tower != null &&
+                tower.IsUp)
+            {
+                text += "샴페인 타워 · 손님이 바로 모임 ([바텐더]를 최면하면 붕괴)   ";
+            }
+
+            if (zone != null)
+            {
+                text += $"VIP 구역 {Mathf.CeilToInt(zone.Remaining)}초 · 안에서 최면 절반   ";
+            }
+
+            if (CloneDancer.ActiveCount > 0)
+            {
+                text += $"분신 {CloneDancer.ActiveCount}명 · 그림자 있는 쪽이 진짜";
+            }
+
+            if (_skillText.text != text)
+            {
+                _skillText.text = text;
+            }
         }
 
         private void RefreshBattle()

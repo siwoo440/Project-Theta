@@ -626,8 +626,19 @@ namespace ProjectTheta.UI
                         ? $"     |     한 판 종료 · {session.Records.Count}구역 · 계약 정기 +{session.TotalContractEssence}"
                         : string.Empty;
 
+                // 27일차: 보스전 결과를 제목에 붙인다.
+                Boss.BossBattle battle =
+                    Boss.BossBattle.Current;
+
+                string boss =
+                    battle == null
+                        ? string.Empty
+                        : battle.IsDefeated
+                            ? "  ·  라이벌 서큐버스 함락"
+                            : $"  ·  라이벌 보호막 {battle.ShieldsLeft}장 남음";
+
                 _titleText.text =
-                    $"{zone}  —  {_stage.GetStateLabel()}{runTotal}";
+                    $"{zone}  —  {_stage.GetStateLabel()}{boss}{runTotal}";
             }
 
             for (int i = 0;
