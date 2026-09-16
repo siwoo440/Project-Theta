@@ -114,6 +114,12 @@ namespace ProjectTheta.Disruptors
         private StallToutRole _tout;
         private LiveBroadcastAbility _live;
         private PickpocketAbility _pickpocket;
+
+        // 24일차 역할 · 능력
+        private GateRole _gate;
+        private RescuerRole _rescuer;
+        private BrawlerRole _brawler;
+        private DroneTrackingAbility _drone;
         private string _nameLabel = string.Empty;
 
         private Text _nameText;
@@ -132,6 +138,10 @@ namespace ProjectTheta.Disruptors
             _tout = GetComponent<StallToutRole>();
             _live = GetComponent<LiveBroadcastAbility>();
             _pickpocket = GetComponent<PickpocketAbility>();
+            _gate = GetComponent<GateRole>();
+            _rescuer = GetComponent<RescuerRole>();
+            _brawler = GetComponent<BrawlerRole>();
+            _drone = GetComponent<DroneTrackingAbility>();
 
             DisruptorProfile profile =
                 body.Profile;
@@ -251,6 +261,30 @@ namespace ProjectTheta.Disruptors
                      _watcher.IsSpotting)
             {
                 state = "!";
+                color = UiTheme.Danger;
+            }
+            else if (_brawler != null &&
+                     _brawler.IsWindingUp)
+            {
+                state = "으랏차!";
+                color = UiTheme.Danger;
+            }
+            else if (_rescuer != null &&
+                     _rescuer.IsRushing)
+            {
+                state = "회원님!";
+                color = new Color(0.60f, 0.85f, 0.95f);
+            }
+            else if (_gate != null &&
+                     _gate.WaitingCount > 0)
+            {
+                state = $"한 명씩! ({_gate.WaitingCount})";
+                color = new Color(1.00f, 0.80f, 0.35f);
+            }
+            else if (_drone != null &&
+                     _drone.IsTracking)
+            {
+                state = "● REC";
                 color = UiTheme.Danger;
             }
             else if (_pickpocket != null &&

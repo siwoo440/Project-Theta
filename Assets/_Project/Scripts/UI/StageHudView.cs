@@ -833,7 +833,11 @@ namespace ProjectTheta.UI
             TideCycle tide =
                 TideCycle.Current;
 
-            // 0: 없음, 1: 소매치기 도주, 2: 밀물 예고, 3: 밀물, 4: 썰물
+            TrainArrival train =
+                TrainArrival.Current;
+
+            // 0: 없음, 1: 소매치기 도주, 2: 밀물 예고, 3: 밀물, 4: 썰물,
+            // 5: 인파 흐름, 6: 단체 PT, 7: 열차 문 열림, 8: 열차 대기
             int state = 0;
             int seconds = 0;
             int extra = 0;
@@ -844,6 +848,23 @@ namespace ProjectTheta.UI
                 state = 1;
                 seconds = Mathf.CeilToInt(thief.FleeRemaining);
                 extra = thief.StolenAmount;
+            }
+            else if (CrowdFlow.IsActive)
+            {
+                state = 5;
+                seconds = Mathf.CeilToInt(CrowdFlow.Remaining);
+                extra = CrowdFlow.IsAnchored ? 1 : 0;
+            }
+            else if (GymZone.IsPtActive)
+            {
+                state = 6;
+                seconds = Mathf.CeilToInt(GymZone.PtRemaining);
+            }
+            else if (train != null)
+            {
+                state = train.IsDoorOpen ? 7 : 8;
+                seconds = Mathf.CeilToInt(train.SecondsUntilNext);
+                extra = train.TrainsArrived;
             }
             else if (tide != null)
             {
@@ -902,6 +923,28 @@ namespace ProjectTheta.UI
 
                 case 4:
                     text = $"다음 밀물까지 {seconds}초   ·   {hint}";
+                    color = UiTheme.TextMuted;
+                    break;
+
+                case 5:
+                    text = extra > 0
+                        ? $"승강장 변경! 파동으로 버티는 중  {seconds}초"
+                        : $"승강장 변경! 인파에 끌려갑니다 {(CrowdFlow.Direction > 0 ? "→" : "←")}  {seconds}초  ·  파동으로 버티기";
+                    color = new Color(1.00f, 0.80f, 0.30f);
+                    break;
+
+                case 6:
+                    text = $"단체 PT {seconds}초  ·  충동 급상승! 요가실로 피하거나 운동 구역 NPC를 노리세요";
+                    color = new Color(1.00f, 0.60f, 0.25f);
+                    break;
+
+                case 7:
+                    text = $"열차 도착! 인파에 섞이면 개찰구 통과  ·  열차 {extra}/{StageSessionController.SurvivalTrainsRequired}";
+                    color = new Color(0.60f, 0.90f, 0.60f);
+                    break;
+
+                case 8:
+                    text = $"열차 {extra}/{StageSessionController.SurvivalTrainsRequired}  ·  다음 열차 {seconds}초   ·   {hint}";
                     color = UiTheme.TextMuted;
                     break;
 

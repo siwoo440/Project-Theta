@@ -131,7 +131,65 @@ namespace ProjectTheta.Hypnosis
             Disruptors.ZoneAlert.PlayerHypnosisMultiplier *
             // 23일차: 라이프가드 반장의 호루라기를 들은 NPC는 경계해 최면이 절반으로 느려진다.
             WhistleAlarmMultiplier *
+            // 24일차: 헬스장 심박 구역 · 단체 PT, 대회 앞둔 선수(고저항).
+            Stage.Locations.GymZone.GetHypnosisMultiplier(transform.position) *
+            AthleteMultiplier *
             PlayerUpgradeMultipliers.HypnosisSpeed;
+
+        private Stage.Locations.AthleteMark _athleteMark;
+        private bool _athleteChecked;
+
+        /// <summary>선수 표식은 스폰 직후 한 번 붙고 바뀌지 않는다. 한 번만 찾는다.</summary>
+        private float AthleteMultiplier
+        {
+            get
+            {
+                if (!_athleteChecked)
+                {
+                    _athleteChecked = true;
+                    TryGetComponent(out _athleteMark);
+                }
+
+                return Stage.Locations.AthleteMark.GetHypnosisMultiplier(
+                    _athleteMark);
+            }
+        }
+
+        private Disruptors.HypnosisBlock _hypnosisBlock;
+
+        /// <summary>수영장 코치의 "전원 입수"로 물속에 있어 최면이 걸리지 않는 상태다 (24일차).</summary>
+        public bool IsDiveBlocked
+        {
+            get
+            {
+                if (_hypnosisBlock == null &&
+                    !TryGetComponent(out _hypnosisBlock))
+                {
+                    return false;
+                }
+
+                return _hypnosisBlock.IsBlocked;
+            }
+        }
+
+        /// <summary>
+        /// 중립 NPC의 최면 진행을 비율만큼 되돌린다 (24일차, 트레이너 · 수영장 코치).
+        /// 이미 누군가의 소유가 된 NPC는 건드리지 않는다.
+        /// </summary>
+        public void KnockBackNeutralHypnosis(
+            float fraction)
+        {
+            if (Owner != NpcOwner.Neutral)
+            {
+                return;
+            }
+
+            CurrentHypnosis =
+                Mathf.Max(
+                    0f,
+                    CurrentHypnosis *
+                    (1f - Mathf.Clamp01(fraction)));
+        }
 
         private Disruptors.WhistleAlarm _whistleAlarm;
 
@@ -289,8 +347,9 @@ namespace ProjectTheta.Hypnosis
             if (Owner ==
                 NpcOwner.Neutral)
             {
-                // 시선 회피형은 고개를 돌리는 동안 최면 게이지가 오르지 않는다.
-                if (IsGazeBlocked)
+                // 시선 회피형은 고개를 돌리는 동안, 잠수 중인 NPC는 물속에 있는 동안 최면 게이지가 오르지 않는다.
+                if (IsGazeBlocked ||
+                    IsDiveBlocked)
                 {
                     return false;
                 }

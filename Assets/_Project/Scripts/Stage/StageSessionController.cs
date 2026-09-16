@@ -47,6 +47,12 @@ namespace ProjectTheta.Stage
 
         public int RampageCaptureCount { get; private set; }
 
+        /// <summary>생존 목표에서 버텨야 하는 열차 수다 (24일차, 자산 값).</summary>
+        public static int SurvivalTrainsRequired =>
+            Mathf.Max(
+                1,
+                Balance.BalanceOverrides.StageOrDefault.SurvivalTrainCount);
+
         public int RecoveredFollowerCount { get; private set; }
 
         public int TargetEssence =>
@@ -273,6 +279,21 @@ namespace ProjectTheta.Stage
                     Disruptors.PickpocketMark.GetEssenceMultiplier(
                         follower));
 
+            // 24일차: 대회 앞둔 선수를 회수하면 정기 보너스가 바로 붙는다.
+            int athleteBonus =
+                Locations.AthleteMark.GetBonusEssence(
+                    follower);
+
+            if (athleteBonus > 0)
+            {
+                AddEssence(
+                    athleteBonus);
+
+                StageMoments.RaiseSpecialTargetRecovered(
+                    follower.transform.position,
+                    athleteBonus);
+            }
+
             AddToPendingBatch(
                 essenceValue,
                 wasHighImpulse,
@@ -432,12 +453,34 @@ namespace ProjectTheta.Stage
                     ? 1
                     : _playerHealth.CurrentHealth;
 
+            // 24일차: 장소 목표에 따라 클리어 조건이 다르다 (지하철은 열차 생존).
+            Locations.TrainArrival train =
+                Locations.TrainArrival.Current;
+
+            Locations.LocationObjective objective =
+                Locations.LocationContext.Current.Objective;
+
+            // 열차가 없는 곳에서 생존 목표를 쓰면 끝날 수 없으므로 정기 목표로 돌린다.
+            if (objective == Locations.LocationObjective.Survival &&
+                train == null)
+            {
+                objective = Locations.LocationObjective.EssenceQuota;
+            }
+
             State =
-                StageRules.ResolveState(
+                Locations.ObjectiveStateLogic.Resolve(
+                    objective,
                     RemainingTime,
                     CurrentEssence,
                     TargetEssence,
-                    health);
+                    health,
+                    train == null
+                        ? 0
+                        : train.TrainsArrived,
+                    SurvivalTrainsRequired,
+                    _followers == null
+                        ? 0
+                        : _followers.Count);
         }
     }
 }

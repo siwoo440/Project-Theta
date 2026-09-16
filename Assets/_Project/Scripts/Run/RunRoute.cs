@@ -17,13 +17,23 @@ namespace ProjectTheta.Run
     ///   · 같은 장소는 한 판에 한 번만 간다.
     ///   · 시간은 거꾸로 흐르지 않는다. 밤 장소에 간 뒤에는 저녁 장소를 제시하지 않는다.
     /// 제시 후보는 시드와 구역 번호로 정해져서, 지도를 다시 열어도 같은 후보가 나온다.
+    ///
+    /// 24일차: <see cref="OpenAllLocations"/>가 켜져 있으면 위 규칙 대신
+    /// 모든 구역에서 아직 안 간 장소 전부를 고를 수 있다. 장소를 하나씩 만들며 바로 들어가 보기 위해서다.
+    /// 짜인 경로로 되돌리려면 이 값만 false로 바꾼다.
     /// </summary>
     public static class RunRouteLogic
     {
         public const int ZoneCount = 5;
 
-        /// <summary>한 번에 제시하는 후보 수다.</summary>
+        /// <summary>한 번에 제시하는 후보 수다 (짜인 경로일 때).</summary>
         public const int ChoicesPerStep = 2;
+
+        /// <summary>
+        /// 모든 장소 열기 (24일차). 켜면 구역마다 아직 안 간 장소 8곳 중 어디든 고른다.
+        /// const로 두면 꺼진 쪽 코드가 "닿지 않는 코드" 경고를 내므로 읽기 전용 정적 값으로 둔다.
+        /// </summary>
+        public static readonly bool OpenAllLocations = true;
 
         private static readonly LocationId[] MiddleLocations =
         {
@@ -41,10 +51,48 @@ namespace ProjectTheta.Run
             return step >= ZoneCount - 1;
         }
 
-        /// <summary>
-        /// 그 구역에서 고를 수 있는 장소다. 첫 구역과 마지막 구역은 한 곳뿐이다.
-        /// </summary>
+        /// <summary>그 구역에서 고를 수 있는 장소다. 모든 장소 열기가 켜져 있으면 안 간 장소 전부다.</summary>
         public static List<LocationId> GetCandidates(
+            int step,
+            IReadOnlyList<LocationId> visited,
+            int seed)
+        {
+            return OpenAllLocations
+                ? GetOpenCandidates(visited)
+                : GetCuratedCandidates(step, visited, seed);
+        }
+
+        /// <summary>아직 안 간 장소 전부다. 장소 번호순이다.</summary>
+        public static List<LocationId> GetOpenCandidates(
+            IReadOnlyList<LocationId> visited)
+        {
+            List<LocationId> result =
+                new List<LocationId>();
+
+            IReadOnlyList<LocationDefinition> all =
+                LocationCatalog.All;
+
+            for (int i = 0;
+                 i < all.Count;
+                 i++)
+            {
+                if (all[i] != null &&
+                    !Contains(visited, all[i].Id) &&
+                    !result.Contains(all[i].Id))
+                {
+                    result.Add(all[i].Id);
+                }
+            }
+
+            result.Sort();
+
+            return result;
+        }
+
+        /// <summary>
+        /// 짜인 경로의 후보다 (21일차). 첫 구역과 마지막 구역은 한 곳뿐이다.
+        /// </summary>
+        public static List<LocationId> GetCuratedCandidates(
             int step,
             IReadOnlyList<LocationId> visited,
             int seed)

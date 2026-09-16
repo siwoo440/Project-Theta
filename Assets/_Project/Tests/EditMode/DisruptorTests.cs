@@ -251,11 +251,12 @@ namespace ProjectTheta.Tests.EditMode
                 Assert.IsFalse(string.IsNullOrEmpty(profile.DisplayName), kind.ToString());
                 Assert.GreaterOrEqual(profile.MoveSpeed, 0f, kind.ToString());
 
-                // 시야가 있으면 거리와 각도가 모두 있어야 한다. 촬영팀 · 쟁탈 · 길막 · 도둑은 부채꼴을 쓰지 않는다 (23일차).
+                // 시야가 있으면 거리와 각도가 모두 있어야 한다. 촬영팀 · 드론 · 쟁탈 · 길막 · 도둑 등은 부채꼴을 쓰지 않는다 (23 · 24일차).
                 Assert.AreEqual(profile.SightRange > 0f, profile.SightHalfAngle > 0f, kind.ToString());
 
                 if (profile.Role == DisruptorRole.Watcher &&
-                    profile.Ability != SpecialAbilityKind.LiveBroadcast)
+                    profile.Ability != SpecialAbilityKind.LiveBroadcast &&
+                    profile.Ability != SpecialAbilityKind.DroneTracking)
                 {
                     Assert.Greater(profile.SightRange, 0f, kind.ToString());
                 }

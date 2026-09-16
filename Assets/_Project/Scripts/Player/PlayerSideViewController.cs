@@ -28,6 +28,9 @@ namespace ProjectTheta.Player
         private float _dashCooldownRemaining;
         private bool _inputLocked;
 
+        /// <summary>헬스 고인물에게 밀려 휘청이는 남은 시간이다 (24일차). 입력 잠금과 따로 흐른다.</summary>
+        private float _staggerRemaining;
+
         public int FacingDirection { get; private set; } = 1;
         public bool IsDashing => _dashRemaining > 0f;
 
@@ -63,6 +66,20 @@ namespace ProjectTheta.Player
                     0.1f,
                     1f);
         }
+        public bool IsStaggered => _staggerRemaining > 0f;
+
+        /// <summary>잠깐 움직이지도 대시하지도 못하게 한다. 포획 · 힘겨루기의 입력 잠금과 겹쳐도 서로 풀지 않는다.</summary>
+        public void ApplyStagger(
+            float seconds)
+        {
+            _staggerRemaining =
+                Mathf.Max(
+                    _staggerRemaining,
+                    seconds);
+
+            _dashRemaining = 0f;
+        }
+
         public Vector2 MoveInput => _moveInput;
         public bool IsInputLocked => _inputLocked;
 
@@ -87,6 +104,15 @@ namespace ProjectTheta.Player
                 _moveInput =
                     Vector2.zero;
 
+                _dashRemaining = 0f;
+
+                return;
+            }
+
+            if (_staggerRemaining > 0f)
+            {
+                _staggerRemaining -= Time.deltaTime;
+                _moveInput = Vector2.zero;
                 _dashRemaining = 0f;
 
                 return;

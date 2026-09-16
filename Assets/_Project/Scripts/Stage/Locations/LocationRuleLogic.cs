@@ -173,9 +173,20 @@ namespace ProjectTheta.Stage.Locations
         public static string GetHint(
             LocationObjective objective)
         {
-            return objective == LocationObjective.GroupCarry
-                ? $"동시 운반: {GroupCarryMinimum}명 이상 한 번에 회수하면 정기 ×{GroupCarryBonusMultiplier:0.0}, 적으면 ×{GroupCarrySmallBatchMultiplier:0.0}"
-                : string.Empty;
+            switch (objective)
+            {
+                case LocationObjective.GroupCarry:
+                    return $"동시 운반: {GroupCarryMinimum}명 이상 한 번에 회수하면 정기 ×{GroupCarryBonusMultiplier:0.0}, 적으면 ×{GroupCarrySmallBatchMultiplier:0.0}";
+
+                case LocationObjective.Survival:
+                    return "생존: 열차가 모두 지나갈 때까지 동행자를 1명 이상 지키기";
+
+                case LocationObjective.SpecialTarget:
+                    return "특수 대상: ★ 대회 앞둔 선수를 회수하면 정기 보너스";
+
+                default:
+                    return string.Empty;
+            }
         }
     }
 }

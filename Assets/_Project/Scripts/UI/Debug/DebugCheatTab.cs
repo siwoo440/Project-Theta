@@ -156,6 +156,14 @@ namespace ProjectTheta.UI.DebugTools
             // 23일차: 해변가 · 야시장
             DebugUi.Button(root, "밀물 즉시 (해변가)", 0f, y, half, height, StartTide);
             DebugUi.Button(root, "소매치기 발동 (야시장)", half + gap, y, half, height, TriggerPickpocket);
+            y += height + gap;
+
+            // 24일차: 지하철
+            DebugUi.Button(root, "열차 즉시 (지하철)", 0f, y, half, height, ArriveTrain);
+            DebugUi.Button(root, "방송 즉시 (지하철)", half + gap, y, half, height, TriggerAnnouncement);
+            y += height + gap;
+
+            DebugUi.Button(root, "적 최대 인원 등장", 0f, y, half, height, FillDisruptors);
             y += height + DebugUi.SectionGap + 4f;
 
             // 시간
@@ -586,6 +594,69 @@ namespace ProjectTheta.UI.DebugTools
             DebugCheats.MarkUsed();
 
             ShowMessage($"{nearest.DisplayName} 예고를 시작했습니다");
+        }
+
+        private void FillDisruptors()
+        {
+            if (DisruptorSpawner.Current == null)
+            {
+                ShowMessage("이 장소에는 방해 세력이 없습니다", false);
+
+                return;
+            }
+
+            DisruptorSpawner.Current.DebugFillAll();
+
+            DebugCheats.MarkUsed();
+
+            ShowMessage($"층마다 최대 {PopulationLogic.MaxPerFloor}명까지 내보냈습니다");
+        }
+
+        private void ArriveTrain()
+        {
+            if (Stage.Locations.TrainArrival.Current == null)
+            {
+                ShowMessage("지하철이 아닙니다", false);
+
+                return;
+            }
+
+            Stage.Locations.TrainArrival.Current.DebugArriveNow();
+
+            DebugCheats.MarkUsed();
+
+            ShowMessage("다음 열차를 도착시켰습니다");
+        }
+
+        private void TriggerAnnouncement()
+        {
+            DisruptorBase.CopyActive(
+                _disruptorBuffer);
+
+            for (int i = 0;
+                 i < _disruptorBuffer.Count;
+                 i++)
+            {
+                PlatformChangeAbility announcer =
+                    _disruptorBuffer[i] == null
+                        ? null
+                        : _disruptorBuffer[i].GetComponent<PlatformChangeAbility>();
+
+                if (announcer == null)
+                {
+                    continue;
+                }
+
+                announcer.DebugTrigger();
+
+                DebugCheats.MarkUsed();
+
+                ShowMessage("안내 방송 예고를 시작했습니다");
+
+                return;
+            }
+
+            ShowMessage("지하철이 아닙니다", false);
         }
 
         private void StartTide()

@@ -98,6 +98,11 @@ namespace ProjectTheta.Disruptors
         /// <summary>한 명을 놓아준 뒤 다음 손님을 부르기까지의 간격이다.</summary>
         public const float CooldownSeconds = 5f;
 
+        /// <summary>지하철 전단지 알바(24일차): 바로 앞만 붙잡고, 2초 뒤 놓아주며 동행자를 잃지는 않는다.</summary>
+        public const float FlyerPullRadius = 1.8f;
+        public const float FlyerHoldSeconds = 2f;
+        public const float FlyerCooldownSeconds = 4f;
+
         public static bool CanPull(
             float distance,
             float cooldownRemaining)

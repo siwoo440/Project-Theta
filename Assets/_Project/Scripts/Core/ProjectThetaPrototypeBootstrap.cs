@@ -141,9 +141,13 @@ namespace ProjectTheta.Core
                  floor < floorCount;
                  floor++)
             {
+                // 24일차: 헬스장은 층마다 운동 구역에 "대회 앞둔 선수"를 한 명 둔다.
                 CreateNpcs(
                     player,
-                    floor);
+                    floor,
+                    location.Id == LocationId.FitnessCenter
+                        ? GymLayout.GetAthleteX(floor)
+                        : (float?)null);
 
                 CreateRecoveryPoint(
                     stage,
@@ -204,6 +208,17 @@ namespace ProjectTheta.Core
                 case LocationId.NightMarket:
                     CreateNightMarketRules(
                         followers);
+                    break;
+
+                case LocationId.SubwayStation:
+                    CreateSubwayRules(
+                        stage,
+                        floorCount);
+                    break;
+
+                case LocationId.FitnessCenter:
+                    CreateFitnessCenterRules(
+                        floorCount);
                     break;
             }
 
@@ -436,6 +451,91 @@ namespace ProjectTheta.Core
             }
         }
 
+        /// <summary>
+        /// 지하철 환승역 환경 규칙을 붙인다 (24일차).
+        ///   열차 도착  45초마다 행인이 쏟아지고, 도착한 열차 수가 생존 목표가 된다
+        ///   개찰구     층마다 가운데. 역무원이 동행자 5명 이상을 한 명씩 통과시킨다
+        /// </summary>
+        private void CreateSubwayRules(
+            StageSessionController stage,
+            int floorCount)
+        {
+            GameObject rules =
+                new GameObject(
+                    "SubwayRules");
+
+            rules.AddComponent<TrainArrival>().Configure(
+                stage,
+                floorCount);
+
+            float gateX =
+                DisruptorCatalog.SubwayGateX;
+
+            for (int floor = 0;
+                 floor < floorCount;
+                 floor++)
+            {
+                // 개찰구 기둥을 세로로 늘어놓는다. 기둥 사이로 지나간다는 느낌만 준다.
+                for (float y = FloorSpace.WalkMinY + 0.4f;
+                     y < FloorSpace.WalkMaxY;
+                     y += 1.2f)
+                {
+                    LocationProps.Box(
+                        rules.transform,
+                        "GatePost",
+                        FloorSpace.ToWorld(floor, new Vector2(gateX, y)),
+                        new Vector2(0.35f, 0.3f),
+                        new Color(0.55f, 0.60f, 0.65f),
+                        -44);
+                }
+
+                LocationProps.Sign(
+                    rules.transform,
+                    floor,
+                    new Vector2(gateX, FloorSpace.WalkMaxY + 1.2f),
+                    "개찰구 · 5명 이상은 한 명씩",
+                    new Color(0.75f, 0.85f, 0.95f),
+                    20);
+            }
+        }
+
+        /// <summary>
+        /// 헬스장 환경 규칙을 붙인다 (24일차).
+        ///   심박 구역  운동 구역은 최면 · 충동이 빠르고, 요가실은 충동이 오르지 않는다
+        ///   수영장     수영장 코치의 "전원 입수" 범위
+        /// </summary>
+        private void CreateFitnessCenterRules(
+            int floorCount)
+        {
+            GameObject rules =
+                new GameObject(
+                    "FitnessCenterRules");
+
+            GymZoneSpec[] zones =
+                GymLayout.Zones;
+
+            for (int i = 0;
+                 i < zones.Length;
+                 i++)
+            {
+                if (zones[i].Floor >= floorCount)
+                {
+                    continue;
+                }
+
+                GameObject zone =
+                    new GameObject(
+                        $"GymZone_{zones[i].Kind}_{zones[i].Floor + 1}F");
+
+                zone.transform.SetParent(
+                    rules.transform,
+                    false);
+
+                zone.AddComponent<GymZone>().Configure(
+                    zones[i]);
+            }
+        }
+
         /// <summary>한 판 기록을 붙인다 (20일차). 층 이동·레벨 알림을 구독하므로 둘 다 만들어진 뒤에 부른다.</summary>
         private RunStatsRecorder CreateRunStatsRecorder(
             PlayerSideViewController player,
@@ -634,7 +734,8 @@ namespace ProjectTheta.Core
         /// </summary>
         private void CreateNpcs(
             PlayerSideViewController player,
-            int floorIndex)
+            int floorIndex,
+            float? athleteX = null)
         {
             Collider2D playerCollider =
                 player.GetComponent<Collider2D>();
@@ -651,6 +752,13 @@ namespace ProjectTheta.Core
                 FloorPlanLogic.BuildGrades(
                     floorIndex + _zoneStep,
                     count);
+
+            int athleteIndex =
+                athleteX == null
+                    ? -1
+                    : FindClosestSpawnIndex(
+                        athleteX.Value,
+                        count);
 
             for (int i = 0;
                  i < count;
@@ -719,8 +827,16 @@ namespace ProjectTheta.Core
                 NpcProfile profile =
                     npc.AddComponent<NpcProfile>();
 
+                // 특수 대상 선수는 희귀 등급으로 고정한다.
                 profile.Configure(
-                    grades[i % grades.Length]);
+                    i == athleteIndex
+                        ? NpcGrade.Rare
+                        : grades[i % grades.Length]);
+
+                if (i == athleteIndex)
+                {
+                    npc.AddComponent<AthleteMark>();
+                }
 
                 npc.AddComponent<HypnosisTarget>();
                 npc.AddComponent<FollowerController>();
@@ -732,6 +848,31 @@ namespace ProjectTheta.Core
                     player.transform,
                     animator);
             }
+        }
+
+        private static int FindClosestSpawnIndex(
+            float x,
+            int count)
+        {
+            int best = 0;
+            float bestDistance = float.MaxValue;
+
+            for (int i = 0;
+                 i < count;
+                 i++)
+            {
+                float distance =
+                    Mathf.Abs(
+                        GetNpcSpawnPosition(i, count).x - x);
+
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = i;
+                }
+            }
+
+            return best;
         }
 
         /// <summary>
