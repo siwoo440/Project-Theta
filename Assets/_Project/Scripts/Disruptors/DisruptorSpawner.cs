@@ -489,6 +489,13 @@ namespace ProjectTheta.Disruptors
                     go.AddComponent<ManagerRole>().Configure();
                     break;
 
+                case DisruptorKind.ClubMd:
+                    go.AddComponent<ContesterRole>().Configure(
+                        _followers,
+                        _player,
+                        0);
+                    break;
+
                 case DisruptorKind.OfficeRomeo:
                     go.AddComponent<ContesterRole>().Configure(
                         _followers,
@@ -556,6 +563,10 @@ namespace ProjectTheta.Disruptors
                     go.AddComponent<EmergencyMeetingAbility>().Configure(
                         _followers,
                         _player);
+                    break;
+
+                case SpecialAbilityKind.TempoUp:
+                    go.AddComponent<TempoUpAbility>().Configure();
                     break;
 
                 case SpecialAbilityKind.DroneTracking:

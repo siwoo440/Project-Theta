@@ -77,13 +77,16 @@ namespace ProjectTheta.Stage
         /// <summary>출입증 게이트에 잠긴 위층 계단인지다 (25일차).</summary>
         public bool IsLocked =>
             _direction == FloorStairDirection.Up &&
-            Locations.PassGate.IsLocked(_sourceFloor);
+            (Locations.PassGate.IsLocked(_sourceFloor) ||
+             Locations.VipEntrance.IsLocked(_sourceFloor));
 
         public string GetPromptText()
         {
             if (IsLocked)
             {
-                return "[F] 출입증 게이트 잠김 · 두 번 누르면 비상계단";
+                return Locations.VipEntrance.IsLocked(_sourceFloor)
+                    ? "바운서가 막고 있습니다 · 동행 6명 이하 또는 [VIP] 게스트"
+                    : "[F] 출입증 게이트 잠김 · 두 번 누르면 비상계단";
             }
 
             return _direction == FloorStairDirection.Up

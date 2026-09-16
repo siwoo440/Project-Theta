@@ -583,6 +583,13 @@ namespace ProjectTheta.UI
                         0.78f,
                         1f);
 
+                case NpcOwner.Rival:
+                    return new Color(
+                        0.65f,
+                        0.35f,
+                        1.00f,
+                        1f);
+
                 case NpcOwner.Neutral:
                 default:
                     return new Color(

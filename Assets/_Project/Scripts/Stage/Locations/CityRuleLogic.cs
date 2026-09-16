@@ -158,6 +158,49 @@ namespace ProjectTheta.Stage.Locations
     /// </summary>
     public static class ObjectiveStateLogic
     {
+        /// <summary>
+        /// 보스 함락 목표까지 판정한다 (26일차).
+        ///   보스(루프탑 클럽)  보스를 함락하면 클리어. 정기 목표로는 끝나지 않는다
+        /// </summary>
+        public static StageState Resolve(
+            LocationObjective objective,
+            float remainingTime,
+            int currentEssence,
+            int targetEssence,
+            int currentHealth,
+            int trainsArrived,
+            int trainsRequired,
+            int followerCount,
+            bool bossDefeated)
+        {
+            if (objective != LocationObjective.Boss)
+            {
+                return Resolve(
+                    objective,
+                    remainingTime,
+                    currentEssence,
+                    targetEssence,
+                    currentHealth,
+                    trainsArrived,
+                    trainsRequired,
+                    followerCount);
+            }
+
+            if (currentHealth <= 0)
+            {
+                return StageState.FailedByHealth;
+            }
+
+            if (bossDefeated)
+            {
+                return StageState.Cleared;
+            }
+
+            return remainingTime <= 0f
+                ? StageState.FailedByTime
+                : StageState.Running;
+        }
+
         public static StageState Resolve(
             LocationObjective objective,
             float remainingTime,

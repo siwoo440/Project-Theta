@@ -10,7 +10,10 @@ namespace ProjectTheta.Stage.Locations
         Employee = 0,
         Visitor = 1,
         PassHolder = 2,
-        SecurityRoom = 3
+        SecurityRoom = 3,
+
+        /// <summary>루프탑 클럽 VIP 게스트다 (26일차). 데리고 있으면 바운서가 막지 않는다.</summary>
+        VipGuest = 4
     }
 
     /// <summary>
@@ -80,6 +83,9 @@ namespace ProjectTheta.Stage.Locations
                 case NpcRole.Visitor:
                     return "방문객";
 
+                case NpcRole.VipGuest:
+                    return "[VIP]";
+
                 default:
                     return string.Empty;
             }
@@ -95,6 +101,9 @@ namespace ProjectTheta.Stage.Locations
 
                 case NpcRole.SecurityRoom:
                     return new Color(0.65f, 0.80f, 1.00f);
+
+                case NpcRole.VipGuest:
+                    return new Color(0.85f, 0.60f, 1.00f);
 
                 default:
                     return new Color(0.80f, 0.80f, 0.85f, 0.8f);

@@ -253,6 +253,23 @@ namespace ProjectTheta.Balance
                 v => v.ClosingTimeScale,
                 (v, x) => v.ClosingTimeScale = x),
 
+            // 루프탑 클럽 · 보스전 (26일차)
+            new TuningParameter(
+                nameof(StageBalanceValues.DropHypnosisScale),
+                TuningGroup.Danger, "드롭 최면 배율", 1f, 3f, false,
+                v => v.DropHypnosisScale,
+                (v, x) => v.DropHypnosisScale = x),
+            new TuningParameter(
+                nameof(StageBalanceValues.BossAdvantageRatio),
+                TuningGroup.Danger, "보스 우세 기준(배)", 1f, 2f, false,
+                v => v.BossAdvantageRatio,
+                (v, x) => v.BossAdvantageRatio = x),
+            new TuningParameter(
+                nameof(StageBalanceValues.MindDamageScale),
+                TuningGroup.Danger, "정신력 피해 배율", 0f, 3f, false,
+                v => v.MindDamageScale,
+                (v, x) => v.MindDamageScale = x),
+
             // 연출
             new TuningParameter(
                 nameof(StageBalanceValues.VfxShakeMedium),

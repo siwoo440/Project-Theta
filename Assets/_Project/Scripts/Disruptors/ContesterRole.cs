@@ -131,7 +131,9 @@ namespace ProjectTheta.Disruptors
                     MallOfficeValues.GetPantryMultiplier(
                         target.x,
                         Stage.Locations.OfficeLayout.GetPantryX(_body.Floor),
-                        Stage.Locations.OfficeLayout.Active),
+                        Stage.Locations.OfficeLayout.Active) *
+                    // 26일차: 클럽 드롭 직후에는 클럽 MD가 세 배로 빠르다.
+                    Stage.Locations.ClubBeat.ContestMultiplier,
                     deltaTime);
 
             if (ClaimLogic.IsComplete(_gauge))

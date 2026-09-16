@@ -36,13 +36,13 @@ namespace ProjectTheta.Disruptors
                 ? _timer.Remaining
                 : 0f;
 
-        protected float TelegraphSeconds =>
+        protected virtual float TelegraphSeconds =>
             Body == null ||
             Body.Profile == null
                 ? SpecialAbilityLogic.MinimumTelegraphSeconds
                 : Body.Profile.TelegraphSeconds;
 
-        protected float CooldownSeconds =>
+        protected virtual float CooldownSeconds =>
             Body == null ||
             Body.Profile == null
                 ? 10f
