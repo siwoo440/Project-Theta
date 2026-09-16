@@ -182,6 +182,10 @@ namespace ProjectTheta.Hypnosis
             StunNearbyOpponents();
             SuppressNearbyAuras();
             StunNearbyDisruptors();
+
+            // 24일차: 인파 흐름 중에는 파동이 동행자를 붙잡아 둔다.
+            Disruptors.CrowdFlow.Anchor(
+                Disruptors.CrowdFlowLogic.AnchorSeconds);
         }
 
         private readonly System.Collections.Generic.List<Disruptors.DisruptorBase> _disruptorBuffer =

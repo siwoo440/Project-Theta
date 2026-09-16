@@ -100,6 +100,14 @@ namespace ProjectTheta.Balance
         // 헌팅남 쟁탈 게이지가 오르는 속도에 곱한다.
         public float ContestRiseScale = 1f;
 
+        // --- 지하철 · 헬스장 (24일차) ---
+        // 헬스장 운동 구역에서 오르는 충동 가속분(×1.5)에 곱한다. 0이면 가속 없음.
+        public float HeartRateImpulseScale = 1f;
+        // 지하철 생존 목표에서 버텨야 하는 열차 수다.
+        public int SurvivalTrainCount = 3;
+        // 방해 세력 층당 허용 인원이 1명 늘어나는 간격(초)이다. 최대 4명. 0이면 처음부터 4명.
+        public float DisruptorRampSeconds = 20f;
+
         // --- 최면 속도 (19일차) ---
         // 플레이어 최면 전체에 곱하는 기본 배율이다. 등급별 속도 표는 그대로 두고 전체만 올린다.
         // 1.3이면 모든 등급이 1.3배 빨라진다 (일반 40/초 → 52/초). 되찾기에도 똑같이 걸린다.
@@ -168,6 +176,9 @@ namespace ProjectTheta.Balance
                 WatcherSightScale = WatcherSightScale,
                 DarkHypnosisRangeScale = DarkHypnosisRangeScale,
                 ContestRiseScale = ContestRiseScale,
+                HeartRateImpulseScale = HeartRateImpulseScale,
+                SurvivalTrainCount = SurvivalTrainCount,
+                DisruptorRampSeconds = DisruptorRampSeconds,
                 PlayerHypnosisSpeedScale = PlayerHypnosisSpeedScale,
                 LevelBaseXp = LevelBaseXp,
                 LevelXpGrowth = LevelXpGrowth,

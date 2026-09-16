@@ -194,8 +194,16 @@ namespace ProjectTheta.UI.DebugTools
             _alertBar.SetValue(alert.Normalized);
             _alertBar.SetColor(StageHudView.GetAlertColor(alert.Level));
 
+            DisruptorSpawner spawner =
+                DisruptorSpawner.Current;
+
+            string population =
+                spawner == null
+                    ? string.Empty
+                    : $"  층당 {spawner.AllowedPerFloor}/{PopulationLogic.MaxPerFloor}명 · 대기 {spawner.PendingCount}";
+
             _alertText.text =
-                $"{alert.Value:0}  {ZoneAlertLogic.GetLabel(alert.Level)}  증원 {alert.ReinforcementsUsed}/{ZoneAlertLogic.MaximumReinforcements}";
+                $"{alert.Value:0}  {ZoneAlertLogic.GetLabel(alert.Level)}  증원 {alert.ReinforcementsUsed}/{ZoneAlertLogic.MaximumReinforcements}{population}";
 
             DisruptorBase.CopyActive(
                 _disruptorBuffer);

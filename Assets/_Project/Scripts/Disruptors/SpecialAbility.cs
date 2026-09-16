@@ -53,6 +53,14 @@ namespace ProjectTheta.Disruptors
             Body = GetComponent<DisruptorBase>();
         }
 
+        /// <summary>판 시작 직후 바로 쓰지 않게 첫 재사용 대기를 걸어 둔다 (24일차).</summary>
+        protected void SetInitialCooldown(
+            float seconds)
+        {
+            _timer.Phase = AbilityPhase.Cooldown;
+            _timer.Remaining = Mathf.Max(0f, seconds);
+        }
+
         /// <summary>디버그 치트: 조건을 무시하고 바로 예고를 시작한다. 예고는 건너뛰지 않는다.</summary>
         public void DebugTrigger()
         {

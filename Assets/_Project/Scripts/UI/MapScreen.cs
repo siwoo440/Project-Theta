@@ -155,6 +155,26 @@ namespace ProjectTheta.UI
             {
                 SelectCandidateAt(2);
             }
+            else if (keyboard.digit4Key.wasPressedThisFrame)
+            {
+                SelectCandidateAt(3);
+            }
+            else if (keyboard.digit5Key.wasPressedThisFrame)
+            {
+                SelectCandidateAt(4);
+            }
+            else if (keyboard.digit6Key.wasPressedThisFrame)
+            {
+                SelectCandidateAt(5);
+            }
+            else if (keyboard.digit7Key.wasPressedThisFrame)
+            {
+                SelectCandidateAt(6);
+            }
+            else if (keyboard.digit8Key.wasPressedThisFrame)
+            {
+                SelectCandidateAt(7);
+            }
 
             if (keyboard.enterKey.wasPressedThisFrame ||
                 keyboard.numpadEnterKey.wasPressedThisFrame)
@@ -777,7 +797,8 @@ namespace ProjectTheta.UI
             _subtitle.text =
                 _candidates.Count > 1
                     ? $"구역 {step + 1} / {RunRouteLogic.ZoneCount}   ·   다음 장소를 고르세요  (숫자 키 1~{_candidates.Count})"
-                    : RunRouteLogic.IsFinalStep(step)
+                    : RunRouteLogic.IsFinalStep(step) ||
+                      RunRouteLogic.OpenAllLocations
                         ? $"구역 {step + 1} / {RunRouteLogic.ZoneCount}   ·   마지막 장소입니다"
                         : $"구역 {step + 1} / {RunRouteLogic.ZoneCount}   ·   첫 장소에서 시작합니다";
 
@@ -821,8 +842,10 @@ namespace ProjectTheta.UI
                     continue;
                 }
 
+                // 모든 장소 열기에서는 마지막 구역도 정해져 있지 않다.
                 label.text =
-                    i == RunRouteLogic.ZoneCount - 1
+                    i == RunRouteLogic.ZoneCount - 1 &&
+                    !RunRouteLogic.OpenAllLocations
                         ? LocationCatalog.Get(LocationCatalog.FinalLocation).DisplayName
                         : "?";
 

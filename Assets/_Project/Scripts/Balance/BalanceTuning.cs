@@ -229,6 +229,23 @@ namespace ProjectTheta.Balance
                 v => v.ContestRiseScale,
                 (v, x) => v.ContestRiseScale = x),
 
+            // 지하철 · 헬스장 (24일차)
+            new TuningParameter(
+                nameof(StageBalanceValues.HeartRateImpulseScale),
+                TuningGroup.Danger, "운동 구역 충동 가속", 0f, 3f, false,
+                v => v.HeartRateImpulseScale,
+                (v, x) => v.HeartRateImpulseScale = x),
+            new TuningParameter(
+                nameof(StageBalanceValues.SurvivalTrainCount),
+                TuningGroup.Danger, "생존 열차 수", 1f, 3f, true,
+                v => v.SurvivalTrainCount,
+                (v, x) => v.SurvivalTrainCount = (int)x),
+            new TuningParameter(
+                nameof(StageBalanceValues.DisruptorRampSeconds),
+                TuningGroup.Danger, "적 증가 간격(초)", 0f, 60f, false,
+                v => v.DisruptorRampSeconds,
+                (v, x) => v.DisruptorRampSeconds = x),
+
             // 연출
             new TuningParameter(
                 nameof(StageBalanceValues.VfxShakeMedium),

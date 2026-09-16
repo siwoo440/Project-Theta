@@ -32,6 +32,9 @@ namespace ProjectTheta.Disruptors
         private float _cooldownRemaining;
         private Text _heldLabel;
 
+        /// <summary>전단지 알바 모드다 (24일차). 짧게 세우기만 하고 동행자를 빼앗지 않는다.</summary>
+        private bool _flyer;
+
         public bool IsHolding =>
             _held != null;
 
@@ -42,12 +45,23 @@ namespace ProjectTheta.Disruptors
 
         public void Configure(
             FollowerManager followers,
-            Transform player)
+            Transform player,
+            bool flyer = false)
         {
             _body = GetComponent<DisruptorBase>();
             _followers = followers;
             _player = player;
+            _flyer = flyer;
         }
+
+        private float PullRadius =>
+            _flyer ? StallHoldLogic.FlyerPullRadius : StallHoldLogic.PullRadius;
+
+        private float HoldSeconds =>
+            _flyer ? StallHoldLogic.FlyerHoldSeconds : StallHoldLogic.HoldSeconds;
+
+        private float CooldownSeconds =>
+            _flyer ? StallHoldLogic.FlyerCooldownSeconds : StallHoldLogic.CooldownSeconds;
 
         private void OnDisable()
         {
@@ -126,9 +140,8 @@ namespace ProjectTheta.Disruptors
                     continue;
                 }
 
-                if (StallHoldLogic.CanPull(
-                        Vector2.Distance(self, position),
-                        _cooldownRemaining))
+                if (_cooldownRemaining <= 0f &&
+                    Vector2.Distance(self, position) <= PullRadius)
                 {
                     return follower;
                 }
@@ -166,7 +179,7 @@ namespace ProjectTheta.Disruptors
             FollowerController follower)
         {
             _held = follower;
-            _holdRemaining = StallHoldLogic.HoldSeconds;
+            _holdRemaining = HoldSeconds;
             _rescueProgress = 0f;
 
             follower.SetExternalControl(true);
@@ -183,7 +196,7 @@ namespace ProjectTheta.Disruptors
                     new Color(1.00f, 0.70f, 0.35f));
 
             GameVfx.FloatText(
-                "시식하고 가세요~",
+                _flyer ? "헬스장 3개월 반값이에요~" : "시식하고 가세요~",
                 (Vector2)transform.position + new Vector2(0f, 2.4f),
                 new Color(1.00f, 0.80f, 0.45f),
                 UiTheme.FontSmall);
@@ -200,7 +213,7 @@ namespace ProjectTheta.Disruptors
                 // 회수 · 폭주 · 다른 이유로 무리를 떠났다. 몸은 건드리지 않고 놓는다.
                 _held = null;
                 DestroyLabel();
-                _cooldownRemaining = StallHoldLogic.CooldownSeconds;
+                _cooldownRemaining = CooldownSeconds;
 
                 return;
             }
@@ -244,7 +257,8 @@ namespace ProjectTheta.Disruptors
 
             if (_holdRemaining <= 0f)
             {
-                Release(false);
+                // 전단지 알바는 시간이 지나면 그냥 놓아준다.
+                Release(_flyer);
 
                 return;
             }
@@ -254,7 +268,9 @@ namespace ProjectTheta.Disruptors
                 _heldLabel.text =
                     _rescueProgress > 0f
                         ? "되찾는 중…"
-                        : $"호객 중 {Mathf.CeilToInt(_holdRemaining)}";
+                        : _flyer
+                            ? "전단지 받는 중…"
+                            : $"호객 중 {Mathf.CeilToInt(_holdRemaining)}";
             }
         }
 
@@ -284,7 +300,7 @@ namespace ProjectTheta.Disruptors
             Vector2 position = follower.transform.position;
 
             _held = null;
-            _cooldownRemaining = StallHoldLogic.CooldownSeconds;
+            _cooldownRemaining = CooldownSeconds;
 
             follower.SetExternalControl(false);
 
@@ -293,7 +309,7 @@ namespace ProjectTheta.Disruptors
             if (rescued)
             {
                 GameVfx.FloatText(
-                    "되찾았다!",
+                    _flyer ? "다시 출발" : "되찾았다!",
                     position + new Vector2(0f, 1.8f),
                     UiTheme.Positive,
                     UiTheme.FontBody);

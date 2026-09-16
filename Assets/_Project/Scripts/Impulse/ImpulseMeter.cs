@@ -176,7 +176,10 @@ namespace ProjectTheta.Impulse
                     GradeImpulseMultiplier *
                     Mathf.Max(
                         0f,
-                        Balance.BalanceOverrides.StageOrDefault.ImpulseBuildScale),
+                        Balance.BalanceOverrides.StageOrDefault.ImpulseBuildScale) *
+                    // 24일차: 헬스장 운동 구역 · 단체 PT는 충동을 빠르게, 요가실은 멈춘다.
+                    Stage.Locations.GymZone.GetImpulseMultiplier(
+                        transform.position),
                     Time.deltaTime);
 
             State =

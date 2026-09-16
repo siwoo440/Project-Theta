@@ -208,35 +208,34 @@ namespace ProjectTheta.Tests.EditMode
     public sealed class BeachMarketPlacementTests
     {
         [Test]
-        public void Beach_Has_Lifeguards_A_Hunter_Pair_And_The_Chief()
+        public void Beach_Has_A_Lifeguard_A_Hunter_The_Chief_And_The_Drone()
         {
             List<DisruptorPlacement> placements =
                 DisruptorCatalog.GetPlacements(LocationId.Beach, 1);
 
-            Assert.AreEqual(2, placements.FindAll(p => p.Kind == DisruptorKind.Lifeguard).Count);
+            // 24일차: 층당 4명 제한으로 한 종류씩이다.
+            Assert.AreEqual(1, placements.FindAll(p => p.Kind == DisruptorKind.Lifeguard).Count);
+            Assert.AreEqual(1, placements.FindAll(p => p.Kind == DisruptorKind.BeachHunter).Count);
             Assert.AreEqual(1, placements.FindAll(p => p.Kind == DisruptorKind.LifeguardChief).Count);
+            Assert.AreEqual(1, placements.FindAll(p => p.Kind == DisruptorKind.DronePhotographer).Count);
 
-            List<DisruptorPlacement> hunters =
-                placements.FindAll(p => p.Kind == DisruptorKind.BeachHunter);
-
-            Assert.AreEqual(2, hunters.Count);
-            Assert.AreNotEqual(hunters[0].Variant, hunters[1].Variant, "2인조는 서로 다른 동행자를 노려야 합니다");
+            // 처음 등장하는 적은 일반 감시자다.
+            Assert.AreEqual(DisruptorKind.Lifeguard, placements[0].Kind);
         }
 
         [Test]
-        public void Night_Market_Has_A_Tout_At_Every_Stall()
+        public void Night_Market_Has_One_Of_Each_And_The_Tout_Stands_At_A_Stall()
         {
             List<DisruptorPlacement> placements =
                 DisruptorCatalog.GetPlacements(LocationId.NightMarket, 1);
 
-            foreach (float x in DisruptorCatalog.NightMarketStallX)
-            {
-                Assert.IsTrue(
-                    placements.Exists(p => p.Kind == DisruptorKind.StallTout && p.X == x),
-                    $"x={x} 노점에 호객꾼이 없습니다");
-            }
+            List<DisruptorPlacement> touts =
+                placements.FindAll(p => p.Kind == DisruptorKind.StallTout);
 
-            Assert.AreEqual(2, placements.FindAll(p => p.Kind == DisruptorKind.Drunkard).Count);
+            Assert.AreEqual(1, touts.Count);
+            Assert.Contains(touts[0].X, DisruptorCatalog.NightMarketStallX);
+
+            Assert.AreEqual(1, placements.FindAll(p => p.Kind == DisruptorKind.Drunkard).Count);
             Assert.AreEqual(1, placements.FindAll(p => p.Kind == DisruptorKind.FilmCrew).Count);
             Assert.AreEqual(1, placements.FindAll(p => p.Kind == DisruptorKind.Pickpocket).Count);
         }
@@ -268,13 +267,15 @@ namespace ProjectTheta.Tests.EditMode
         [Test]
         public void Other_Locations_Still_Have_No_Disruptors()
         {
-            // 나머지 5곳은 24일차부터 채운다.
+            // 쇼핑몰 · 오피스 타워 · 루프탑 클럽은 25일차부터 채운다.
             foreach (LocationDefinition location in LocationCatalog.All)
             {
                 bool built =
                     location.Id == LocationId.TrainingCenter ||
                     location.Id == LocationId.Beach ||
-                    location.Id == LocationId.NightMarket;
+                    location.Id == LocationId.NightMarket ||
+                    location.Id == LocationId.SubwayStation ||
+                    location.Id == LocationId.FitnessCenter;
 
                 Assert.AreEqual(
                     built,
