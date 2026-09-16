@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using ProjectTheta.Companion;
 using ProjectTheta.Core;
+using ProjectTheta.Disruptors;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Items;
 using ProjectTheta.Player;
@@ -89,6 +90,12 @@ namespace ProjectTheta.UI
 
         // 21일차: 층 표시 위의 "구역 2/5 · 해변가 · 낮"
         private Text _zoneText;
+
+        // 22일차: 중상단 구역 경계도
+        private RectTransform _alertGroup;
+        private UiBar _alertBar;
+        private Text _alertText;
+        private long _alertKey = UiChangeKey.Unset;
 
         // 계단 안내
         private RectTransform _stairPrompt;
@@ -203,6 +210,7 @@ namespace ProjectTheta.UI
         {
             RefreshSurvival();
             RefreshObjective();
+            RefreshAlert();
             RefreshTools();
             RefreshFollowers();
             RefreshCombo();
@@ -308,6 +316,9 @@ namespace ProjectTheta.UI
                     transform);
 
             BuildSurvival(
+                canvas.transform);
+
+            BuildAlert(
                 canvas.transform);
 
             BuildObjective(
@@ -648,6 +659,135 @@ namespace ProjectTheta.UI
                 new Vector2(0f, 1f),
                 new Vector2(410f, -106f),
                 new Vector2(120f, 28f));
+        }
+
+        /// <summary>
+        /// 구역 경계도 막대다 (22일차). 방해 세력이 있는 장소에서만 보인다.
+        /// 단계마다 색이 바뀐다: 평온 회색 · 주의 노랑 · 경계 주황 · 비상 빨강 (부록 C.8).
+        /// </summary>
+        private void BuildAlert(
+            Transform parent)
+        {
+            _alertGroup =
+                UiFactory.CreateRect(
+                    parent,
+                    "ZoneAlert");
+
+            UiFactory.Place(
+                _alertGroup,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -196f),
+                new Vector2(420f, 40f));
+
+            _alertText =
+                UiFactory.CreateText(
+                    _alertGroup,
+                    "Label",
+                    string.Empty,
+                    UiTheme.FontSmall,
+                    UiTheme.TextMuted,
+                    TextAnchor.MiddleCenter,
+                    FontStyle.Bold);
+
+            UiFactory.Place(
+                _alertText.rectTransform,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                Vector2.zero,
+                new Vector2(420f, 22f));
+
+            _alertBar =
+                UiFactory.CreateBar(
+                    _alertGroup,
+                    "Bar",
+                    UiTheme.TextMuted,
+                    UiTheme.TrackFill);
+
+            UiFactory.Place(
+                _alertBar.Root,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -24f),
+                new Vector2(360f, 12f));
+
+            _alertGroup.gameObject.SetActive(
+                false);
+        }
+
+        public static Color GetAlertColor(
+            AlertLevel level)
+        {
+            switch (level)
+            {
+                case AlertLevel.Caution:
+                    return new Color(1.00f, 0.84f, 0.30f);
+
+                case AlertLevel.Alert:
+                    return new Color(1.00f, 0.55f, 0.20f);
+
+                case AlertLevel.Emergency:
+                    return UiTheme.Danger;
+
+                default:
+                    return new Color(0.62f, 0.62f, 0.70f);
+            }
+        }
+
+        private void RefreshAlert()
+        {
+            if (_alertGroup == null)
+            {
+                return;
+            }
+
+            ZoneAlert alert =
+                ZoneAlert.Current;
+
+            bool visible =
+                alert != null;
+
+            if (_alertGroup.gameObject.activeSelf != visible)
+            {
+                _alertGroup.gameObject.SetActive(
+                    visible);
+            }
+
+            if (!visible)
+            {
+                return;
+            }
+
+            _alertBar.SetValue(
+                alert.Normalized);
+
+            Color color =
+                GetAlertColor(
+                    alert.Level);
+
+            _alertBar.SetColor(
+                color);
+
+            int lockSeconds =
+                Mathf.CeilToInt(
+                    RecoveryPoint.LockRemaining);
+
+            if (UiChangeKey.Changed(
+                    ref _alertKey,
+                    UiChangeKey.Of(
+                        (int)alert.Level,
+                        lockSeconds)))
+            {
+                _alertText.text =
+                    lockSeconds > 0
+                        ? $"경계도  {ZoneAlertLogic.GetLabel(alert.Level)}   ·   회수 지점 잠김 {lockSeconds}초"
+                        : $"경계도  {ZoneAlertLogic.GetLabel(alert.Level)}";
+
+                _alertText.color =
+                    lockSeconds > 0
+                        ? UiTheme.Danger
+                        : color;
+            }
         }
 
         private void BuildObjective(

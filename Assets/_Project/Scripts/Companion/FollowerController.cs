@@ -38,6 +38,9 @@ namespace ProjectTheta.Companion
         private Transform _leader;
         private int _slotIndex;
         private float _stability;
+
+        /// <summary>근태 체크 표식이다. 표식이 한 번 붙으면 찾아 두고 계속 쓴다.</summary>
+        private Disruptors.AttendanceMark _attendanceMark;
         private bool _isFollowing;
         private bool _isUnderExternalControl;
 
@@ -188,15 +191,41 @@ namespace ProjectTheta.Companion
             float targetDistance =
                 delta.magnitude;
 
+            // 22일차: 인사팀 평가관의 근태 체크 표식이 붙어 있으면 유지도가 빨리 줄고, 가까이 있어도 조금씩 준다.
+            bool marked =
+                _attendanceMark != null &&
+                _attendanceMark.IsMarked;
+
+            if (!marked &&
+                _attendanceMark == null &&
+                TryGetComponent(out Disruptors.AttendanceMark found))
+            {
+                _attendanceMark = found;
+                marked = found.IsMarked;
+            }
+
             _stability =
                 FollowerStabilityLogic.Tick(
                     _stability,
                     _maximumStability,
                     targetDistance,
                     _breakDistance,
-                    _stabilityDecayPerSecond,
+                    _stabilityDecayPerSecond *
+                    (marked
+                        ? Disruptors.AttendanceMark.DecayMultiplier
+                        : 1f),
                     _stabilityRecoveryPerSecond,
                     Time.fixedDeltaTime);
+
+            if (marked)
+            {
+                _stability =
+                    Mathf.Max(
+                        0f,
+                        _stability -
+                        Disruptors.AttendanceMark.DrainPerSecond *
+                        Time.fixedDeltaTime);
+            }
 
             if (_stability <= 0f)
             {

@@ -84,6 +84,16 @@ namespace ProjectTheta.Balance
         // 동행 NPC의 충동이 차오르는 속도 전체에 곱한다. 1이면 기존 그대로, 2면 두 배 빨리 폭주한다.
         public float ImpulseBuildScale = 1f;
 
+        // --- 방해 세력 · 구역 경계도 (22일차) ---
+        // 감시자에게 발각된 채 최면을 유지하면 초당 오르는 경계도다.
+        public float AlertRisePerSecond = 12f;
+        // 발각된 채 달리기 · 대시를 한 번 하면 오르는 경계도다.
+        public float AlertDashRise = 8f;
+        // 발각이 없을 때 초당 내려가는 경계도다.
+        public float AlertDecayPerSecond = 4f;
+        // 모든 감시자 시야 거리에 곱한다.
+        public float WatcherSightScale = 1f;
+
         // --- 최면 속도 (19일차) ---
         // 플레이어 최면 전체에 곱하는 기본 배율이다. 등급별 속도 표는 그대로 두고 전체만 올린다.
         // 1.3이면 모든 등급이 1.3배 빨라진다 (일반 40/초 → 52/초). 되찾기에도 똑같이 걸린다.
@@ -146,6 +156,10 @@ namespace ProjectTheta.Balance
                 FocusHypnosisDrainPerSecond = FocusHypnosisDrainPerSecond,
                 FocusRecoveryPerSecond = FocusRecoveryPerSecond,
                 ImpulseBuildScale = ImpulseBuildScale,
+                AlertRisePerSecond = AlertRisePerSecond,
+                AlertDashRise = AlertDashRise,
+                AlertDecayPerSecond = AlertDecayPerSecond,
+                WatcherSightScale = WatcherSightScale,
                 PlayerHypnosisSpeedScale = PlayerHypnosisSpeedScale,
                 LevelBaseXp = LevelBaseXp,
                 LevelXpGrowth = LevelXpGrowth,

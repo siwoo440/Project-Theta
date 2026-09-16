@@ -1,6 +1,7 @@
 using UnityEngine;
 using ProjectTheta.Balance;
 using ProjectTheta.Core;
+using ProjectTheta.Disruptors;
 using ProjectTheta.Impulse;
 using ProjectTheta.Run;
 using ProjectTheta.Stage;
@@ -92,6 +93,11 @@ namespace ProjectTheta.Presentation
             StageMoments.RampageSurvived += HandleRampageSurvived;
             StageMoments.CaptureStarted += HandleCapture;
             StageMoments.DuelWon += HandleDuelWon;
+            StageMoments.AlertLevelChanged += HandleAlertLevelChanged;
+            StageMoments.DisruptorSpotted += HandleSpotted;
+            StageMoments.AbilityTelegraphed += HandleAbilityTelegraphed;
+            StageMoments.AbilityFired += HandleAbilityFired;
+            StageMoments.BreakTimeStarted += HandleBreakTime;
 
             if (_run != null)
             {
@@ -113,6 +119,11 @@ namespace ProjectTheta.Presentation
             StageMoments.RampageSurvived -= HandleRampageSurvived;
             StageMoments.CaptureStarted -= HandleCapture;
             StageMoments.DuelWon -= HandleDuelWon;
+            StageMoments.AlertLevelChanged -= HandleAlertLevelChanged;
+            StageMoments.DisruptorSpotted -= HandleSpotted;
+            StageMoments.AbilityTelegraphed -= HandleAbilityTelegraphed;
+            StageMoments.AbilityFired -= HandleAbilityFired;
+            StageMoments.BreakTimeStarted -= HandleBreakTime;
 
             if (_run != null)
             {
@@ -391,6 +402,108 @@ namespace ProjectTheta.Presentation
 
             GameAudio.Play(
                 GameSfx.DuelWin);
+        }
+
+        // 22일차: 방해 세력 ----------------------------------------------
+
+        private void HandleSpotted(
+            Vector2 position)
+        {
+            GameVfx.Ripple(
+                position + new Vector2(0f, 1.2f),
+                UiTheme.Danger,
+                0.7f,
+                0.35f);
+
+            GameAudio.Play(
+                GameSfx.ClaimTick,
+                0.8f);
+        }
+
+        /// <summary>단계가 오를 때만 알린다. 내려갈 때는 조용히 둔다.</summary>
+        private void HandleAlertLevelChanged(
+            AlertLevel previous,
+            AlertLevel current)
+        {
+            if (current <= previous)
+            {
+                return;
+            }
+
+            Color color =
+                UI.StageHudView.GetAlertColor(
+                    current);
+
+            bool emergency =
+                current == AlertLevel.Emergency;
+
+            GameVfx.FloatText(
+                emergency
+                    ? "비상! 증원 · 회수 지점 잠김"
+                    : $"경계도 {ZoneAlertLogic.GetLabel(current)}",
+                PlayerPosition + new Vector2(0f, 2.2f),
+                color,
+                emergency
+                    ? UiTheme.FontHeading
+                    : UiTheme.FontBody,
+                1.2f);
+
+            if (emergency)
+            {
+                GameVfx.Shake(
+                    Tuning.VfxShakeMedium,
+                    Tuning.VfxShakeSeconds);
+            }
+
+            GameAudio.Play(
+                emergency
+                    ? GameSfx.UiStamp
+                    : GameSfx.UiTick);
+        }
+
+        private void HandleAbilityTelegraphed(
+            Vector2 position,
+            string abilityName)
+        {
+            GameVfx.Ripple(
+                position + new Vector2(0f, 1f),
+                UiTheme.Gold,
+                1.1f,
+                0.6f);
+
+            GameAudio.Play(
+                GameSfx.ClaimTick);
+        }
+
+        private void HandleAbilityFired(
+            Vector2 position,
+            string abilityName)
+        {
+            GameVfx.Ripple(
+                position + new Vector2(0f, 1f),
+                UiTheme.Danger,
+                0.9f,
+                0.4f);
+
+            GameVfx.FloatText(
+                $"{abilityName}!",
+                position + new Vector2(0f, 1.8f),
+                UiTheme.Danger,
+                UiTheme.FontBody);
+        }
+
+        private void HandleBreakTime()
+        {
+            GameVfx.FloatText(
+                "쉬는 시간!",
+                PlayerPosition + new Vector2(0f, 2.4f),
+                new Color(0.65f, 0.85f, 1.00f),
+                UiTheme.FontHeading,
+                1.2f);
+
+            GameAudio.Play(
+                GameSfx.UiStamp,
+                0.6f);
         }
 
         private void HandleFloorChanged(

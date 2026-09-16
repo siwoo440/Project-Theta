@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 using ProjectTheta.Capture;
 using ProjectTheta.Duel;
 using ProjectTheta.Companion;
+using ProjectTheta.Disruptors;
 using ProjectTheta.Hypnosis;
 using ProjectTheta.Impulse;
 using ProjectTheta.Items;
@@ -172,6 +173,22 @@ namespace ProjectTheta.Core
                     floorCount);
             }
 
+            // 22일차: 장소의 방해 세력과 구역 경계도, 연수원 환경 규칙.
+            DisruptorSpawner.Create(
+                location,
+                floorCount,
+                stage,
+                player.transform,
+                followers);
+
+            if (location.Id == LocationId.TrainingCenter)
+            {
+                CreateTrainingCenterRules(
+                    stage,
+                    player,
+                    floorCount);
+            }
+
             CreateCursorController();
 
             CreateCaptureHud(
@@ -242,6 +259,45 @@ namespace ProjectTheta.Core
                     Capture = capture,
                     Recorder = recorder
                 });
+        }
+
+        /// <summary>
+        /// 기업 연수원 환경 규칙을 붙인다 (22일차).
+        ///   쉬는 시간 종  40초마다 8초 동안 복도 NPC가 빨라진다
+        ///   자습실        층마다 한 칸, 안에서 대시하면 경계도가 오른다
+        /// 1F는 튜토리얼 층이라 자습실을 두지 않는다.
+        /// </summary>
+        private void CreateTrainingCenterRules(
+            StageSessionController stage,
+            PlayerSideViewController player,
+            int floorCount)
+        {
+            GameObject rules =
+                new GameObject(
+                    "TrainingCenterRules");
+
+            rules.AddComponent<BreakTimeBell>().Configure(
+                stage);
+
+            for (int floor = 1;
+                 floor < floorCount;
+                 floor++)
+            {
+                GameObject room =
+                    new GameObject(
+                        $"QuietRoom_{floor + 1}F");
+
+                room.transform.SetParent(
+                    rules.transform,
+                    false);
+
+                room.AddComponent<QuietRoomZone>().Configure(
+                    player,
+                    floor,
+                    floor % 2 == 0
+                        ? -7f
+                        : 7f);
+            }
         }
 
         /// <summary>한 판 기록을 붙인다 (20일차). 층 이동·레벨 알림을 구독하므로 둘 다 만들어진 뒤에 부른다.</summary>

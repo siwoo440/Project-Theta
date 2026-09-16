@@ -36,6 +36,23 @@ namespace ProjectTheta.Stage
         /// <summary>경쟁자가 플레이어 동행자를 빼앗아 갔다. (NPC 위치) — 20일차 판 기록용</summary>
         public static event Action<Vector2> FollowerStolen;
 
+        // --- 22일차: 방해 세력 ---
+
+        /// <summary>구역 경계도 단계가 바뀌었다. (이전 단계, 새 단계)</summary>
+        public static event Action<Disruptors.AlertLevel, Disruptors.AlertLevel> AlertLevelChanged;
+
+        /// <summary>감시자가 플레이어를 발견했다. (감시자 위치)</summary>
+        public static event Action<Vector2> DisruptorSpotted;
+
+        /// <summary>특수 개체가 능력 예고를 시작했다. (개체 위치, 능력 이름)</summary>
+        public static event Action<Vector2, string> AbilityTelegraphed;
+
+        /// <summary>특수 능력이 발동했다. (효과 위치, 능력 이름)</summary>
+        public static event Action<Vector2, string> AbilityFired;
+
+        /// <summary>기업 연수원 쉬는 시간 종이 울렸다.</summary>
+        public static event Action BreakTimeStarted;
+
         public static void RaiseHypnosisSucceeded(
             Vector2 position,
             bool wasReclaim)
@@ -91,6 +108,45 @@ namespace ProjectTheta.Stage
                 position);
         }
 
+        public static void RaiseAlertLevelChanged(
+            Disruptors.AlertLevel previous,
+            Disruptors.AlertLevel current)
+        {
+            AlertLevelChanged?.Invoke(
+                previous,
+                current);
+        }
+
+        public static void RaiseDisruptorSpotted(
+            Vector2 position)
+        {
+            DisruptorSpotted?.Invoke(
+                position);
+        }
+
+        public static void RaiseAbilityTelegraphed(
+            Vector2 position,
+            string abilityName)
+        {
+            AbilityTelegraphed?.Invoke(
+                position,
+                abilityName);
+        }
+
+        public static void RaiseAbilityFired(
+            Vector2 position,
+            string abilityName)
+        {
+            AbilityFired?.Invoke(
+                position,
+                abilityName);
+        }
+
+        public static void RaiseBreakTimeStarted()
+        {
+            BreakTimeStarted?.Invoke();
+        }
+
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetOnPlayModeEnter()
@@ -102,6 +158,11 @@ namespace ProjectTheta.Stage
             CaptureStarted = null;
             DuelWon = null;
             FollowerStolen = null;
+            AlertLevelChanged = null;
+            DisruptorSpotted = null;
+            AbilityTelegraphed = null;
+            AbilityFired = null;
+            BreakTimeStarted = null;
         }
     }
 }
