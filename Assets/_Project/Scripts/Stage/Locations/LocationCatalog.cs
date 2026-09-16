@@ -32,7 +32,8 @@ namespace ProjectTheta.Stage.Locations
         GroupCarry = 1,
         Survival = 2,
         SpecialTarget = 3,
-        Boss = 4
+        Boss = 4,
+        Stealth = 5
     }
 
     /// <summary>
@@ -199,7 +200,7 @@ namespace ProjectTheta.Stage.Locations
                 Id = LocationId.ShoppingMall,
                 DisplayName = "쇼핑몰",
                 TimeOfDay = LocationTimeOfDay.Evening,
-                Objective = LocationObjective.EssenceQuota,
+                Objective = LocationObjective.Stealth,
                 Summary = "에스컬레이터로 이어진 층. CCTV와 보안요원이 서로 연락한다",
                 DisruptorPreview = "보안요원 · CCTV · 판촉 직원 · 보안팀장",
                 FloorCount = 3,
@@ -296,6 +297,9 @@ namespace ProjectTheta.Stage.Locations
             {
                 case LocationObjective.GroupCarry:
                     return "동시 운반";
+
+                case LocationObjective.Stealth:
+                    return "잠입";
 
                 case LocationObjective.Survival:
                     return "생존";

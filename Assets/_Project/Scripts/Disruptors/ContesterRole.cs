@@ -126,7 +126,12 @@ namespace ProjectTheta.Disruptors
                     _gauge,
                     inReach,
                     guarded,
-                    BalanceOverrides.StageOrDefault.ContestRiseScale,
+                    BalanceOverrides.StageOrDefault.ContestRiseScale *
+                    // 25일차: 오피스 탕비실 근처에서는 사내 인기남이 두 배로 빠르다.
+                    MallOfficeValues.GetPantryMultiplier(
+                        target.x,
+                        Stage.Locations.OfficeLayout.GetPantryX(_body.Floor),
+                        Stage.Locations.OfficeLayout.Active),
                     deltaTime);
 
             if (ClaimLogic.IsComplete(_gauge))
@@ -206,7 +211,9 @@ namespace ProjectTheta.Disruptors
                 position);
 
             GameVfx.FloatText(
-                "헌팅당했다!",
+                _body.Profile == null
+                    ? "빼앗겼다!"
+                    : $"{_body.Profile.DisplayName}에게 넘어갔다!",
                 position + new Vector2(0f, 1.8f),
                 UiTheme.Danger,
                 UiTheme.FontBody);

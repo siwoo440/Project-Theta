@@ -482,12 +482,13 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
-        public void Only_The_Announcer_Is_An_Object()
+        public void Only_The_Announcer_And_Cameras_Are_Objects()
         {
             foreach (DisruptorKind kind in System.Enum.GetValues(typeof(DisruptorKind)))
             {
                 Assert.AreEqual(
-                    kind == DisruptorKind.PlatformAnnouncer,
+                    kind == DisruptorKind.PlatformAnnouncer ||
+                    kind == DisruptorKind.SecurityCamera,
                     DisruptorCatalog.Get(kind).IsObject,
                     kind.ToString());
             }

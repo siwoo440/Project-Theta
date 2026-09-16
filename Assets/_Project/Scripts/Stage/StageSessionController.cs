@@ -99,6 +99,13 @@ namespace ProjectTheta.Stage
                 CurrentEssence /
                 (float)TargetEssence);
 
+        /// <summary>장소가 정한 제한 시간(초)이다. 폐점 · 정전 시점 계산에 쓴다.</summary>
+        public float TimeLimitSeconds =>
+            _timeLimitSeconds;
+
+        /// <summary>남은 시간이 줄어드는 배율이다 (25일차, 쇼핑몰 폐점 방송 뒤 1.3).</summary>
+        public float TimeFlowMultiplier { get; set; } = 1f;
+
         public float ElapsedTime =>
             Mathf.Max(
                 0f,
@@ -181,7 +188,8 @@ namespace ProjectTheta.Stage
             RemainingTime =
                 StageRules.TickTime(
                     RemainingTime,
-                    Time.deltaTime);
+                    Time.deltaTime *
+                    Mathf.Max(0f, TimeFlowMultiplier));
 
             UpdateRecoveryBatch();
 
@@ -279,7 +287,7 @@ namespace ProjectTheta.Stage
                     Disruptors.PickpocketMark.GetEssenceMultiplier(
                         follower));
 
-            // 24일차: 대회 앞둔 선수를 회수하면 정기 보너스가 바로 붙는다.
+            // 24일차: 대회 앞둔 선수(25일차: 대표 비서)를 회수하면 정기 보너스가 바로 붙는다.
             int athleteBonus =
                 Locations.AthleteMark.GetBonusEssence(
                     follower);
@@ -378,7 +386,12 @@ namespace ProjectTheta.Stage
                     RunUpgradeMultipliers.RecoveryEssence *
                     Locations.LocationObjectiveLogic.GetBatchMultiplier(
                         Locations.LocationContext.Current.Objective,
-                        _pendingCount));
+                        _pendingCount) *
+                    // 25일차: 쇼핑몰은 이번 구역에서 한 번도 들키지 않았으면 보너스.
+                    Locations.StealthLogic.GetBatchMultiplier(
+                        Locations.LocationContext.Current.Objective,
+                        Disruptors.ZoneAlert.Current != null &&
+                        Disruptors.ZoneAlert.Current.WasSpotted));
 
             int count =
                 _pendingCount;

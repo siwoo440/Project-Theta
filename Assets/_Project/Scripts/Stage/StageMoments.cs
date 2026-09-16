@@ -72,6 +72,14 @@ namespace ProjectTheta.Stage
         /// <summary>특수 대상(선수)을 회수했다. (위치, 보너스 정기)</summary>
         public static event Action<Vector2, int> SpecialTargetRecovered;
 
+        // --- 25일차: 쇼핑몰 · 오피스 ---
+
+        /// <summary>오피스 정전이 시작됐다.</summary>
+        public static event Action BlackoutStarted;
+
+        /// <summary>쇼핑몰 폐점 방송이 나왔다.</summary>
+        public static event Action MallClosing;
+
         public static void RaiseHypnosisSucceeded(
             Vector2 position,
             bool wasReclaim)
@@ -182,6 +190,16 @@ namespace ProjectTheta.Stage
                 bonus);
         }
 
+        public static void RaiseBlackoutStarted()
+        {
+            BlackoutStarted?.Invoke();
+        }
+
+        public static void RaiseMallClosing()
+        {
+            MallClosing?.Invoke();
+        }
+
         public static void RaiseTideWarning()
         {
             TideWarning?.Invoke();
@@ -226,6 +244,8 @@ namespace ProjectTheta.Stage
             PickpocketResolved = null;
             TrainArrived = null;
             SpecialTargetRecovered = null;
+            BlackoutStarted = null;
+            MallClosing = null;
         }
     }
 }

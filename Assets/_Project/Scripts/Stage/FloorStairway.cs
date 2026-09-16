@@ -74,8 +74,18 @@ namespace ProjectTheta.Stage
                     FloorLayout.StairStandY));
         }
 
+        /// <summary>출입증 게이트에 잠긴 위층 계단인지다 (25일차).</summary>
+        public bool IsLocked =>
+            _direction == FloorStairDirection.Up &&
+            Locations.PassGate.IsLocked(_sourceFloor);
+
         public string GetPromptText()
         {
+            if (IsLocked)
+            {
+                return "[F] 출입증 게이트 잠김 · 두 번 누르면 비상계단";
+            }
+
             return _direction == FloorStairDirection.Up
                 ? $"[F] {FloorPlanLogic.GetLabel(_targetFloor)}로 올라가기"
                 : $"[F] {FloorPlanLogic.GetLabel(_targetFloor)}로 내려가기";

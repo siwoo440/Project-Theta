@@ -182,7 +182,12 @@ namespace ProjectTheta.Stage.Locations
                     return "생존: 열차가 모두 지나갈 때까지 동행자를 1명 이상 지키기";
 
                 case LocationObjective.SpecialTarget:
-                    return "특수 대상: ★ 대회 앞둔 선수를 회수하면 정기 보너스";
+                    return OfficeLayout.Active
+                        ? "특수 대상: 게이트를 열고 최상층 ★ 대표 비서를 회수하면 정기 보너스"
+                        : "특수 대상: ★ 대회 앞둔 선수를 회수하면 정기 보너스";
+
+                case LocationObjective.Stealth:
+                    return $"잠입: 한 번도 들키지 않고 회수하면 정기 ×{StealthLogic.UndetectedMultiplier:0.0}";
 
                 default:
                     return string.Empty;

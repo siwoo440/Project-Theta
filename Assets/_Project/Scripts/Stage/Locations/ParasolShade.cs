@@ -46,6 +46,37 @@ namespace ProjectTheta.Stage.Locations
                 canopy);
         }
 
+        /// <summary>쇼핑몰 기둥 · 진열대다 (25일차). 그늘과 같은 판정으로 감시 시야를 가린다.</summary>
+        public void ConfigurePillar(
+            int floor,
+            float x,
+            float localY)
+        {
+            Vector2 center =
+                FloorSpace.ToWorld(
+                    floor,
+                    new Vector2(x, localY));
+
+            transform.position =
+                new Vector3(center.x, center.y, 0f);
+
+            LocationProps.Blob(
+                transform,
+                "PillarShadow",
+                center,
+                new Vector2(RadiusX * 2f, RadiusY * 2f),
+                new Color(0.05f, 0.05f, 0.12f, 0.28f),
+                -55);
+
+            LocationProps.Box(
+                transform,
+                "Pillar",
+                center + new Vector2(0f, 1.4f),
+                new Vector2(0.9f, 2.8f),
+                new Color(0.75f, 0.72f, 0.80f, 0.85f),
+                15000);
+        }
+
         public bool Contains(
             Vector2 worldPosition)
         {

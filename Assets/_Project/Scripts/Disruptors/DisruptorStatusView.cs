@@ -120,6 +120,10 @@ namespace ProjectTheta.Disruptors
         private RescuerRole _rescuer;
         private BrawlerRole _brawler;
         private DroneTrackingAbility _drone;
+
+        // 25일차
+        private ManagerRole _manager;
+        private RadioLink _radio;
         private string _nameLabel = string.Empty;
 
         private Text _nameText;
@@ -142,6 +146,8 @@ namespace ProjectTheta.Disruptors
             _rescuer = GetComponent<RescuerRole>();
             _brawler = GetComponent<BrawlerRole>();
             _drone = GetComponent<DroneTrackingAbility>();
+            _manager = GetComponent<ManagerRole>();
+            _radio = GetComponent<RadioLink>();
 
             DisruptorProfile profile =
                 body.Profile;
@@ -262,6 +268,25 @@ namespace ProjectTheta.Disruptors
             {
                 state = "!";
                 color = UiTheme.Danger;
+            }
+            else if (_manager != null &&
+                     _manager.ShoutFlashRemaining > 0f)
+            {
+                state = "이거 오늘까지 해!";
+                color = new Color(1.00f, 0.55f, 0.35f);
+            }
+            else if (_manager != null &&
+                     _manager.IsOnBreak)
+            {
+                state = "커피 휴식";
+                color = new Color(0.85f, 0.70f, 0.50f);
+            }
+            else if (_radio != null &&
+                     _radio.IsResponding &&
+                     (_watcher == null || !_watcher.IsSpotting))
+            {
+                state = "무전 출동";
+                color = new Color(1.00f, 0.60f, 0.35f);
             }
             else if (_brawler != null &&
                      _brawler.IsWindingUp)

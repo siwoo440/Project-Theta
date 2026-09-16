@@ -46,19 +46,29 @@ namespace ProjectTheta.Disruptors
         public void Configure(
             FollowerManager followers,
             Transform player,
-            bool flyer = false)
+            bool flyer = false,
+            float holdSeconds = 0f,
+            string callText = null)
         {
             _body = GetComponent<DisruptorBase>();
             _followers = followers;
             _player = player;
             _flyer = flyer;
+            _holdOverride = holdSeconds;
+            _callText = callText;
         }
+
+        /// <summary>짧게 세우는 모드의 붙잡는 시간 · 외치는 말이다 (25일차, 판촉 직원). 0 · null이면 기본값이다.</summary>
+        private float _holdOverride;
+        private string _callText;
 
         private float PullRadius =>
             _flyer ? StallHoldLogic.FlyerPullRadius : StallHoldLogic.PullRadius;
 
         private float HoldSeconds =>
-            _flyer ? StallHoldLogic.FlyerHoldSeconds : StallHoldLogic.HoldSeconds;
+            _holdOverride > 0f
+                ? _holdOverride
+                : _flyer ? StallHoldLogic.FlyerHoldSeconds : StallHoldLogic.HoldSeconds;
 
         private float CooldownSeconds =>
             _flyer ? StallHoldLogic.FlyerCooldownSeconds : StallHoldLogic.CooldownSeconds;
@@ -196,7 +206,9 @@ namespace ProjectTheta.Disruptors
                     new Color(1.00f, 0.70f, 0.35f));
 
             GameVfx.FloatText(
-                _flyer ? "헬스장 3개월 반값이에요~" : "시식하고 가세요~",
+                !string.IsNullOrEmpty(_callText)
+                    ? _callText
+                    : _flyer ? "헬스장 3개월 반값이에요~" : "시식하고 가세요~",
                 (Vector2)transform.position + new Vector2(0f, 2.4f),
                 new Color(1.00f, 0.80f, 0.45f),
                 UiTheme.FontSmall);

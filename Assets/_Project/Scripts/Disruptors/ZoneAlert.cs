@@ -48,6 +48,14 @@ namespace ProjectTheta.Disruptors
 
         public bool HasLastSeen { get; private set; }
 
+        /// <summary>이번 구역에서 감시자에게 한 번이라도 발각됐는지다 (25일차, 잠입 목표).</summary>
+        public bool WasSpotted { get; private set; }
+
+        public void MarkSpotted()
+        {
+            WasSpotted = true;
+        }
+
         public int ReinforcementsUsed =>
             _reinforcementsUsed;
 
