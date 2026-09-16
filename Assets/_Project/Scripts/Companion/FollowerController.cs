@@ -243,11 +243,18 @@ namespace ProjectTheta.Companion
                     ? Vector2.zero
                     : _separation.GetCorrectionVelocity();
 
+            // 24일차: 지하철 승강장 변경 안내 뒤에는 인파에 끌려가고 느려진다.
+            Vector2 crowdDrift =
+                new Vector2(
+                    Disruptors.CrowdFlow.Drift,
+                    0f);
+
             if (targetDistance <=
                 _personalStopDistance)
             {
                 _body.linearVelocity =
-                    separationVelocity;
+                    separationVelocity +
+                    crowdDrift;
 
                 return;
             }
@@ -260,7 +267,8 @@ namespace ProjectTheta.Companion
 
             float speed =
                 baseSpeed *
-                _personalSpeedMultiplier;
+                _personalSpeedMultiplier *
+                Disruptors.CrowdFlow.SpeedMultiplier;
 
             Vector2 followVelocity =
                 delta.normalized *
@@ -270,7 +278,8 @@ namespace ProjectTheta.Companion
                 Vector2.ClampMagnitude(
                     followVelocity +
                     separationVelocity,
-                    speed + 0.65f);
+                    speed + 0.65f) +
+                crowdDrift;
         }
 
         private void RandomizeFormationPersonality()

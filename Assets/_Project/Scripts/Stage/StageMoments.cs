@@ -64,6 +64,14 @@ namespace ProjectTheta.Stage
         /// <summary>소매치기 도주가 끝났다. (위치, 잡았는지)</summary>
         public static event Action<Vector2, bool> PickpocketResolved;
 
+        // --- 24일차: 지하철 · 헬스장 ---
+
+        /// <summary>열차가 도착했다. (지금까지 도착한 열차 수)</summary>
+        public static event Action<int> TrainArrived;
+
+        /// <summary>특수 대상(선수)을 회수했다. (위치, 보너스 정기)</summary>
+        public static event Action<Vector2, int> SpecialTargetRecovered;
+
         public static void RaiseHypnosisSucceeded(
             Vector2 position,
             bool wasReclaim)
@@ -158,6 +166,22 @@ namespace ProjectTheta.Stage
             BreakTimeStarted?.Invoke();
         }
 
+        public static void RaiseTrainArrived(
+            int arrived)
+        {
+            TrainArrived?.Invoke(
+                arrived);
+        }
+
+        public static void RaiseSpecialTargetRecovered(
+            Vector2 position,
+            int bonus)
+        {
+            SpecialTargetRecovered?.Invoke(
+                position,
+                bonus);
+        }
+
         public static void RaiseTideWarning()
         {
             TideWarning?.Invoke();
@@ -200,6 +224,8 @@ namespace ProjectTheta.Stage
             TideWarning = null;
             PickpocketStole = null;
             PickpocketResolved = null;
+            TrainArrived = null;
+            SpecialTargetRecovered = null;
         }
     }
 }

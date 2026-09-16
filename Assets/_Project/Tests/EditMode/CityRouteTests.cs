@@ -76,29 +76,23 @@ namespace ProjectTheta.Tests.EditMode
     {
         private const int SeedsToCheck = 300;
 
-        /// <summary>시드마다 첫 번째 후보를 계속 골라 한 판 경로를 끝까지 만든다.</summary>
+        /// <summary>짜인 경로 규칙(21일차)으로 시드마다 한 판 경로를 끝까지 만든다.</summary>
         private static List<LocationId> PlayRoute(
             int seed,
             int pickIndex)
         {
-            RunSession session = new RunSession(seed);
+            List<LocationId> visited = new List<LocationId>();
 
             for (int step = 0; step < RunRouteLogic.ZoneCount; step++)
             {
-                List<LocationId> candidates = session.GetCandidates();
+                List<LocationId> candidates = RunRouteLogic.GetCuratedCandidates(step, visited, seed);
 
                 Assert.IsNotEmpty(candidates, $"시드 {seed}, 구역 {step + 1}에 후보가 없습니다");
 
-                LocationId pick = candidates[System.Math.Min(pickIndex, candidates.Count - 1)];
-
-                Assert.IsTrue(session.Select(pick));
-
-                session.RecordZone(new ZoneRecord { Location = pick, Cleared = true, RankLabel = "A" });
+                visited.Add(candidates[System.Math.Min(pickIndex, candidates.Count - 1)]);
             }
 
-            Assert.IsTrue(session.IsFinished);
-
-            return new List<LocationId>(session.Visited);
+            return visited;
         }
 
         [Test]
@@ -147,13 +141,13 @@ namespace ProjectTheta.Tests.EditMode
         {
             for (int seed = 0; seed < SeedsToCheck; seed++)
             {
-                RunSession session = new RunSession(seed);
-
-                session.Select(LocationCatalog.StartLocation);
-                session.RecordZone(new ZoneRecord { Location = LocationCatalog.StartLocation, Cleared = true });
+                List<LocationId> visited = new List<LocationId> { LocationCatalog.StartLocation };
 
                 // 2구역은 항상 두 곳 중에서 고른다.
-                Assert.AreEqual(RunRouteLogic.ChoicesPerStep, session.GetCandidates().Count, $"시드 {seed}");
+                Assert.AreEqual(
+                    RunRouteLogic.ChoicesPerStep,
+                    RunRouteLogic.GetCuratedCandidates(1, visited, seed).Count,
+                    $"시드 {seed}");
             }
         }
 
@@ -162,11 +156,11 @@ namespace ProjectTheta.Tests.EditMode
         {
             CollectionAssert.AreEqual(
                 new[] { LocationCatalog.StartLocation },
-                RunRouteLogic.GetCandidates(0, new List<LocationId>(), 7));
+                RunRouteLogic.GetCuratedCandidates(0, new List<LocationId>(), 7));
 
             CollectionAssert.AreEqual(
                 new[] { LocationCatalog.FinalLocation },
-                RunRouteLogic.GetCandidates(RunRouteLogic.ZoneCount - 1, new List<LocationId>(), 7));
+                RunRouteLogic.GetCuratedCandidates(RunRouteLogic.ZoneCount - 1, new List<LocationId>(), 7));
         }
 
         [Test]
@@ -176,8 +170,8 @@ namespace ProjectTheta.Tests.EditMode
             List<LocationId> visited = new List<LocationId> { LocationId.TrainingCenter };
 
             CollectionAssert.AreEqual(
-                RunRouteLogic.GetCandidates(1, visited, 12345),
-                RunRouteLogic.GetCandidates(1, visited, 12345));
+                RunRouteLogic.GetCuratedCandidates(1, visited, 12345),
+                RunRouteLogic.GetCuratedCandidates(1, visited, 12345));
         }
 
         [Test]
@@ -187,11 +181,89 @@ namespace ProjectTheta.Tests.EditMode
 
             for (int seed = 0; seed < SeedsToCheck; seed++)
             {
-                foreach (LocationId id in RunRouteLogic.GetCandidates(1, visited, seed))
+                foreach (LocationId id in RunRouteLogic.GetCuratedCandidates(1, visited, seed))
                 {
                     Assert.AreNotEqual(LocationTimeOfDay.Night, LocationCatalog.Get(id).TimeOfDay, $"시드 {seed}");
                 }
             }
+        }
+    }
+
+    /// <summary>모든 장소 열기(24일차)다.</summary>
+    public sealed class OpenRouteTests
+    {
+        [Test]
+        public void Open_Mode_Is_On()
+        {
+            Assert.IsTrue(RunRouteLogic.OpenAllLocations);
+        }
+
+        [Test]
+        public void Every_Place_Can_Be_Entered_From_The_First_Zone()
+        {
+            RunSession session = new RunSession(1);
+
+            List<LocationId> candidates = session.GetCandidates();
+
+            Assert.AreEqual(LocationCatalog.All.Count, candidates.Count);
+
+            foreach (LocationDefinition location in LocationCatalog.All)
+            {
+                Assert.Contains(location.Id, candidates);
+            }
+
+            // 첫 구역부터 마지막 장소에도 들어갈 수 있다.
+            Assert.IsTrue(session.Select(LocationId.RooftopClub));
+        }
+
+        [Test]
+        public void Visited_Places_Are_Not_Offered_Again()
+        {
+            RunSession session = new RunSession(1);
+
+            session.Select(LocationId.NightMarket);
+            session.RecordZone(new ZoneRecord { Location = LocationId.NightMarket, Cleared = true });
+
+            List<LocationId> candidates = session.GetCandidates();
+
+            Assert.AreEqual(LocationCatalog.All.Count - 1, candidates.Count);
+            Assert.IsFalse(candidates.Contains(LocationId.NightMarket));
+            Assert.IsFalse(session.Select(LocationId.NightMarket));
+        }
+
+        [Test]
+        public void A_Full_Run_Still_Has_Five_Zones_In_Any_Order()
+        {
+            RunSession session = new RunSession(3);
+
+            // 번호 역순으로 골라도 끝까지 간다.
+            for (int step = 0; step < RunRouteLogic.ZoneCount; step++)
+            {
+                List<LocationId> candidates = session.GetCandidates();
+                LocationId pick = candidates[candidates.Count - 1];
+
+                Assert.IsTrue(session.Select(pick), $"구역 {step + 1}");
+
+                session.RecordZone(new ZoneRecord { Location = pick, Cleared = true });
+            }
+
+            Assert.IsTrue(session.IsFinished);
+            Assert.AreEqual(RunRouteLogic.ZoneCount, new HashSet<LocationId>(session.Visited).Count);
+        }
+
+        [Test]
+        public void Open_Candidates_Are_Sorted_And_Stable()
+        {
+            List<LocationId> visited = new List<LocationId> { LocationId.Beach };
+
+            List<LocationId> candidates = RunRouteLogic.GetOpenCandidates(visited);
+
+            for (int i = 1; i < candidates.Count; i++)
+            {
+                Assert.Less(candidates[i - 1], candidates[i]);
+            }
+
+            CollectionAssert.AreEqual(candidates, RunRouteLogic.GetCandidates(2, visited, 99));
         }
     }
 
@@ -202,10 +274,14 @@ namespace ProjectTheta.Tests.EditMode
         {
             RunSession session = new RunSession(1);
 
-            Assert.IsFalse(session.Select(LocationId.RooftopClub));
+            session.Select(LocationId.TrainingCenter);
+            session.RecordZone(new ZoneRecord { Location = LocationId.TrainingCenter, Cleared = true });
+
+            // 이미 간 장소는 후보가 아니다.
+            Assert.IsFalse(session.Select(LocationId.TrainingCenter));
             Assert.IsNull(session.SelectedLocation);
 
-            Assert.IsTrue(session.Select(LocationId.TrainingCenter));
+            Assert.IsTrue(session.Select(LocationId.Beach));
         }
 
         [Test]

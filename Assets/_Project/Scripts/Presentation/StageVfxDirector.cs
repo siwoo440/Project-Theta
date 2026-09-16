@@ -101,6 +101,8 @@ namespace ProjectTheta.Presentation
             StageMoments.TideWarning += HandleTideWarning;
             StageMoments.PickpocketStole += HandlePickpocketStole;
             StageMoments.PickpocketResolved += HandlePickpocketResolved;
+            StageMoments.TrainArrived += HandleTrainArrived;
+            StageMoments.SpecialTargetRecovered += HandleSpecialTargetRecovered;
 
             if (_run != null)
             {
@@ -130,6 +132,8 @@ namespace ProjectTheta.Presentation
             StageMoments.TideWarning -= HandleTideWarning;
             StageMoments.PickpocketStole -= HandlePickpocketStole;
             StageMoments.PickpocketResolved -= HandlePickpocketResolved;
+            StageMoments.TrainArrived -= HandleTrainArrived;
+            StageMoments.SpecialTargetRecovered -= HandleSpecialTargetRecovered;
 
             if (_run != null)
             {
@@ -577,6 +581,50 @@ namespace ProjectTheta.Presentation
                 UiTheme.TextMuted,
                 UiTheme.FontBody,
                 1.4f);
+        }
+
+        // 24일차: 지하철 · 헬스장 -----------------------------------------
+
+        private void HandleTrainArrived(
+            int arrived)
+        {
+            int required =
+                StageSessionController.SurvivalTrainsRequired;
+
+            GameVfx.FloatText(
+                arrived >= required
+                    ? $"열차 {arrived}대 통과! 버텼다"
+                    : $"열차 도착 ({arrived}/{required}) · 인파 주의",
+                PlayerPosition + new Vector2(0f, 2.4f),
+                new Color(0.60f, 0.85f, 0.60f),
+                UiTheme.FontHeading,
+                1.2f);
+
+            GameVfx.Shake(
+                Tuning.VfxShakeMedium * 0.5f,
+                Tuning.VfxShakeSeconds);
+
+            GameAudio.Play(
+                GameSfx.FloorArrive);
+        }
+
+        private void HandleSpecialTargetRecovered(
+            Vector2 position,
+            int bonus)
+        {
+            GameVfx.Pop(
+                VfxSprite.Spark,
+                position + new Vector2(0f, 1f),
+                UiTheme.Gold,
+                1.4f);
+
+            GameVfx.FlyText(
+                $"★ 선수 함락 +{bonus}",
+                position + new Vector2(0f, 2f),
+                UiTheme.Gold);
+
+            GameAudio.Play(
+                GameSfx.LevelUp);
         }
 
         private void HandleFloorChanged(
