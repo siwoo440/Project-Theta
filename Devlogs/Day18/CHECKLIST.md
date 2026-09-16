@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 28일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 29일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -69,7 +69,7 @@
 | 31 | 목표 정기 달성 | 클리어 → 결과 화면 | `StageEndController` |
 | 32 | 결과 화면 | 도달 층 `4F (4개 층)`, 런 레벨, 강화 목록 | `StageResultPanel` |
 | 33 | 클릭 | 연출 스킵, 랭크 도장 | `StageResultRevealLogic` |
-| 34 | `지도로 (다음 구역)` (21일차부터. 판 전체 흐름은 6-3 구간) | 도시 지도로 돌아감 | `GameSession.GoTo` |
+| 34 | `지도로` (29일차부터 `허브로` 버튼과 나란히. 흐름은 6-3 구간) | 도시 지도로 돌아감 | `GameSession.GoTo` |
 
 ## 6. 허브 → 재출격 (이전 판이 남지 않는가)
 
@@ -136,23 +136,23 @@
 | 83 | S·A 랭크로 클리어 | 도장 뒤에 **랭크 색 빛 번짐** | `StageResultPanel._rankGlow` |
 | 84 | 허브 · 타이틀 | 배경에 보라 빛 알갱이가 **천천히 떠오름**, 버튼에 마우스를 올리면 살짝 커짐 | `UiFloatingMotes`, `UiHoverEffect` |
 
-## 6-3. 도시 지도 · 구역 흐름 (21일차 추가)
+## 6-3. 도시 지도 흐름 (21일차 추가, 29일차에 판 없이 다시 씀)
 
-**가장 중요한 줄은 88번과 91번이다.** 구역을 넘어도 레벨·카드가 이어지는지, 끝난 판이 다음 출격에 남지 않는지다.
+**가장 중요한 줄은 88번과 91번이다.** 장소마다 레벨·카드가 새로 시작하는지, 허브에 다녀와도 아무 장소나 고를 수 있는지다.
 
 | # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
 | ---: | --- | --- | --- |
-| 85 | 허브 → `출 격` | **도시 지도** 화면. **장소 8곳이 모두 빛나고** "[1]~[8] 선택 가능", 경로 줄 1칸 "선택 중" · 나머지 "?" (24일차: 모든 장소 열기) | `HubScreen` 출격, `MapScreen`, `RunRouteLogic` |
-| 86 | 기업 연수원 선택 → `출  발` (또는 Enter) | 연수원 4층 시작, 우상단 "구역 1/5 · 기업 연수원 · 낮", 층 표시 "교육동 1F", 시작 계약 카드 | `ProjectThetaPrototypeBootstrap`, `LocationContext` |
-| 87 | F1 → 치트 → `구역 즉시 클리어` → 결과 | 제목 "구역 1/5 · 기업 연수원 — CLEAR", 버튼 **"지도로 (다음 구역)"** | `StageResultPanel.RecordZoneInRun` |
-| 88 | 지도로 → 연수원을 뺀 7곳 중 하나 선택 → 출발 | 경로 줄 1칸에 "기업 연수원 A". 새 장소는 **색이 다르고** 저녁/밤이면 화면이 주황/남색. **레벨·카드가 그대로이고 시작 계약 카드가 다시 뜨지 않음**. 튜토리얼 안내 없음 | `RunSession`, `RunProgression.Configure`, `TimeOfDayOverlay` |
-| 89 | 지도 화면에서 숫자 키 `1`~`8` | 해당 후보가 선택되고 오른쪽 정보가 바뀜. **이미 간 장소**("완료")는 눌리지 않음 | `MapScreen.ReadKeyboard` |
-| 90 | 아무 장소나 5구역째를 클리어 | 결과 제목에 "한 판 종료 · 5구역 · 계약 정기 +N", 버튼 **"허브로"** | `RunSession.IsFinished` |
-| 91 | 허브로 → 다시 출격 | 지도가 **1구역부터** 새로 시작, 경로 줄이 비어 있음, Lv 1 | `GameSession.EndRun`, `BeginRun` |
-| 92 | 2구역에서 일부러 시간 초과 | 결과 버튼이 "허브로". 허브의 계약 정기에 **1구역 몫은 남아 있음** | `SceneFlowLogic.ShouldSaveOnTransition` |
-| 93 | 지도에서 `판 포기하고 허브로` 한 번 | "한 번 더 누르면 포기합니다"로 바뀌고, 3초 안에 다시 누르면 허브 | `MapScreen.Abandon` |
-| 94 | 에디터에서 `TestStage` 씬을 바로 재생 | 오류 없이 연수원(구역 1/5)으로 시작 | `GameSession.EnsureRunForStage` |
-| 95 | 기록 폴더의 새 json | `Location`과 `Zone` 항목이 들어 있음 (구역마다 파일 1개) | `RunStatsRecorder` |
+| 85 | 허브 → `출 격` | **도시 지도** 화면. 장소 8곳 모두 누를 수 있고 배지 "[1] 새 장소" · 클럽은 "[8] 보스". 위쪽에 구역 경로 줄 · 판 포기 버튼이 **없음**. 오른쪽 위 `통계 (Tab)` · `허브로` | `HubScreen` 출격, `MapScreen`, `RunRouteLogic.GetLocations` |
+| 86 | 기업 연수원 선택 → `출  발` (또는 Enter) | 연수원 4층 시작, 우상단 "기업 연수원 · 낮"(구역 번호 없음), 층 표시 "교육동 1F", 시작 계약 카드 | `GameSession.BeginLocation`, `LocationContext` |
+| 87 | F1 → 치트 → `장소 즉시 클리어` → 결과 | 제목 "기업 연수원 — CLEAR", 아래 버튼 **`지도로` · `허브로`** 두 개 | `StageResultPanel` |
+| 88 | 지도로 → 아무 장소 선택 → 출발 | **Lv 1 · 카드 0장으로 시작**하고 시작 계약 카드가 **다시 뜸**. 저녁/밤이면 화면이 주황/남색. 튜토리얼 안내 없음 | `RunSession`, `RunProgression.Configure`, `TimeOfDayOverlay` |
+| 89 | 지도 화면에서 숫자 키 `1`~`8` | 해당 장소가 선택되고 오른쪽 정보 · "내 기록"이 바뀜. **클리어한 장소도 다시 고를 수 있음** | `MapScreen.ReadKeyboard` |
+| 90 | 같은 장소를 두 번 연속 도전 | 지도가 마지막 장소를 미리 골라 둠. 두 번째도 Lv 1부터. 배지가 "클리어 N회 · 최고 등급" | `MapScreen.Start`, `PlayStatsLogic.Get` |
+| 91 | 결과 → `허브로` → 다시 출격 | 지도에서 **아무 장소나** 고를 수 있음(1구역부터 다시 시작하는 개념 없음) | `GameSession.ClearRun` |
+| 92 | 일부러 시간 초과 → 결과 | 버튼이 여전히 `지도로` · `허브로`. 지도로 가서 바로 다른 장소에 도전 가능 | `SceneFlowLogic.ShouldSaveOnTransition` |
+| 93 | 지도에서 `허브로` | 바로 허브로 감(확인 없음) | `MapScreen.GoToHub` |
+| 94 | 에디터에서 `TestStage` 씬을 바로 재생 | 오류 없이 연수원으로 시작 | `GameSession.EnsureRunForStage` |
+| 95 | 기록 폴더의 새 json | `Location`과 `Zone`(장소 단계 0~4) 항목이 들어 있음 (도전마다 파일 1개) | `RunStatsRecorder` |
 
 ## 6-4. 방해 세력 · 구역 경계도 (22일차 추가)
 
@@ -330,6 +330,22 @@
 | 212 | 야시장 · 해변가 · 오피스 · 클럽 · 헬스장 · 쇼핑몰의 규칙 소품 | 노점 · 망루 · 탕비실 · 바 · DJ 부스 · 러닝머신 · 셔터 틀 · 게이트 기둥 색이 맵 톤과 어울리고 바닥에 묻히지 않음. 큰 소품 위에 장소 강조색 테두리 한 줄 | `LocationProps.Structure`, `MapPropTint` |
 | 213 | 각 장소 바닥 무늬 | 27일차와 같은 줄눈 · 모래 알갱이 · 벽돌 · LED 칸 · 지하철 점자 블록이 보임(한 장으로 구운 그림) | `FloorPatternLayout`, `FloorPatternBaker` |
 | 214 | 8곳을 돌며 Console 확인 | `[Map] … 예산 … 초과` 경고가 없음. Profiler에서 스테이지 진입 프레임이 27일차보다 가벼움 | `MapBudget`, `SchoolHallwayPrototypeBuilder` |
+
+## 6-11. 통계 · 보스 엔딩 (29일차 추가)
+
+**가장 중요한 줄은 217번이다.** 장소를 끝내고 지도로 돌아오면 통계 숫자가 바로 늘어나는지다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| --- | --- | --- | --- |
+| 215 | 지도에서 `통계 (Tab)` 버튼 또는 Tab | 지도 위에 어두운 막과 "플레이 통계" 창. 위에 카드 5장(전체 / 최면 · 동행 / 정기 / 위기 / 성장), 아래 장소 8곳 표(도전 · 클리어 · 최고 정기 · 최단 클리어 · 최고 등급). 처음이면 0 · "-" | `StatsPanel`, `PlayStatsLogic.BuildSections` |
+| 216 | 통계 창에서 Esc · Tab · `닫기` | 창이 닫히고 곧바로 다시 열리지 않음. 창이 열린 동안 숫자 키 · Enter로 지도가 반응하지 않음 | `StatsPanel.Close`, `MapScreen.Update` |
+| 217 | 연수원을 한 번 클리어 → `지도로` → 통계 | 장소 도전 1 · 클리어 1 · 클리어율 100% · 최면 성공 수 · 최대 동행자 · 회수한 정기가 늘어남. 연수원 줄에 최단 클리어 시간 · 등급 | `StageResultPanel.SubmitResultToSession`, `PlayStatsLogic.Apply` |
+| 218 | 한 번 실패 → 통계 | 도전만 늘고 클리어는 그대로, 클리어율이 내려감. 최단 클리어 시간은 바뀌지 않음 | `PlayStatsLogic.Apply` |
+| 219 | F1 치트를 쓴 뒤 클리어 → 통계 | 통계 숫자가 **늘지 않음**(계약 정기 · 허브 기록은 예전처럼 반영) | `StageResultSummary.Cheated` |
+| 220 | 게임 종료 → 다시 실행 → 통계 | 숫자가 그대로 남아 있음. 예전 세이브로 시작해도 오류 없이 0부터 | `SaveData.Stats`, `PlayStatsLogic.Normalize` |
+| 221 | 루프탑 클럽 보스 함락 | 빛기둥 · 흔들림 뒤 1.2초 후 화면이 어두워지고 금색 "ENDING", 문장 4줄이 한 줄씩 뜸 → 잠시 뒤 걷히고 결과 화면(제목 "라이벌 서큐버스 함락") | `EndingSequence`, `EndingLogic` |
+| 222 | 엔딩 문장이 뜨는 중 클릭 · Space | 바로 걷히는 단계로 넘어감. 엔딩 전 1.2초 · 걷히는 중에는 클릭이 무시됨 | `EndingLogic.Skip` |
+| 223 | 엔딩 뒤 `지도로` → 통계 | 엔딩(보스 함락) 1회. 지도에서 계속 다른 장소를 고를 수 있음 | `PlayStats.Endings` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

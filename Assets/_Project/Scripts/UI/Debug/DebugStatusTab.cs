@@ -79,8 +79,8 @@ namespace ProjectTheta.UI.DebugTools
             float afterBarWidth = DebugUi.ContentWidth - afterBarX;
             float row = DebugUi.RowHeight;
 
-            // 판 진행
-            y = DebugUi.Section(root, "판 진행", y);
+            // 도전 진행
+            y = DebugUi.Section(root, "도전 진행", y);
 
             DebugUi.Label(root, "층", 0f, y, labelWidth, UiTheme.TextMuted);
             _floorText = DebugUi.Label(root, string.Empty, valueX, y, DebugUi.ContentWidth - valueX, UiTheme.TextPrimary);

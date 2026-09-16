@@ -69,7 +69,7 @@ namespace ProjectTheta.Core
             GameplayPause.SetDebugSpeed(
                 1f);
 
-            // 21일차: 지도에서 고른 장소를 짓는다. 판 없이 스테이지 씬을 바로 재생하면 첫 구역(연수원)으로 시작한다.
+            // 21일차: 지도에서 고른 장소를 짓는다. 스테이지 씬을 바로 재생하면 연수원으로 시작한다.
             RunSession session =
                 GameSession.Instance == null
                     ? null
@@ -77,19 +77,17 @@ namespace ProjectTheta.Core
 
             LocationDefinition location =
                 LocationCatalog.Get(
-                    session != null &&
-                    session.SelectedLocation != null
-                        ? session.SelectedLocation.Value
+                    session != null
+                        ? session.Location
                         : LocationCatalog.StartLocation);
 
             LocationContext.Set(
                 location);
 
-            // 뒤 구역일수록 같은 층이라도 고급 NPC가 더 섞인다.
+            // 어려운 장소일수록 같은 층이라도 고급 NPC가 더 섞인다 (29일차: 구역 번호 대신 장소 단계).
             _zoneStep =
-                session == null
-                    ? 0
-                    : session.NextStep;
+                RunRouteLogic.GetTier(
+                    location.Id);
 
             _npcDensity =
                 location.NpcDensity;
@@ -893,6 +891,9 @@ namespace ProjectTheta.Core
 
             rules.AddComponent<VipEntrance>().Configure(
                 followers);
+
+            // 29일차: 보스를 함락하면 결과 화면 전에 엔딩 장면을 보여 준다.
+            rules.AddComponent<Boss.EndingSequence>();
 
             int top = Mathf.Max(0, floorCount - 1);
 

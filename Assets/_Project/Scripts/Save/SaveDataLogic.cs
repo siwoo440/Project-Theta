@@ -104,6 +104,10 @@ namespace ProjectTheta.Save
                     "-";
             }
 
+            // 29일차: 통계 칸이 없던 예전 세이브도 빈 기록으로 읽는다.
+            PlayStatsLogic.Normalize(
+                data);
+
             data.Version =
                 Migrate(
                     data.Version);
@@ -222,7 +226,7 @@ namespace ProjectTheta.Save
         }
 
         /// <summary>
-        /// 한 판의 결과를 세이브에 반영한다.
+        /// 장소 한 번의 결과를 세이브에 반영한다.
         /// 최고 기록은 더 좋을 때만 갱신하고, 낮은 기록은 무시한다.
         /// </summary>
         public static SaveData ApplyStageResult(
@@ -261,6 +265,11 @@ namespace ProjectTheta.Save
                 Math.Max(
                     0,
                     result.ContractEssence);
+
+            // 29일차: 누적 통계 · 장소별 기록.
+            PlayStatsLogic.Apply(
+                target,
+                result);
 
             return target;
         }

@@ -43,7 +43,7 @@ namespace ProjectTheta.Run
         /// <summary>첫 선택은 레벨업이 아니라 시작 계약이므로 제목이 다르다.</summary>
         private bool _startChoicePending;
 
-        /// <summary>레벨이다. 21일차부터 판(<see cref="RunSession"/>)이 들고 있어 구역을 넘어 이어진다.</summary>
+        /// <summary>레벨이다. 장소 도전(<see cref="RunSession"/>)이 들고 있다. 29일차부터 장소마다 새로 시작한다.</summary>
         public RunLevelState Level { get; private set; } =
             new RunLevelState();
 
@@ -84,11 +84,11 @@ namespace ProjectTheta.Run
             _duel =
                 GetComponent<OpponentDuelController>();
 
-            // 구역마다 뽑기 순서가 달라지게 판 시드에 지난 구역 수를 섞는다.
+            // 도전마다 뽑기 순서가 달라지게 도전 시드에 장소 번호를 섞는다.
             Seed =
                 session == null
                     ? Environment.TickCount
-                    : unchecked(session.Seed + session.NextStep * 104729);
+                    : unchecked(session.Seed + (int)session.Location * 104729);
 
             _random =
                 new System.Random(
@@ -99,7 +99,7 @@ namespace ProjectTheta.Run
 
             Subscribe();
 
-            // 판을 시작하자마자 카드 한 장을 고른다. 두 번째 구역부터는 시작 계약이 없다.
+            // 장소에 들어가자마자 카드 한 장을 고른다 (29일차: 장소마다 한 번).
             bool startContract =
                 session == null ||
                 !session.StartContractTaken;
@@ -332,7 +332,7 @@ namespace ProjectTheta.Run
 
             string subtitle =
                 _startChoicePending
-                    ? "이번 판을 함께할 첫 강화를 고르세요"
+                    ? "이번 장소를 함께할 첫 강화를 고르세요"
                     : _pendingChoices > 1
                         ? $"강화를 고르세요   (남은 선택 {_pendingChoices})"
                         : "강화를 고르세요";

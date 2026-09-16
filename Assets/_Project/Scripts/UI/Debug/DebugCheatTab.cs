@@ -132,7 +132,7 @@ namespace ProjectTheta.UI.DebugTools
             y += height + gap;
 
             DebugUi.Button(root, "이 층 NPC 전부 최면", 0f, y, half, height, HypnotizeFloor);
-            DebugUi.Button(root, "구역 즉시 클리어", half + gap, y, half, height, ClearZone);
+            DebugUi.Button(root, "장소 즉시 클리어", half + gap, y, half, height, ClearZone);
             y += height + DebugUi.SectionGap + 4f;
 
             // 위험
@@ -261,8 +261,8 @@ namespace ProjectTheta.UI.DebugTools
 
             _cheatedText.text =
                 DebugCheats.UsedThisRun
-                    ? "[주의] 이번 판은 치트를 썼습니다. 판 기록에 \"치트\"로 남습니다"
-                    : "치트를 쓰면 판 기록에 \"치트\"로 표시됩니다";
+                    ? "[주의] 이번 도전은 치트를 썼습니다. 기록에 \"치트\"로 남고 통계에서 빠집니다"
+                    : "치트를 쓰면 기록에 \"치트\"로 표시되고 통계에서 빠집니다";
 
             _cheatedText.color =
                 DebugCheats.UsedThisRun

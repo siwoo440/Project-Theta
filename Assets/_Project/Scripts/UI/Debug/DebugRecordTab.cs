@@ -212,7 +212,7 @@ namespace ProjectTheta.UI.DebugTools
 
             _logPathText.text =
                 string.IsNullOrEmpty(recorder.LastLogPath)
-                    ? "판이 끝나면 기록 파일이 저장됩니다"
+                    ? "장소가 끝나면 기록 파일이 저장됩니다"
                     : "저장됨: " + recorder.LastLogPath;
         }
 

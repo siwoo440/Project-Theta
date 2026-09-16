@@ -8,7 +8,7 @@ namespace ProjectTheta.Core
         public const string MainMenu = "MainMenu";
         public const string Hub = "Hub";
 
-        /// <summary>21일차: 한 판 안에서 다음 장소를 고르는 도시 지도 씬이다.</summary>
+        /// <summary>21일차: 다음 장소를 고르는 도시 지도 씬이다 (29일차부터 판 없이 계속 진행).</summary>
         public const string Map = "Map";
         public const string Stage = "TestStage";
 
@@ -78,10 +78,10 @@ namespace ProjectTheta.Core
         /// 현재 씬에서 해당 목적지로 이동할 수 있는지 판정한다.
         ///
         /// 흐름 (21일차부터 지도를 거친다):
-        ///   Boot → MainMenu → Hub → Map → Stage → Map → Stage … → Hub
+        ///   Boot → MainMenu → Hub → Map → Stage → Map → Stage … (29일차: 판 없이 계속)
         ///   Hub → MainMenu (타이틀 복귀)
-        ///   Map → Hub (판 포기)
-        ///   Stage → Hub (실패 또는 마지막 구역 클리어)
+        ///   Map → Hub
+        ///   Stage → Hub 또는 Map (결과 화면에서 고름)
         /// </summary>
         public static bool CanTransition(
             string currentScene,
@@ -151,8 +151,7 @@ namespace ProjectTheta.Core
             SceneDestination destination)
         {
             // 스테이지를 떠날 때 결과가 확정되므로 이때 반드시 저장한다.
-            // 21일차: 구역을 클리어하고 지도로 갈 때도 그 구역의 정기를 확정해 저장한다.
-            // 다음 구역에서 실패해도 이미 클리어한 구역의 보상은 남는다(기획서 24장).
+            // 21일차: 지도로 갈 때도 그 장소의 정기 · 통계를 확정해 저장한다.
             return IsStageScene(
                        currentScene) &&
                    (destination ==
