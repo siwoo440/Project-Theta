@@ -67,6 +67,8 @@ namespace ProjectTheta.UI
         private bool _hasLastResult;
 
         private AchievementPanel _achievements;
+        private SettingsPanel _settings;
+        private ControlsPanel _controls;
         private Canvas _canvas;
 
         private void Start()
@@ -197,6 +199,19 @@ namespace ProjectTheta.UI
 
             _achievements.Build(
                 canvas.transform);
+
+            // 31일차: 공용 설정 · 조작법 창.
+            _settings =
+                SettingsPanel.Create(
+                    canvas.transform,
+                    60);
+
+            _settings.Closed += Refresh;
+
+            _controls =
+                ControlsPanel.Create(
+                    canvas.transform,
+                    60);
         }
 
         private void BuildHeader(
@@ -748,21 +763,49 @@ namespace ProjectTheta.UI
             _shakeButton.Button.onClick.AddListener(
                 ToggleScreenShake);
 
-            Text hint =
-                UiFactory.CreateText(
+            // 31일차: 음량 · 화면 · 커서는 공용 설정 창에서.
+            UiButton more =
+                UiFactory.CreateButton(
                     card,
-                    "Hint",
-                    "멀미가 나면 끄세요. 다른 연출은 그대로 유지됩니다",
-                    UiTheme.FontSmall,
-                    UiTheme.TextMuted,
-                    TextAnchor.MiddleLeft);
+                    "MoreSettings",
+                    "설정 더 보기",
+                    UiTheme.FontBody,
+                    true);
 
             UiFactory.Place(
-                hint.rectTransform,
+                more.Background.rectTransform,
                 new Vector2(0f, 0.5f),
                 new Vector2(0f, 0.5f),
                 new Vector2(476f, 0f),
-                new Vector2(560f, 26f));
+                new Vector2(200f, 44f));
+
+            more.Button.onClick.AddListener(
+                () =>
+                {
+                    GameAudio.Play(GameSfx.UiTick);
+                    _settings.Open();
+                });
+
+            UiButton controls =
+                UiFactory.CreateButton(
+                    card,
+                    "Controls",
+                    "조작법",
+                    UiTheme.FontBody);
+
+            UiFactory.Place(
+                controls.Background.rectTransform,
+                new Vector2(0f, 0.5f),
+                new Vector2(0f, 0.5f),
+                new Vector2(692f, 0f),
+                new Vector2(160f, 44f));
+
+            controls.Button.onClick.AddListener(
+                () =>
+                {
+                    GameAudio.Play(GameSfx.UiTick);
+                    _controls.Open();
+                });
         }
 
         private void ToggleScreenShake()

@@ -97,6 +97,22 @@ namespace ProjectTheta.Save
         /// <summary>달성한 업적 ID다 (<see cref="AchievementLogic"/>).</summary>
         public string[] UnlockedAchievements = new string[0];
 
+        // --- 31일차: 설정 ---
+        /// <summary>
+        /// 설정을 한 번이라도 저장했는지다. 예전 세이브는 false라서 <see cref="SettingsLogic.Normalize"/>가 기본값을 넣는다.
+        /// (음량 칸이 없으면 0으로 읽혀 무음이 되기 때문이다.)
+        /// </summary>
+        public bool SettingsInitialized;
+
+        public float MasterVolume = SettingsLogic.DefaultVolume;
+        public float SfxVolume = SettingsLogic.DefaultVolume;
+        public float MusicVolume = SettingsLogic.DefaultVolume;
+        public bool Fullscreen = true;
+        public int ResolutionIndex = SettingsLogic.DefaultResolutionIndex;
+
+        /// <summary><see cref="Save.CursorSize"/> 번호다.</summary>
+        public int CursorSize = (int)Save.CursorSize.Normal;
+
         public SaveData Clone()
         {
             SaveData copy =
@@ -113,6 +129,13 @@ namespace ProjectTheta.Save
                     UpgradeLevels = new int[UpgradeLevels?.Length ?? 4],
                     Stats = Stats == null ? new PlayStats() : Stats.Clone(),
                     LocationRecords = new LocationStats[LocationRecords?.Length ?? 0],
+                    SettingsInitialized = SettingsInitialized,
+                    MasterVolume = MasterVolume,
+                    SfxVolume = SfxVolume,
+                    MusicVolume = MusicVolume,
+                    Fullscreen = Fullscreen,
+                    ResolutionIndex = ResolutionIndex,
+                    CursorSize = CursorSize,
                     UnlockedAchievements = UnlockedAchievements == null
                         ? new string[0]
                         : (string[])UnlockedAchievements.Clone()
