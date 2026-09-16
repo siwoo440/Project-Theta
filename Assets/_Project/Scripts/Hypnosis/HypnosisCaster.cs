@@ -483,23 +483,9 @@ namespace ProjectTheta.Hypnosis
 
         private bool ReadHypnosisHeld()
         {
-#if ENABLE_INPUT_SYSTEM
-            bool keyboard =
-                Keyboard.current != null &&
-                Keyboard.current.eKey.isPressed;
-
-            // 디버그 패널 위에서 누른 좌클릭은 최면이 아니다 (20일차).
-            bool mouse =
-                Mouse.current != null &&
-                Mouse.current.leftButton.isPressed &&
-                !PointerGuard.IsOverOverlay;
-
-            return keyboard ||
-                   mouse;
-#else
-            return Input.GetKey(KeyCode.E) ||
-                   Input.GetMouseButton(0);
-#endif
+            // 32일차: 키 설정을 따른다. 디버그 패널 위 클릭 무시도 GameInput이 한다.
+            return GameInput.IsHeld(
+                GameAction.Hypnosis);
         }
 
         private void OnDisable()

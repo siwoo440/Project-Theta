@@ -21,9 +21,9 @@ namespace ProjectTheta.UI
 
         private float _elapsed;
 
-        // 31일차: 설정 · 조작법 · 종료
+        // 31일차: 설정 · 종료 / 32일차: 조작법 대신 업적
         private SettingsPanel _settings;
-        private ControlsPanel _controls;
+        private AchievementPanel _achievements;
         private UiButton _quit;
         private float _quitConfirm;
 
@@ -68,11 +68,15 @@ namespace ProjectTheta.UI
             _titleGlow.color = color;
         }
 
+        /// <summary>시작 버튼 아래 줄이다. 설정 · 업적 · 종료.</summary>
         private void BuildMenuRow(
             Transform canvas)
         {
             _settings = SettingsPanel.Create(canvas, 60);
-            _controls = ControlsPanel.Create(canvas, 60);
+
+            // 32일차: 허브와 같은 업적 창을 메인 메뉴에서도 연다.
+            _achievements = gameObject.AddComponent<AchievementPanel>();
+            _achievements.Build(canvas);
 
             UiButton settings =
                 UiFactory.CreateButton(canvas, "SettingsButton", "설  정", UiTheme.FontBody);
@@ -86,16 +90,19 @@ namespace ProjectTheta.UI
                     _settings.Open();
                 });
 
-            UiButton controls =
-                UiFactory.CreateButton(canvas, "ControlsButton", "조작법", UiTheme.FontBody);
+            UiButton achievements =
+                UiFactory.CreateButton(canvas, "AchievementsButton", "업  적", UiTheme.FontBody);
 
-            UiFactory.Place(controls.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -62f), new Vector2(105f, 44f));
+            UiFactory.Place(achievements.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -62f), new Vector2(105f, 44f));
 
-            controls.Button.onClick.AddListener(
+            achievements.Button.onClick.AddListener(
                 () =>
                 {
                     GameAudio.Play(GameSfx.UiTick);
-                    _controls.Open();
+                    _achievements.Open(
+                        GameSession.Instance == null
+                            ? null
+                            : GameSession.Instance.Save);
                 });
 
             _quit =

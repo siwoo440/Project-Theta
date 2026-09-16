@@ -272,7 +272,7 @@ namespace ProjectTheta.Duel
                 UiFactory.CreateText(
                     _panel,
                     "Hint",
-                    "좌클릭 ↔ 우클릭 빠르게 교대",
+                    $"{Core.GameInput.ShortLabel(Core.GameAction.StruggleLeft)} ↔ {Core.GameInput.ShortLabel(Core.GameAction.StruggleRight)} 빠르게 교대",
                     UiTheme.FontSmall,
                     UiTheme.TextMuted,
                     TextAnchor.MiddleCenter);

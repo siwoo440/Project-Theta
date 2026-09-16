@@ -262,9 +262,11 @@ namespace ProjectTheta.Tests.EditMode
         [Test]
         public void Every_Row_Is_Filled()
         {
-            Assert.GreaterOrEqual(ControlsCatalog.All.Length, 8);
+            ControlRow[] rows = ControlsCatalog.Build(Core.InputBindingLogic.CreateDefault());
 
-            foreach (ControlRow row in ControlsCatalog.All)
+            Assert.GreaterOrEqual(rows.Length, 8);
+
+            foreach (ControlRow row in rows)
             {
                 Assert.IsFalse(string.IsNullOrEmpty(row.Group));
                 Assert.IsFalse(string.IsNullOrEmpty(row.Action));
@@ -277,7 +279,7 @@ namespace ProjectTheta.Tests.EditMode
         {
             List<string> keys = new List<string>();
 
-            foreach (ControlRow row in ControlsCatalog.All)
+            foreach (ControlRow row in ControlsCatalog.Build(Core.InputBindingLogic.CreateDefault()))
             {
                 keys.Add(row.Keys);
             }
@@ -299,7 +301,7 @@ namespace ProjectTheta.Tests.EditMode
             HashSet<string> finished = new HashSet<string>();
             string current = null;
 
-            foreach (ControlRow row in ControlsCatalog.All)
+            foreach (ControlRow row in ControlsCatalog.Build(Core.InputBindingLogic.CreateDefault()))
             {
                 if (row.Group == current)
                 {

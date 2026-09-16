@@ -18,6 +18,11 @@ namespace ProjectTheta.UI
         private UiOverlayParts _parts;
         private Text _extra;
 
+        // 32일차: 키 설정이 바뀌면 열 때마다 다시 채운다.
+        private Text[] _groups;
+        private Text[] _actions;
+        private Text[] _keys;
+
         public bool IsOpen =>
             _parts.Root != null &&
             _parts.Root.activeSelf;
@@ -50,20 +55,17 @@ namespace ProjectTheta.UI
 
             RectTransform w = _parts.Window;
             float top = 100f;
-            string lastGroup = null;
+            int count = ControlsCatalog.All.Length;
 
-            for (int i = 0; i < ControlsCatalog.All.Length; i++)
+            _groups = new Text[count];
+            _actions = new Text[count];
+            _keys = new Text[count];
+
+            for (int i = 0; i < count; i++)
             {
-                ControlRow row = ControlsCatalog.All[i];
-
-                if (row.Group != lastGroup)
-                {
-                    lastGroup = row.Group;
-                    UiOverlay.Label(w, row.Group, 44f, top, 120f, UiTheme.FontSmall, UiTheme.Gold, true);
-                }
-
-                UiOverlay.Label(w, row.Action, 170f, top, 440f, UiTheme.FontBody, UiTheme.TextPrimary);
-                UiOverlay.Label(w, row.Keys, 620f, top, 440f, UiTheme.FontBody, UiTheme.Accent, true);
+                _groups[i] = UiOverlay.Label(w, string.Empty, 44f, top, 120f, UiTheme.FontSmall, UiTheme.Gold, true);
+                _actions[i] = UiOverlay.Label(w, string.Empty, 170f, top, 440f, UiTheme.FontBody, UiTheme.TextPrimary);
+                _keys[i] = UiOverlay.Label(w, string.Empty, 560f, top, 500f, UiTheme.FontBody, UiTheme.Accent, true);
 
                 top += RowHeight;
             }
@@ -90,9 +92,31 @@ namespace ProjectTheta.UI
                 return;
             }
 
+            Fill();
+
             _extra.text = extra ?? string.Empty;
             _parts.Root.SetActive(true);
             UiEscapeStack.Push(this);
+        }
+
+        private void Fill()
+        {
+            ControlRow[] rows = ControlsCatalog.All;
+            string lastGroup = null;
+
+            for (int i = 0; i < _keys.Length; i++)
+            {
+                bool used = i < rows.Length;
+
+                _groups[i].text = used && rows[i].Group != lastGroup ? rows[i].Group : string.Empty;
+                _actions[i].text = used ? rows[i].Action : string.Empty;
+                _keys[i].text = used ? rows[i].Keys : string.Empty;
+
+                if (used)
+                {
+                    lastGroup = rows[i].Group;
+                }
+            }
         }
 
         public void Close()

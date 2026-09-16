@@ -18,6 +18,9 @@ namespace ProjectTheta.Save
         /// <summary>S등급으로 클리어한 횟수다 (30일차 업적).</summary>
         public int SRanks;
 
+        /// <summary>동행자를 한 번도 빼앗기지 않고 클리어한 횟수다 (32일차 업적 "무결점").</summary>
+        public int CleanClears;
+
         // 최면 · 동행
         public int Hypnosis;
         public int MaxFollowers;

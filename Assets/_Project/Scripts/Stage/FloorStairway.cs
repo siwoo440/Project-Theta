@@ -86,12 +86,12 @@ namespace ProjectTheta.Stage
             {
                 return Locations.VipEntrance.IsLocked(_sourceFloor)
                     ? "바운서가 막고 있습니다 · 동행 6명 이하 또는 [VIP] 게스트"
-                    : "[F] 출입증 게이트 잠김 · 두 번 누르면 비상계단";
+                    : $"[{Core.GameInput.ShortLabel(Core.GameAction.Interact)}] 출입증 게이트 잠김 · 두 번 누르면 비상계단";
             }
 
             return _direction == FloorStairDirection.Up
-                ? $"[F] {FloorPlanLogic.GetLabel(_targetFloor)}로 올라가기"
-                : $"[F] {FloorPlanLogic.GetLabel(_targetFloor)}로 내려가기";
+                ? $"[{Core.GameInput.ShortLabel(Core.GameAction.Interact)}] {FloorPlanLogic.GetLabel(_targetFloor)}로 올라가기"
+                : $"[{Core.GameInput.ShortLabel(Core.GameAction.Interact)}] {FloorPlanLogic.GetLabel(_targetFloor)}로 내려가기";
         }
     }
 }

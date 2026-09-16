@@ -268,20 +268,8 @@ namespace ProjectTheta.UI
 
         private bool ReadHypnosisHeld()
         {
-#if ENABLE_INPUT_SYSTEM
-            bool keyboard =
-                Keyboard.current != null &&
-                Keyboard.current.eKey.isPressed;
-
-            bool mouse =
-                Mouse.current != null &&
-                Mouse.current.leftButton.isPressed;
-
-            return keyboard || mouse;
-#else
-            return Input.GetKey(KeyCode.E) ||
-                   Input.GetMouseButton(0);
-#endif
+            return Core.GameInput.IsHeld(
+                Core.GameAction.Hypnosis);
         }
 
         private void OnDisable()

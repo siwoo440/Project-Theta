@@ -89,8 +89,8 @@ namespace ProjectTheta.Duel
         public string ExpectedInputLabel =>
             _expectedInput ==
             OpponentDuelInputSide.Left
-                ? "좌클릭"
-                : "우클릭";
+                ? Core.GameInput.ShortLabel(Core.GameAction.StruggleLeft)
+                : Core.GameInput.ShortLabel(Core.GameAction.StruggleRight);
 
         public float VisualJoltOffsetX =>
             _visualJoltOffsetX;
@@ -527,30 +527,17 @@ namespace ProjectTheta.Duel
 
         private bool ReadLeftPressed()
         {
-#if ENABLE_INPUT_SYSTEM
-            return
-                Mouse.current != null &&
-                Mouse.current.leftButton.
-                    wasPressedThisFrame;
-#else
-            return
-                Input.GetMouseButtonDown(
-                    0);
-#endif
+            // 일시정지 · 설정 창에서 누른 클릭이 탈출 입력으로 들어가지 않게 한다 (32일차).
+            return !Core.GameplayPause.IsPaused &&
+                   Core.GameInput.WasPressed(
+                       Core.GameAction.StruggleLeft);
         }
 
         private bool ReadRightPressed()
         {
-#if ENABLE_INPUT_SYSTEM
-            return
-                Mouse.current != null &&
-                Mouse.current.rightButton.
-                    wasPressedThisFrame;
-#else
-            return
-                Input.GetMouseButtonDown(
-                    1);
-#endif
+            return !Core.GameplayPause.IsPaused &&
+                   Core.GameInput.WasPressed(
+                       Core.GameAction.StruggleRight);
         }
 
         private void OnDisable()

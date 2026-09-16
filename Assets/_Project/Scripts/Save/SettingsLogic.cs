@@ -142,6 +142,11 @@ namespace ProjectTheta.Save
                 return;
             }
 
+            if (save.KeyBindings == null)
+            {
+                save.KeyBindings = new string[0];
+            }
+
             if (!save.SettingsInitialized)
             {
                 ApplyDefaults(save);

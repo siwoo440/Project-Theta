@@ -151,24 +151,52 @@ namespace ProjectTheta.UI
     }
 
     /// <summary>
-    /// 조작법 표다 (31일차). 코드에서 실제로 읽는 키와 맞춰 둔다.
-    /// 키를 바꾸면 여기도 함께 바꾼다.
+    /// 조작법 표다 (31일차). 32일차부터 게임 조작 줄은 현재 키 설정(<see cref="Core.GameInput"/>)을 읽는다.
+    /// 화면 조작 줄은 바꿀 수 없는 고정 키다.
     /// </summary>
     public static class ControlsCatalog
     {
-        public static readonly ControlRow[] All =
+        public static ControlRow[] All =>
+            Build(Core.GameInput.Table);
+
+        public static ControlRow[] Build(
+            Core.KeyBindingTable table)
         {
-            new ControlRow("기본", "이동", "W A S D  /  방향키"),
-            new ControlRow("기본", "대시", "Shift  /  Space"),
-            new ControlRow("기본", "층 이동 · 상호작용", "F  (계단 · 문 앞에서)"),
-            new ControlRow("최면", "최면 (NPC에 커서를 대고 유지)", "마우스 왼쪽  /  E"),
-            new ControlRow("최면", "파동 (주변을 잠깐 멍하게)", "마우스 오른쪽 유지"),
-            new ControlRow("최면", "동행자 회수", "동행자를 데리고 회수 지점으로"),
-            new ControlRow("위기", "붙잡힘 탈출 · 힘겨루기", "마우스 왼쪽 · 오른쪽 번갈아"),
-            new ControlRow("화면", "강화 카드 고르기", "클릭  /  숫자 1~4"),
-            new ControlRow("화면", "결과 · 엔딩 연출 건너뛰기", "클릭"),
-            new ControlRow("화면", "지도: 장소 선택 · 출발 · 통계", "숫자 1~8 · Enter · Tab"),
-            new ControlRow("화면", "일시정지 · 창 닫기", "Esc")
-        };
+            string P(Core.GameAction action) =>
+                Core.InputBindingLogic.GetDisplayName(table?.Get(action, 0));
+
+            string S(Core.GameAction action) =>
+                table?.Get(action, 1);
+
+            string move = $"{P(Core.GameAction.MoveUp)} {P(Core.GameAction.MoveLeft)} {P(Core.GameAction.MoveDown)} {P(Core.GameAction.MoveRight)}";
+
+            if (!string.IsNullOrEmpty(S(Core.GameAction.MoveUp)))
+            {
+                move +=
+                    $"  /  {Core.InputBindingLogic.GetDisplayName(S(Core.GameAction.MoveUp))} " +
+                    $"{Core.InputBindingLogic.GetDisplayName(S(Core.GameAction.MoveLeft))} " +
+                    $"{Core.InputBindingLogic.GetDisplayName(S(Core.GameAction.MoveDown))} " +
+                    $"{Core.InputBindingLogic.GetDisplayName(S(Core.GameAction.MoveRight))}";
+            }
+
+            string D(Core.GameAction action) =>
+                Core.InputBindingLogic.Describe(table, action);
+
+            return new[]
+            {
+                new ControlRow("기본", "이동", move),
+                new ControlRow("기본", "대시", D(Core.GameAction.Dash)),
+                new ControlRow("기본", "층 이동 · 상호작용", $"{D(Core.GameAction.Interact)}  (계단 · 문 앞에서)"),
+                new ControlRow("최면", "최면 (NPC에 커서를 대고 유지)", D(Core.GameAction.Hypnosis)),
+                new ControlRow("최면", "파동 (주변을 잠깐 멍하게, 유지)", D(Core.GameAction.Wave)),
+                new ControlRow("최면", "동행자 회수", "동행자를 데리고 회수 지점으로"),
+                new ControlRow("위기", "붙잡힘 탈출 · 힘겨루기", $"{D(Core.GameAction.StruggleLeft)} · {D(Core.GameAction.StruggleRight)} 번갈아"),
+                new ControlRow("아이템", "아이템 1 · 2", $"{D(Core.GameAction.Item1)} · {D(Core.GameAction.Item2)}"),
+                new ControlRow("화면", "강화 카드 고르기", "클릭  /  숫자 1~4  (고정)"),
+                new ControlRow("화면", "결과 · 엔딩 연출 건너뛰기", "클릭  (고정)"),
+                new ControlRow("화면", "지도: 장소 선택 · 출발 · 통계", "숫자 1~8 · Enter · Tab  (고정)"),
+                new ControlRow("화면", "일시정지 · 창 닫기", "Esc  (고정)")
+            };
+        }
     }
 }

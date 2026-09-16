@@ -345,14 +345,8 @@ namespace ProjectTheta.Hypnosis
 
         private static bool ReadWaveHeld()
         {
-#if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null &&
-                   Mouse.current.rightButton.isPressed &&
-                   !PointerGuard.IsOverOverlay;
-#else
-            return Input.GetMouseButton(
-                1);
-#endif
+            return GameInput.IsHeld(
+                GameAction.Wave);
         }
 
         private void OnDisable()

@@ -147,10 +147,20 @@ namespace ProjectTheta.Tests.EditMode
                 Assert.Greater(definition.Reward, 0, definition.Id);
             }
 
-            Assert.GreaterOrEqual(AchievementLogic.All.Length, 20);
+            // 32일차: 23개 → 46개.
+            Assert.AreEqual(46, AchievementLogic.All.Length);
 
-            // 업적 창 두 줄에 들어가야 한다.
-            Assert.LessOrEqual(AchievementLogic.All.Length, 24);
+            // 업적 창 세 줄(한 줄 16칸)에 들어가야 한다.
+            Assert.LessOrEqual(AchievementLogic.All.Length, 48);
+
+            // 장소를 지정하는 업적만 장소 번호가 있다.
+            foreach (AchievementDefinition definition in AchievementLogic.All)
+            {
+                Assert.AreEqual(
+                    definition.Stat == AchievementStat.LocationSRank,
+                    definition.Location >= 0,
+                    definition.Id);
+            }
         }
 
         [Test]
@@ -267,6 +277,114 @@ namespace ProjectTheta.Tests.EditMode
             copy.UnlockedAchievements[0] = "changed";
 
             Assert.AreEqual("first_step", save.UnlockedAchievements[0]);
+        }
+
+        [Test]
+        public void Location_S_Rank_Achievements_Need_That_Place()
+        {
+            SaveData save = SaveDataLogic.CreateDefault();
+
+            save = SaveDataLogic.ApplyStageResult(save, Clear(LocationId.Beach, "S"));
+
+            Assert.IsFalse(AchievementLogic.IsUnlocked(save, "s_training"));
+            Assert.IsFalse(AchievementLogic.IsUnlocked(save, "s_club"));
+
+            save = SaveDataLogic.ApplyStageResult(save, Clear(LocationId.TrainingCenter, "S"));
+
+            Assert.IsTrue(AchievementLogic.IsUnlocked(save, "s_training"));
+            Assert.IsFalse(AchievementLogic.IsUnlocked(save, "s_club"));
+
+            save = SaveDataLogic.ApplyStageResult(save, Clear(LocationId.RooftopClub, "S"));
+
+            Assert.IsTrue(AchievementLogic.IsUnlocked(save, "s_club"));
+            Assert.AreEqual(3, AchievementLogic.GetValue(save, AchievementStat.SRankLocations));
+            Assert.IsFalse(AchievementLogic.IsUnlocked(save, "s_all"));
+
+            foreach (LocationDefinition location in LocationCatalog.All)
+            {
+                save = SaveDataLogic.ApplyStageResult(save, Clear(location.Id, "S"));
+            }
+
+            Assert.IsTrue(AchievementLogic.IsUnlocked(save, "s_all"));
+        }
+
+        [Test]
+        public void Fast_Clear_Needs_Ninety_Seconds_Or_Less()
+        {
+            SaveData save = SaveDataLogic.CreateDefault();
+
+            StageResultSummary slow = Clear(LocationId.OfficeTower);
+            slow.PlaySeconds = 91f;
+            save = SaveDataLogic.ApplyStageResult(save, slow);
+
+            Assert.IsFalse(AchievementLogic.IsUnlocked(save, "fast_clear"));
+
+            StageResultSummary fast = Clear(LocationId.OfficeTower);
+            fast.PlaySeconds = AchievementLogic.FastClearSeconds;
+            save = SaveDataLogic.ApplyStageResult(save, fast);
+
+            Assert.IsTrue(AchievementLogic.IsUnlocked(save, "fast_clear"));
+        }
+
+        [Test]
+        public void Clean_Clears_Skip_Stolen_Or_Failed_Attempts()
+        {
+            SaveData save = SaveDataLogic.CreateDefault();
+
+            StageResultSummary stolen = Clear(LocationId.Beach);
+            stolen.StolenCount = 2;
+
+            StageResultSummary failed = Clear(LocationId.Beach);
+            failed.Cleared = false;
+
+            save = SaveDataLogic.ApplyStageResult(save, stolen);
+            save = SaveDataLogic.ApplyStageResult(save, failed);
+
+            Assert.AreEqual(0, save.Stats.CleanClears);
+
+            for (int i = 0; i < 10; i++)
+            {
+                save = SaveDataLogic.ApplyStageResult(save, Clear(LocationId.Beach));
+            }
+
+            Assert.AreEqual(10, save.Stats.CleanClears);
+            Assert.IsTrue(AchievementLogic.IsUnlocked(save, "clean_10"));
+            Assert.IsTrue(AchievementLogic.IsUnlocked(save, "clear_10"));
+        }
+
+        [Test]
+        public void New_Stat_Achievements_Read_The_Right_Numbers()
+        {
+            SaveData save = SaveDataLogic.CreateDefault();
+
+            save.Stats.RecoveredFollowers = 500;
+            save.Stats.ContractEssence = 4999;
+            save.Stats.Captures = 20;
+            save.Stats.LevelUps = 100;
+
+            List<AchievementDefinition> unlocked = AchievementLogic.UnlockNew(save);
+            List<string> ids = unlocked.ConvertAll(d => d.Id);
+
+            Assert.Contains("recover_500", ids);
+            Assert.Contains("captured_20", ids);
+            Assert.Contains("levelups_100", ids);
+            CollectionAssert.DoesNotContain(ids, "contract_5000");
+
+            Assert.AreEqual(4999f / 5000f, AchievementLogic.GetProgress(save, AchievementLogic.Get("contract_5000")), 0.0001f);
+        }
+
+        [Test]
+        public void Total_Rewards_Match_The_Plan()
+        {
+            int total = 0;
+
+            foreach (AchievementDefinition definition in AchievementLogic.All)
+            {
+                total += definition.Reward;
+            }
+
+            // 30일차 23개 2,690 + 32일차 23개 6,000.
+            Assert.AreEqual(8690, total);
         }
 
         [Test]
