@@ -294,6 +294,7 @@ namespace ProjectTheta.UI
             Fill(save);
 
             _root.SetActive(true);
+            UiEscapeStack.Push(this);
             LastToggleFrame = Time.frameCount;
         }
 
@@ -307,6 +308,7 @@ namespace ProjectTheta.UI
             }
 
             _root.SetActive(false);
+            UiEscapeStack.Remove(this);
             LastToggleFrame = Time.frameCount;
         }
 
@@ -350,13 +352,23 @@ namespace ProjectTheta.UI
 #if ENABLE_INPUT_SYSTEM
             Keyboard keyboard = Keyboard.current;
 
-            if (keyboard != null &&
-                (keyboard.escapeKey.wasPressedThisFrame ||
-                 keyboard.tabKey.wasPressedThisFrame))
+            if (keyboard == null)
+            {
+                return;
+            }
+
+            if (keyboard.tabKey.wasPressedThisFrame ||
+                (keyboard.escapeKey.wasPressedThisFrame &&
+                 UiEscapeStack.TryConsume(this, Time.frameCount)))
             {
                 Close();
             }
 #endif
+        }
+
+        private void OnDestroy()
+        {
+            UiEscapeStack.Remove(this);
         }
     }
 }

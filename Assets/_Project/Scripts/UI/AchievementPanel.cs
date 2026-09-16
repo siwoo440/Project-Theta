@@ -210,6 +210,7 @@ namespace ProjectTheta.UI
 
             Fill(save);
             _root.SetActive(true);
+            UiEscapeStack.Push(this);
         }
 
         public void Close()
@@ -218,6 +219,13 @@ namespace ProjectTheta.UI
             {
                 _root.SetActive(false);
             }
+
+            UiEscapeStack.Remove(this);
+        }
+
+        private void OnDestroy()
+        {
+            UiEscapeStack.Remove(this);
         }
 
         private void Fill(
@@ -260,7 +268,8 @@ namespace ProjectTheta.UI
             Keyboard keyboard = Keyboard.current;
 
             if (keyboard != null &&
-                keyboard.escapeKey.wasPressedThisFrame)
+                keyboard.escapeKey.wasPressedThisFrame &&
+                UiEscapeStack.TryConsume(this, Time.frameCount))
             {
                 Close();
             }

@@ -19,6 +19,30 @@ namespace ProjectTheta.UI
 
         private void Awake()
         {
+            BuildTextures();
+
+            // 31일차: 설정 창에서 커서 크기를 바꾸면 다시 만든다.
+            Core.SettingsApplier.Changed += HandleSettingsChanged;
+        }
+
+        private float _builtScale = -1f;
+
+        private void HandleSettingsChanged()
+        {
+            if (Mathf.Approximately(_builtScale, Core.SettingsApplier.CursorScale))
+            {
+                return;
+            }
+
+            ReleaseTextures();
+            BuildTextures();
+        }
+
+        private void BuildTextures()
+        {
+            // 31일차: 커서 크기 설정(작게 0.75 · 보통 1 · 크게 1.35)을 곱한다.
+            _builtScale = Core.SettingsApplier.CursorScale;
+
             Texture2D coinSource =
                 Resources.Load<Texture2D>(
                     "UI/Cursor/CoinCursor");
@@ -35,7 +59,7 @@ namespace ProjectTheta.UI
                 CreateCursorCompatibleTexture(
                     coinSource,
                     "CoinCursor_Runtime",
-                    0.5f);
+                    0.5f * _builtScale);
 
             _hypnosisCursors =
                 new Texture2D[2]
@@ -43,11 +67,11 @@ namespace ProjectTheta.UI
                     CreateCursorCompatibleTexture(
                         hypnosisSource0,
                         "HypnosisCursor_0_Runtime",
-                        _hypnosisCursorScale),
+                        _hypnosisCursorScale * _builtScale),
                     CreateCursorCompatibleTexture(
                         hypnosisSource1,
                         "HypnosisCursor_1_Runtime",
-                        _hypnosisCursorScale)
+                        _hypnosisCursorScale * _builtScale)
                 };
 
             Cursor.visible = true;
@@ -272,6 +296,13 @@ namespace ProjectTheta.UI
         }
 
         private void OnDestroy()
+        {
+            Core.SettingsApplier.Changed -= HandleSettingsChanged;
+
+            ReleaseTextures();
+        }
+
+        private void ReleaseTextures()
         {
             DestroyCursorTexture(
                 ref _coinCursor);

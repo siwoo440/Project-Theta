@@ -59,6 +59,12 @@ namespace ProjectTheta.Presentation
 
         private static AudioSource _source;
 
+        /// <summary>효과음 크기 배율이다 (31일차, 전체 × 효과음 설정).</summary>
+        public static float SfxVolume { get; set; } = 1f;
+
+        /// <summary>음악 크기 배율이다 (31일차). 배경음악이 생기면 쓴다.</summary>
+        public static float MusicVolume { get; set; } = 1f;
+
         /// <summary>
         /// 플레이를 끝내면 소스와 런타임에 만든 클립이 파괴된다.
         /// 도메인 리로드가 꺼져 있으면 참조만 남으므로 진입 시 비운다.
@@ -68,6 +74,8 @@ namespace ProjectTheta.Presentation
         private static void ResetOnPlayModeEnter()
         {
             _source = null;
+            SfxVolume = 1f;
+            MusicVolume = 1f;
 
             System.Array.Clear(
                 Clips,
@@ -101,7 +109,8 @@ namespace ProjectTheta.Presentation
                 Mathf.Clamp(
                     volumeScale,
                     0f,
-                    1f));
+                    1f) *
+                Mathf.Clamp01(SfxVolume));
         }
 
         /// <summary>특정 오브젝트에서 소리를 내야 할 때 쓴다(위치가 의미 있는 경우).</summary>
@@ -130,7 +139,8 @@ namespace ProjectTheta.Presentation
                     Mathf.Clamp(
                         volumeScale,
                         0f,
-                        1f));
+                        1f) *
+                    Mathf.Clamp01(SfxVolume));
             }
         }
 

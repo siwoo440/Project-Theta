@@ -229,8 +229,11 @@ namespace ProjectTheta.UI
                     : "-";
 
             // 30일차: 숙련도(★)마다 계약 정기 보상이 커진다.
+            // 31일차: 도중에 포기했으면 0이다.
             _contractEssence =
-                MasteryLogic.GetContractEssence(
+                PauseMenuLogic.GetContractEssence(
+                    _stage.IsAbandoned,
+                    MasteryLogic.GetContractEssence(
                     ContractEssenceLogic.Compute(
                         _tracker.RecoveredEssence,
                         _stage.TargetEssence,
@@ -238,7 +241,7 @@ namespace ProjectTheta.UI
                         rankLabel),
                     GameSession.Instance.Run == null
                         ? 0
-                        : GameSession.Instance.Run.Stars);
+                        : GameSession.Instance.Run.Stars));
 
             // 29일차: 같은 도전을 두 번 세지 않는다. 판이 없으므로 구역 기록 대신 통계 숫자를 넘긴다.
             RunSession session =
@@ -278,8 +281,11 @@ namespace ProjectTheta.UI
                     Cleared = cleared,
                     RecoveredEssence =
                         _tracker.RecoveredEssence,
+                    // 31일차: 포기한 도전은 최고 점수에 넣지 않는다.
                     TotalScore =
-                        _breakdown.Total,
+                        _stage.IsAbandoned
+                            ? 0
+                            : _breakdown.Total,
                     RankLabel =
                         rankLabel,
                     ContractEssence =

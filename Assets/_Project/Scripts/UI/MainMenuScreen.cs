@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using ProjectTheta.Core;
+using ProjectTheta.Presentation;
 using ProjectTheta.Save;
 using ProjectTheta.UI.Framework;
 
@@ -20,6 +21,12 @@ namespace ProjectTheta.UI
 
         private float _elapsed;
 
+        // 31일차: 설정 · 조작법 · 종료
+        private SettingsPanel _settings;
+        private ControlsPanel _controls;
+        private UiButton _quit;
+        private float _quitConfirm;
+
         private void Start()
         {
             Build();
@@ -28,6 +35,16 @@ namespace ProjectTheta.UI
         private void Update()
         {
             _elapsed += Time.unscaledDeltaTime;
+
+            if (_quitConfirm > 0f)
+            {
+                _quitConfirm -= Time.unscaledDeltaTime;
+
+                if (_quitConfirm <= 0f)
+                {
+                    _quit.SetText("종  료");
+                }
+            }
 
             if (_titleGlow == null)
             {
@@ -49,6 +66,65 @@ namespace ProjectTheta.UI
             color.a = pulse;
 
             _titleGlow.color = color;
+        }
+
+        private void BuildMenuRow(
+            Transform canvas)
+        {
+            _settings = SettingsPanel.Create(canvas, 60);
+            _controls = ControlsPanel.Create(canvas, 60);
+
+            UiButton settings =
+                UiFactory.CreateButton(canvas, "SettingsButton", "설  정", UiTheme.FontBody);
+
+            UiFactory.Place(settings.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-115f, -62f), new Vector2(105f, 44f));
+
+            settings.Button.onClick.AddListener(
+                () =>
+                {
+                    GameAudio.Play(GameSfx.UiTick);
+                    _settings.Open();
+                });
+
+            UiButton controls =
+                UiFactory.CreateButton(canvas, "ControlsButton", "조작법", UiTheme.FontBody);
+
+            UiFactory.Place(controls.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -62f), new Vector2(105f, 44f));
+
+            controls.Button.onClick.AddListener(
+                () =>
+                {
+                    GameAudio.Play(GameSfx.UiTick);
+                    _controls.Open();
+                });
+
+            _quit =
+                UiFactory.CreateButton(canvas, "QuitButton", "종  료", UiTheme.FontBody);
+
+            UiFactory.Place(_quit.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(115f, -62f), new Vector2(105f, 44f));
+
+            _quit.Button.onClick.AddListener(Quit);
+        }
+
+        /// <summary>실수로 누르지 않게 두 번 눌러야 끈다. 끄기 전에 저장한다.</summary>
+        private void Quit()
+        {
+            if (_quitConfirm <= 0f)
+            {
+                _quitConfirm = PauseMenuLogic.AbandonConfirmSeconds;
+                _quit.SetText("한 번 더");
+                GameAudio.Play(GameSfx.UiTick);
+
+                return;
+            }
+
+            GameSession.Instance?.WriteSave();
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
         }
 
         private void Build()
@@ -200,6 +276,10 @@ namespace ProjectTheta.UI
                         SceneDestination.Hub);
                 });
 
+            // 31일차: 설정 · 조작법 · 종료 -------------------------------
+            BuildMenuRow(
+                canvas.transform);
+
             // 기록 ------------------------------------------------------
             RectTransform recordPanel =
                 UiFactory.CreatePanel(
@@ -212,7 +292,7 @@ namespace ProjectTheta.UI
                 recordPanel,
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -96f),
+                new Vector2(0f, -150f),
                 new Vector2(460f, 104f));
 
             _statsText =
@@ -253,7 +333,7 @@ namespace ProjectTheta.UI
                 UiFactory.CreateText(
                     canvas.transform,
                     "Footer",
-                    "15일차 · Canvas UI",
+                    "31일차 · Esc 일시정지 · 설정",
                     UiTheme.FontTiny,
                     UiTheme.TextDisabled,
                     TextAnchor.LowerCenter);
