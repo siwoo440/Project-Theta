@@ -28,6 +28,9 @@ namespace ProjectTheta.Run
         public int DuelWins;
         public int HighestFloor;
 
+        /// <summary>한 번에 데리고 다닌 동행자 수의 최대값이다 (29일차 통계).</summary>
+        public int MaxFollowers;
+
         /// <summary>레벨이 오른 시각(판 시작부터 초)이다. 순서대로 2레벨, 3레벨…</summary>
         public List<float> LevelUpTimes =
             new List<float>();
@@ -77,6 +80,12 @@ namespace ProjectTheta.Run
             {
                 FocusEmptySeconds += deltaTime;
             }
+        }
+
+        public void NoteFollowers(
+            int count)
+        {
+            MaxFollowers = Math.Max(MaxFollowers, count);
         }
 
         public void RecordHypnosis(

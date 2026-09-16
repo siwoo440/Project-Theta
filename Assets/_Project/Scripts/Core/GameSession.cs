@@ -34,49 +34,45 @@ namespace ProjectTheta.Core
             _pendingResult;
 
         /// <summary>
-        /// 진행 중인 한 판이다 (21일차). 허브에서 출격할 때 만들고, 판이 끝나면 허브로 돌아갈 때 비운다.
-        /// 구역마다 스테이지 씬을 다시 불러오므로 레벨 · 카드 · 경로는 여기에 둔다.
+        /// 지금 도전 중인 장소다 (29일차: 판 대신 장소 한 번 도전).
+        /// 지도에서 출발할 때 새로 만들어, 레벨 · 카드는 장소마다 처음부터 시작한다.
         /// </summary>
         public RunSession Run { get; private set; }
 
-        /// <summary>새 판을 시작한다. 이전 판이 남아 있어도 버린다.</summary>
-        public RunSession BeginRun()
+        /// <summary>장소 도전을 새로 시작한다. 이전 도전이 남아 있어도 버린다.</summary>
+        public RunSession BeginLocation(
+            ProjectTheta.Stage.Locations.LocationId location)
         {
             Run =
                 new RunSession(
-                    System.Environment.TickCount);
+                    System.Environment.TickCount,
+                    location);
 
             return Run;
         }
 
         /// <summary>
-        /// 에디터에서 스테이지 씬을 바로 재생한 경우처럼 판 없이 스테이지에 들어왔을 때,
-        /// 첫 구역(기업 연수원)을 고른 판을 만들어 준다.
+        /// 에디터에서 스테이지 씬을 바로 재생한 경우처럼 도전 없이 스테이지에 들어왔을 때,
+        /// 기업 연수원 도전을 만들어 준다. 이미 기록을 마친 도전이면 같은 장소로 새로 만든다.
         /// </summary>
         public RunSession EnsureRunForStage()
         {
-            if (Run == null ||
-                Run.IsFinished)
+            if (Run == null)
             {
-                BeginRun();
+                BeginLocation(
+                    ProjectTheta.Stage.Locations.LocationCatalog.StartLocation);
             }
-
-            if (Run.SelectedLocation == null)
+            else if (Run.IsRecorded)
             {
-                System.Collections.Generic.List<ProjectTheta.Stage.Locations.LocationId> candidates =
-                    Run.GetCandidates();
-
-                if (candidates.Count > 0)
-                {
-                    Run.Select(
-                        candidates[0]);
-                }
+                BeginLocation(
+                    Run.Location);
             }
 
             return Run;
         }
 
-        public void EndRun()
+        /// <summary>도전을 비운다. 허브로 돌아갈 때 쓴다.</summary>
+        public void ClearRun()
         {
             Run = null;
         }

@@ -42,6 +42,7 @@ namespace ProjectTheta.Run
         private FloorTransitionController _floors;
         private PlayerFocus _focus;
         private RunProgression _run;
+        private Companion.FollowerManager _followers;
         private bool _finished;
 
         public RunStats Stats { get; private set; } =
@@ -66,6 +67,7 @@ namespace ProjectTheta.Run
             _floors = floors;
             _focus = focus;
             _run = run;
+            _followers = FindFirstObjectByType<Companion.FollowerManager>();
 
             Stats =
                 new RunStats(
@@ -133,6 +135,11 @@ namespace ProjectTheta.Run
                 return;
             }
 
+            if (_followers != null)
+            {
+                Stats.NoteFollowers(_followers.Count);
+            }
+
             // 카드 화면에서는 timeScale이 0이라 deltaTime도 0이다. 멈춘 시간은 자연히 빠진다.
             Stats.Tick(
                 Time.deltaTime,
@@ -163,10 +170,9 @@ namespace ProjectTheta.Run
                     {
                         Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                         Location = Stage.Locations.LocationContext.Current.Id.ToString(),
-                        Zone = GameSession.Instance == null ||
-                               GameSession.Instance.Run == null
+                        Zone = Stage.Locations.LocationContext.Current == null
                             ? 0
-                            : GameSession.Instance.Run.Records.Count,
+                            : RunRouteLogic.GetTier(Stage.Locations.LocationContext.Current.Id),
                         Result = _stage.State.ToString(),
                         Difficulty = BalanceOverrides.Difficulty == null
                             ? "-"
@@ -199,7 +205,7 @@ namespace ProjectTheta.Run
             {
                 // 기록 실패가 결과 화면을 막으면 안 된다.
                 Debug.LogWarning(
-                    $"판 기록 파일을 쓰지 못했습니다: {exception.Message}");
+                    $"도전 기록 파일을 쓰지 못했습니다: {exception.Message}");
             }
         }
 

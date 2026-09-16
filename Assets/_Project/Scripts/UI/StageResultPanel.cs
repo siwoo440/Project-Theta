@@ -65,10 +65,7 @@ namespace ProjectTheta.UI
         private Image _rankGlow;
         private Text _hintText;
         private UiButton _hubButton;
-
-        // 21일차: 구역 결과. 판이 이어지면 버튼이 "지도로", 끝나면 "허브로"가 된다.
-        private int _zoneNumber;
-        private bool _continuesRun;
+        private UiButton _mapButton;
 
         private readonly RectTransform[] _rowRects =
             new RectTransform[RowCount];
@@ -91,6 +88,12 @@ namespace ProjectTheta.UI
         {
             if (_stage == null ||
                 _stage.IsRunning)
+            {
+                return;
+            }
+
+            // 29일차: 보스 엔딩이 도는 동안에는 결과 화면을 미룬다.
+            if (Boss.EndingSequence.IsPlaying)
             {
                 return;
             }
@@ -232,13 +235,41 @@ namespace ProjectTheta.UI
                     cleared,
                     rankLabel);
 
-            RecordZoneInRun(
-                cleared,
-                rankLabel);
+            // 29일차: 같은 도전을 두 번 세지 않는다. 판이 없으므로 구역 기록 대신 통계 숫자를 넘긴다.
+            RunSession session =
+                GameSession.Instance.Run;
+
+            if (session != null &&
+                !session.MarkRecorded())
+            {
+                return;
+            }
+
+            RunStats stats =
+                FindFirstObjectByType<RunStatsRecorder>()?.Stats;
+
+            Boss.BossBattle battle =
+                Boss.BossBattle.Current;
 
             GameSession.Instance.SubmitStageResult(
                 new StageResultSummary
                 {
+                    HasLocation = true,
+                    LocationId = (int)LocationContext.Current.Id,
+                    PlaySeconds = stats == null ? _stage.ElapsedTime : stats.TotalSeconds,
+                    BossDefeated = battle != null && battle.IsDefeated,
+                    Cheated = DebugCheats.UsedThisRun || (stats != null && stats.Cheated),
+                    HypnosisCount = stats == null ? 0 : stats.HypnosisCount,
+                    MaxFollowers = stats == null ? 0 : stats.MaxFollowers,
+                    RecoveredFollowers = stats == null ? 0 : stats.RecoveredFollowers,
+                    StolenCount = stats == null ? 0 : stats.StolenCount,
+                    ReclaimCount = stats == null ? 0 : stats.ReclaimCount,
+                    RampageWindups = stats == null ? 0 : stats.RampageWindups,
+                    RampageSurvived = stats == null ? 0 : stats.RampageSurvived,
+                    CaptureCount = stats == null ? 0 : stats.CaptureCount,
+                    DuelWins = stats == null ? 0 : stats.DuelWins,
+                    LevelUps = stats == null ? 0 : stats.LevelUpTimes.Count,
+                    CardsPicked = _run == null ? 0 : _run.Upgrades.PickCount,
                     Cleared = cleared,
                     RecoveredEssence =
                         _tracker.RecoveredEssence,
@@ -251,43 +282,6 @@ namespace ProjectTheta.UI
                     TargetEssence =
                         _stage.TargetEssence
                 });
-        }
-
-        /// <summary>
-        /// 구역 결과를 판에 기록한다 (21일차). 기록하기 전에 구역 번호와 "판이 이어지는가"를 먼저 읽어 둔다.
-        /// 기록하면 실패했거나 마지막 구역인 경우 판이 끝난다.
-        /// </summary>
-        private void RecordZoneInRun(
-            bool cleared,
-            string rankLabel)
-        {
-            RunSession session =
-                GameSession.Instance.Run;
-
-            if (session == null ||
-                session.SelectedLocation == null)
-            {
-                _zoneNumber = 0;
-                _continuesRun = false;
-
-                return;
-            }
-
-            _zoneNumber =
-                session.NextStep + 1;
-
-            session.RecordZone(
-                new ZoneRecord
-                {
-                    Location = session.SelectedLocation.Value,
-                    Cleared = cleared,
-                    RecoveredEssence = _tracker.RecoveredEssence,
-                    ContractEssence = _contractEssence,
-                    RankLabel = rankLabel
-                });
-
-            _continuesRun =
-                !session.IsFinished;
         }
 
         private void PlayPendingSounds()
@@ -443,22 +437,45 @@ namespace ProjectTheta.UI
                 new Vector2(0f, 34f),
                 new Vector2(600f, 24f));
 
+            // 29일차: 판이 없다. 지도로 가서 다음 장소를 고르거나, 허브로 가서 강화한다.
+            _mapButton =
+                UiFactory.CreateButton(
+                    panel,
+                    "MapButton",
+                    "지도로",
+                    UiTheme.FontSubheading,
+                    true);
+
+            UiFactory.Place(
+                _mapButton.Background.rectTransform,
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(-130f, 30f),
+                new Vector2(240f, 52f));
+
+            _mapButton.Button.onClick.AddListener(
+                () =>
+                {
+                    GameSession.Instance?.GoTo(
+                        SceneDestination.Map);
+                });
+
+            _mapButton.Button.gameObject.SetActive(
+                false);
+
             _hubButton =
                 UiFactory.CreateButton(
                     panel,
                     "HubButton",
-                    _continuesRun
-                        ? "지도로  (다음 구역)"
-                        : "허브로",
-                    UiTheme.FontSubheading,
-                    true);
+                    "허브로",
+                    UiTheme.FontSubheading);
 
             UiFactory.Place(
                 _hubButton.Background.rectTransform,
                 new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f),
-                new Vector2(0f, 30f),
-                new Vector2(320f, 52f));
+                new Vector2(130f, 30f),
+                new Vector2(240f, 52f));
 
             _hubButton.Button.onClick.AddListener(
                 () =>
@@ -471,16 +488,7 @@ namespace ProjectTheta.UI
                         return;
                     }
 
-                    if (_continuesRun)
-                    {
-                        session.GoTo(
-                            SceneDestination.Map);
-
-                        return;
-                    }
-
-                    // 판이 끝났다. 허브로 가면서 판을 비운다. 정기는 구역마다 이미 확정됐다.
-                    session.EndRun();
+                    session.ClearRun();
 
                     session.GoTo(
                         SceneDestination.Hub);
@@ -609,22 +617,7 @@ namespace ProjectTheta.UI
                     LocationContext.Current;
 
                 string zone =
-                    _zoneNumber > 0
-                        ? $"구역 {_zoneNumber}/{RunRouteLogic.ZoneCount} · {location.DisplayName}"
-                        : location.DisplayName;
-
-                // 마지막 구역을 끝냈으면 판 전체 결과를 함께 보여 준다.
-                RunSession session =
-                    GameSession.Instance == null
-                        ? null
-                        : GameSession.Instance.Run;
-
-                string runTotal =
-                    session != null &&
-                    session.IsFinished &&
-                    session.Records.Count > 0
-                        ? $"     |     한 판 종료 · {session.Records.Count}구역 · 계약 정기 +{session.TotalContractEssence}"
-                        : string.Empty;
+                    location.DisplayName;
 
                 // 27일차: 보스전 결과를 제목에 붙인다.
                 Boss.BossBattle battle =
@@ -638,7 +631,7 @@ namespace ProjectTheta.UI
                             : $"  ·  라이벌 보호막 {battle.ShieldsLeft}장 남음";
 
                 _titleText.text =
-                    $"{zone}  —  {_stage.GetStateLabel()}{boss}{runTotal}";
+                    $"{zone}  —  {_stage.GetStateLabel()}{boss}";
             }
 
             for (int i = 0;
@@ -731,11 +724,18 @@ namespace ProjectTheta.UI
                     !complete);
             }
 
-            // 연출이 끝난 뒤에만 허브로 돌아갈 수 있다.
+            // 연출이 끝난 뒤에만 지도 · 허브로 돌아갈 수 있다.
             if (_hubButton.Button != null &&
                 _hubButton.Button.gameObject.activeSelf != complete)
             {
                 _hubButton.Button.gameObject.SetActive(
+                    complete);
+            }
+
+            if (_mapButton.Button != null &&
+                _mapButton.Button.gameObject.activeSelf != complete)
+            {
+                _mapButton.Button.gameObject.SetActive(
                     complete);
             }
         }

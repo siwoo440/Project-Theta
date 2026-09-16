@@ -925,13 +925,11 @@ namespace ProjectTheta.UI
             sortie.Button.onClick.AddListener(
                 () =>
                 {
-                    // 21일차: 출격하면 새 판을 만들고 도시 지도에서 첫 장소를 고른다.
+                    // 29일차: 판이 없다. 출격하면 도시 지도에서 아무 장소나 고른다.
                     if (GameSession.Instance == null)
                     {
                         return;
                     }
-
-                    GameSession.Instance.BeginRun();
 
                     GameSession.Instance.GoTo(
                         SceneDestination.Map);
