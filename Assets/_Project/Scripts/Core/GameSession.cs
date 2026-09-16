@@ -46,7 +46,17 @@ namespace ProjectTheta.Core
             Run =
                 new RunSession(
                     System.Environment.TickCount,
-                    location);
+                    location)
+                {
+                    // 30일차: 숙련도 · 엔딩 해금은 출발할 때의 세이브로 정한다.
+                    Stars =
+                        MasteryLogic.GetStars(
+                            _saveData,
+                            (int)location),
+                    StartChoiceCount =
+                        MasteryLogic.GetStartChoiceCount(
+                            _saveData)
+                };
 
             return Run;
         }
@@ -145,6 +155,27 @@ namespace ProjectTheta.Core
                 true;
         }
 
+        /// <summary>마지막으로 세이브에 반영한 결과다 (30일차). 허브의 "직전 도전" 카드가 쓴다.</summary>
+        public StageResultSummary LastResult { get; private set; } =
+            StageResultSummary.Empty;
+
+        public bool HasLastResult { get; private set; }
+
+        private readonly System.Collections.Generic.List<AchievementDefinition> _newAchievements =
+            new System.Collections.Generic.List<AchievementDefinition>();
+
+        /// <summary>아직 알리지 않은 새 업적을 꺼낸다. 꺼내면 비워진다.</summary>
+        public System.Collections.Generic.List<AchievementDefinition> TakeNewAchievements()
+        {
+            System.Collections.Generic.List<AchievementDefinition> result =
+                new System.Collections.Generic.List<AchievementDefinition>(
+                    _newAchievements);
+
+            _newAchievements.Clear();
+
+            return result;
+        }
+
         /// <summary>넘겨받은 결과를 세이브에 반영하고 비운다.</summary>
         public bool ConsumePendingResult()
         {
@@ -153,10 +184,27 @@ namespace ProjectTheta.Core
                 return false;
             }
 
+            string[] before =
+                _saveData == null ||
+                _saveData.UnlockedAchievements == null
+                    ? new string[0]
+                    : (string[])_saveData.UnlockedAchievements.Clone();
+
             _saveData =
                 SaveDataLogic.ApplyStageResult(
                     _saveData,
                     _pendingResult);
+
+            _newAchievements.AddRange(
+                AchievementLogic.Diff(
+                    before,
+                    _saveData.UnlockedAchievements));
+
+            LastResult =
+                _pendingResult;
+
+            HasLastResult =
+                true;
 
             _hasPendingResult =
                 false;

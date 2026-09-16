@@ -4,6 +4,7 @@ using ProjectTheta.Balance;
 using ProjectTheta.Core;
 using ProjectTheta.Presentation;
 using ProjectTheta.Save;
+using ProjectTheta.Stage.Locations;
 using ProjectTheta.UI.Framework;
 
 namespace ProjectTheta.UI
@@ -65,25 +66,40 @@ namespace ProjectTheta.UI
 
         private bool _hasLastResult;
 
+        private AchievementPanel _achievements;
+        private Canvas _canvas;
+
         private void Start()
         {
-            if (GameSession.Instance != null)
+            GameSession game =
+                GameSession.Instance;
+
+            if (game != null)
             {
+                _resultApplied =
+                    game.ConsumePendingResult() ||
+                    game.HasLastResult;
+
+                // 30일차: 결과는 지도로 갈 때도 반영되므로, 세션이 기억한 마지막 결과를 보여 준다.
                 _hasLastResult =
-                    GameSession.Instance.HasPendingResult;
+                    game.HasLastResult;
 
                 if (_hasLastResult)
                 {
                     _lastResult =
-                        GameSession.Instance.PendingResult;
+                        game.LastResult;
                 }
-
-                _resultApplied =
-                    GameSession.Instance.ConsumePendingResult();
             }
 
             Build();
             Refresh();
+
+            if (game != null)
+            {
+                AchievementToast.Show(
+                    _canvas.transform,
+                    game.TakeNewAchievements());
+            }
         }
 
         // 화면 조립 ------------------------------------------------------
@@ -95,6 +111,8 @@ namespace ProjectTheta.UI
                     "HubCanvas",
                     0,
                     transform);
+
+            _canvas = canvas;
 
             Image backdrop =
                 UiFactory.CreateImage(
@@ -171,6 +189,13 @@ namespace ProjectTheta.UI
                 right);
 
             BuildFooter(
+                canvas.transform);
+
+            // 30일차: 업적 목록 창.
+            _achievements =
+                gameObject.AddComponent<AchievementPanel>();
+
+            _achievements.Build(
                 canvas.transform);
         }
 
@@ -323,7 +348,7 @@ namespace ProjectTheta.UI
                 UiFactory.CreateText(
                     card,
                     "Caption",
-                    "직전 출격",
+                    "직전 도전",
                     UiTheme.FontSmall,
                     UiTheme.TextMuted,
                     TextAnchor.UpperLeft);
@@ -427,6 +452,34 @@ namespace ProjectTheta.UI
                 new Vector2(0f, 1f),
                 new Vector2(24f, -48f),
                 new Vector2(400f, 70f));
+
+            // 30일차: 업적 목록 버튼.
+            UiButton achievements =
+                UiFactory.CreateButton(
+                    card,
+                    "AchievementsButton",
+                    "업적 보기",
+                    UiTheme.FontSmall,
+                    true);
+
+            UiFactory.Place(
+                achievements.Background.rectTransform,
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-20f, -14f),
+                new Vector2(130f, 36f));
+
+            achievements.Button.onClick.AddListener(
+                () =>
+                {
+                    GameAudio.Play(
+                        GameSfx.UiTick);
+
+                    _achievements.Open(
+                        GameSession.Instance == null
+                            ? null
+                            : GameSession.Instance.Save);
+                });
 
             _assetText =
                 UiFactory.CreateText(
@@ -1010,7 +1063,7 @@ namespace ProjectTheta.UI
                 _resultText.color = UiTheme.TextPrimary;
 
                 _resultDetailText.text =
-                    "구역에 진입해 정기를 회수하세요";
+                    "지도에서 장소를 골라 정기를 회수하세요";
 
                 _resultAccent.color =
                     UiTheme.AccentSoft;
@@ -1018,10 +1071,15 @@ namespace ProjectTheta.UI
                 return;
             }
 
+            string place =
+                _lastResult.HasLocation
+                    ? LocationCatalog.Get((LocationId)_lastResult.LocationId).DisplayName + "  "
+                    : string.Empty;
+
             _resultText.text =
                 _lastResult.Cleared
-                    ? $"클리어   랭크 {_lastResult.RankLabel}"
-                    : "실패";
+                    ? $"{place}클리어   랭크 {_lastResult.RankLabel}"
+                    : $"{place}실패";
 
             _resultText.color =
                 _lastResult.Cleared
@@ -1183,8 +1241,19 @@ namespace ProjectTheta.UI
                 return;
             }
 
+            // 30일차: 29일차 누적 통계 요약 · 업적 · 엔딩 해금.
+            PlayStats stats =
+                save.Stats ?? new PlayStats();
+
+            string unlock =
+                MasteryLogic.HasEndingUnlock(save)
+                    ? $"엔딩 {stats.Endings}회 · 해금: 시작 계약 카드 {MasteryLogic.EndingStartChoices}장"
+                    : "엔딩 전 · 루프탑 클럽 보스를 함락하면 해금";
+
             _statsText.text =
-                $"플레이 {save.PlayCount}회    클리어 {save.ClearCount}회\n최고 랭크 {save.BestRankLabel}\n최고 점수 {save.BestScore:N0}";
+                $"플레이 {PlayStatsLogic.FormatDuration(stats.TotalSeconds)} · 도전 {stats.Attempts} · 클리어 {stats.Clears} ({PlayStatsLogic.FormatPercent(PlayStatsLogic.GetClearRate(stats.Attempts, stats.Clears))})\n" +
+                $"업적 {AchievementLogic.CountUnlocked(save)}/{AchievementLogic.All.Length} · 최고 랭크 {save.BestRankLabel} · 최고 점수 {save.BestScore:N0}\n" +
+                unlock;
 
             _assetText.text =
                 BalanceBootstrap.StageAssetApplied

@@ -93,6 +93,10 @@ namespace ProjectTheta.Save
         /// <summary>장소별 누적 기록이다. 한 번이라도 도전한 장소만 들어 있다.</summary>
         public LocationStats[] LocationRecords = new LocationStats[0];
 
+        // --- 30일차 ---
+        /// <summary>달성한 업적 ID다 (<see cref="AchievementLogic"/>).</summary>
+        public string[] UnlockedAchievements = new string[0];
+
         public SaveData Clone()
         {
             SaveData copy =
@@ -108,7 +112,10 @@ namespace ProjectTheta.Save
                     ScreenShakeDisabled = ScreenShakeDisabled,
                     UpgradeLevels = new int[UpgradeLevels?.Length ?? 4],
                     Stats = Stats == null ? new PlayStats() : Stats.Clone(),
-                    LocationRecords = new LocationStats[LocationRecords?.Length ?? 0]
+                    LocationRecords = new LocationStats[LocationRecords?.Length ?? 0],
+                    UnlockedAchievements = UnlockedAchievements == null
+                        ? new string[0]
+                        : (string[])UnlockedAchievements.Clone()
                 };
 
             for (int i = 0; i < copy.LocationRecords.Length; i++)

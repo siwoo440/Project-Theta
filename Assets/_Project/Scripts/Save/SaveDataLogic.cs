@@ -108,6 +108,10 @@ namespace ProjectTheta.Save
             PlayStatsLogic.Normalize(
                 data);
 
+            // 30일차: 알 수 없는 업적 ID를 지운다.
+            AchievementLogic.Normalize(
+                data);
+
             data.Version =
                 Migrate(
                     data.Version);
@@ -270,6 +274,10 @@ namespace ProjectTheta.Save
             PlayStatsLogic.Apply(
                 target,
                 result);
+
+            // 30일차: 새로 달성한 업적을 남기고 보상을 준다.
+            AchievementLogic.UnlockNew(
+                target);
 
             return target;
         }

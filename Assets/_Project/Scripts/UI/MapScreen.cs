@@ -64,6 +64,7 @@ namespace ProjectTheta.UI
         private List<LocationId> _candidates = new List<LocationId>();
         private LocationId? _selected;
         private StatsPanel _stats;
+        private Canvas _canvas;
 
         private readonly Dictionary<LocationId, NodeView> _nodes =
             new Dictionary<LocationId, NodeView>();
@@ -96,6 +97,14 @@ namespace ProjectTheta.UI
 
             Build();
             Refresh();
+
+            // 30일차: 방금 끝낸 장소에서 달성한 업적을 알린다.
+            if (game != null)
+            {
+                AchievementToast.Show(
+                    _canvas.transform,
+                    game.TakeNewAchievements());
+            }
         }
 
         private void Update()
@@ -260,6 +269,8 @@ namespace ProjectTheta.UI
                     "MapCanvas",
                     0,
                     transform);
+
+            _canvas = canvas;
 
             Image backdrop =
                 UiFactory.CreateImage(
@@ -765,8 +776,9 @@ namespace ProjectTheta.UI
                     LocationCatalog.GetTimeColor(
                         view.Location.TimeOfDay);
 
+                // 30일차: 숙련도(★)를 번호 옆에 붙인다.
                 string number =
-                    $"[{_candidates.IndexOf(pair.Key) + 1}]";
+                    $"[{_candidates.IndexOf(pair.Key) + 1}] {MasteryLogic.FormatStars(MasteryLogic.GetStars(record.Clears))}";
 
                 switch (state)
                 {
@@ -782,7 +794,7 @@ namespace ProjectTheta.UI
                         view.Edge.color = timeColor;
                         view.Name.color = UiTheme.TextPrimary;
                         view.Detail.color = UiTheme.TextMuted;
-                        view.Badge.text = $"{number} 클리어 {record.Clears}회 · 최고 {record.BestRank}";
+                        view.Badge.text = $"{number} 클리어 {record.Clears} · {record.BestRank}";
                         view.Badge.color = UiTheme.Gold;
                         break;
 
@@ -832,7 +844,7 @@ namespace ProjectTheta.UI
             {
                 _infoTime.text = string.Empty;
                 _infoName.text = "장소를 고르세요";
-                _infoSummary.text = "지도의 장소를 누르거나 숫자 키로 고르세요. 모든 장소에 언제든 갈 수 있습니다.";
+                _infoSummary.text = "지도의 장소를 누르거나 숫자 키로 고르세요. 클리어할수록 ★이 오르고 목표와 보상이 커집니다.";
                 _infoRows.text = string.Empty;
                 _infoDisruptors.text = "-";
 
@@ -856,10 +868,26 @@ namespace ProjectTheta.UI
             int minutes = Mathf.FloorToInt(location.TimeLimitSeconds / 60f);
             int seconds = Mathf.FloorToInt(location.TimeLimitSeconds) % 60;
 
+            // 30일차: 숙련도(★)만큼 목표 정기가 오른다.
+            int stars =
+                MasteryLogic.GetStars(
+                    CurrentSave,
+                    (int)location.Id);
+
+            int target =
+                MasteryLogic.GetTargetEssence(
+                    location.TargetEssence,
+                    stars);
+
+            string targetBonus =
+                stars > 0
+                    ? $"   (★{stars} · 보상 +{Mathf.RoundToInt(MasteryLogic.RewardBonusPerStar * stars * 100f)}%)"
+                    : string.Empty;
+
             _infoRows.text =
                 $"층 수            {location.FloorCount}개 층\n" +
                 $"제한 시간      {minutes}:{seconds:00}\n" +
-                $"목표 정기      {location.TargetEssence}\n" +
+                $"목표 정기      {target}{targetBonus}\n" +
                 $"경쟁자          {(location.HasRivals ? "금태양 · 인기남" : "없음")}";
 
             _infoDisruptors.text = location.DisruptorPreview;
@@ -884,7 +912,17 @@ namespace ProjectTheta.UI
                     save,
                     (int)_selected.Value);
 
+            int next =
+                MasteryLogic.GetClearsToNextStar(
+                    record.Clears);
+
+            string mastery =
+                next > 0
+                    ? $"숙련 {MasteryLogic.FormatStars(MasteryLogic.GetStars(record.Clears))}  (다음 ★까지 클리어 {next}회)"
+                    : $"숙련 {MasteryLogic.FormatStars(MasteryLogic.MaxStars)}  (최고)";
+
             _runStatus.text =
+                $"{mastery}\n" +
                 $"내 기록   도전 {record.Attempts} · 클리어 {record.Clears} · 최고 등급 {record.BestRank}\n" +
                 $"최고 정기 {record.BestEssence}   ·   최단 클리어 {PlayStatsLogic.FormatClock(record.BestClearSeconds)}\n" +
                 $"보유 계약 정기  {essence}";

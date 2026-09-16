@@ -32,7 +32,7 @@ namespace ProjectTheta.UI
         private const float TableTop = 350f;
         private const float RowHeight = 44f;
         private const float NameColumnWidth = 300f;
-        private const float ValueColumnWidth = 220f;
+        private const float ValueColumnWidth = 190f;
 
         private GameObject _root;
         private readonly List<Text[]> _cardValues = new List<Text[]>();

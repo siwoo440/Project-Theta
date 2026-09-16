@@ -23,7 +23,8 @@ namespace ProjectTheta.UI
     /// </summary>
     public sealed class RunUpgradeChoicePanel : MonoBehaviour
     {
-        private const int CardSlots = 3;
+        /// <summary>30일차: 엔딩 해금 뒤 시작 계약은 4장이다.</summary>
+        private const int CardSlots = 4;
 
         /// <summary>열린 직후 입력을 무시하는 시간이다.</summary>
         private const float InputGuardSeconds = 0.35f;
@@ -244,6 +245,12 @@ namespace ProjectTheta.UI
                 return 2;
             }
 
+            if (keyboard.digit4Key.wasPressedThisFrame ||
+                keyboard.numpad4Key.wasPressedThisFrame)
+            {
+                return 3;
+            }
+
             return -1;
 #else
             if (Input.GetKeyDown(KeyCode.Alpha1)) return 0;
@@ -385,7 +392,7 @@ namespace ProjectTheta.UI
                 UiFactory.CreateText(
                     _canvas.transform,
                     "Hint",
-                    "클릭 또는 1 · 2 · 3 키로 선택",
+                    "클릭 또는 숫자 키로 선택",
                     UiTheme.FontSmall,
                     UiTheme.TextDisabled,
                     TextAnchor.MiddleCenter);

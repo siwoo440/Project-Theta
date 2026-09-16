@@ -312,10 +312,15 @@ namespace ProjectTheta.Run
 
         private void OpenNextChoice()
         {
+            // 30일차: 엔딩을 봤으면 시작 계약 카드가 4장 나온다.
             List<RunUpgradeCard> cards =
                 RunUpgradeDrawLogic.Draw(
                     Upgrades,
-                    _random);
+                    _random,
+                    _startChoicePending &&
+                    _session != null
+                        ? _session.StartChoiceCount
+                        : RunUpgradeDrawLogic.DefaultChoiceCount);
 
             // 모든 카드가 최대 스택이면 고를 게 없으므로 선택을 소진한다.
             if (cards.Count == 0)
