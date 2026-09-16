@@ -104,6 +104,11 @@ namespace ProjectTheta.Core
                 floorCount,
                 location.Id);
 
+            // 28일차: 규칙 소품(노점 · 게이트 · 바 …) 색을 이 장소 맵 톤에 맞춘다.
+            LocationProps.Theme =
+                Map.MapThemeCatalog.Get(
+                    location.Id);
+
             PlayerSideViewController player =
                 CreatePlayer();
 
@@ -521,7 +526,7 @@ namespace ProjectTheta.Core
                      y < FloorSpace.WalkMaxY;
                      y += 1.2f)
                 {
-                    LocationProps.Box(
+                    LocationProps.Structure(
                         rules.transform,
                         "GatePost",
                         FloorSpace.ToWorld(floor, new Vector2(gateX, y)),
@@ -833,7 +838,7 @@ namespace ProjectTheta.Core
                 float pantryX = OfficeLayout.GetPantryX(floor);
                 float meetingX = OfficeLayout.GetMeetingRoomX(floor);
 
-                LocationProps.Box(
+                LocationProps.Structure(
                     rules.transform,
                     "Pantry",
                     FloorSpace.ToWorld(floor, new Vector2(pantryX, FloorSpace.WalkMaxY + 0.35f)),
@@ -891,7 +896,7 @@ namespace ProjectTheta.Core
 
             int top = Mathf.Max(0, floorCount - 1);
 
-            LocationProps.Box(
+            LocationProps.Structure(
                 rules.transform,
                 "EntranceBar",
                 FloorSpace.ToWorld(0, new Vector2(ClubLayout.EntranceBarX, FloorSpace.WalkMaxY + 0.35f)),
@@ -906,7 +911,7 @@ namespace ProjectTheta.Core
                 "BAR",
                 new Color(1.00f, 0.60f, 0.90f));
 
-            LocationProps.Box(
+            LocationProps.Structure(
                 rules.transform,
                 "DjBooth",
                 FloorSpace.ToWorld(top, new Vector2(ClubLayout.DjBoothX, FloorSpace.WalkMaxY + 0.4f)),
@@ -921,7 +926,7 @@ namespace ProjectTheta.Core
                 "DJ 부스",
                 new Color(0.55f, 0.95f, 1.00f));
 
-            LocationProps.Box(
+            LocationProps.Structure(
                 rules.transform,
                 "TopBar",
                 FloorSpace.ToWorld(top, new Vector2(ClubLayout.BarX, FloorSpace.WalkMaxY + 0.35f)),
