@@ -88,4 +88,24 @@ namespace ProjectTheta.Stage.Locations
                 : 1f;
         }
     }
+
+    /// <summary>
+    /// 오피스 엘리베이터 정원 계산이다 (27일차, 부록 B.3 [6]).
+    /// 한 번에 4명까지만 같이 층을 옮긴다. 남은 동행자는 20초 동안 그 층에서 기다리고,
+    /// 그 사이 플레이어가 돌아오면 다시 따라온다. 시간이 지나면 떠난다.
+    /// </summary>
+    public static class ElevatorLogic
+    {
+        public const int Capacity = 4;
+        public const float WaitSeconds = 20f;
+
+        public static int GetRidersAllowed(
+            bool limited,
+            int followers)
+        {
+            return limited
+                ? Math.Min(Capacity, Math.Max(0, followers))
+                : Math.Max(0, followers);
+        }
+    }
 }

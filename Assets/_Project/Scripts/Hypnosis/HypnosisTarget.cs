@@ -136,6 +136,8 @@ namespace ProjectTheta.Hypnosis
             AthleteMultiplier *
             // 26일차: 루프탑 클럽 드롭 직후에는 최면이 잘 걸린다.
             Stage.Locations.ClubBeat.HypnosisMultiplier *
+            // 27일차: 라이벌의 VIP 전용 구역 안에서는 최면이 절반으로 느려진다.
+            Boss.VipZoneAbility.GetHypnosisMultiplier(transform.position) *
             PlayerUpgradeMultipliers.HypnosisSpeed;
 
         private Stage.Locations.AthleteMark _athleteMark;
