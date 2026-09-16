@@ -103,6 +103,8 @@ namespace ProjectTheta.Presentation
             StageMoments.PickpocketResolved += HandlePickpocketResolved;
             StageMoments.TrainArrived += HandleTrainArrived;
             StageMoments.SpecialTargetRecovered += HandleSpecialTargetRecovered;
+            StageMoments.BlackoutStarted += HandleBlackoutStarted;
+            StageMoments.MallClosing += HandleMallClosing;
 
             if (_run != null)
             {
@@ -134,6 +136,8 @@ namespace ProjectTheta.Presentation
             StageMoments.PickpocketResolved -= HandlePickpocketResolved;
             StageMoments.TrainArrived -= HandleTrainArrived;
             StageMoments.SpecialTargetRecovered -= HandleSpecialTargetRecovered;
+            StageMoments.BlackoutStarted -= HandleBlackoutStarted;
+            StageMoments.MallClosing -= HandleMallClosing;
 
             if (_run != null)
             {
@@ -619,12 +623,42 @@ namespace ProjectTheta.Presentation
                 1.4f);
 
             GameVfx.FlyText(
-                $"★ 선수 함락 +{bonus}",
+                $"★ 특수 대상 함락 +{bonus}",
                 position + new Vector2(0f, 2f),
                 UiTheme.Gold);
 
             GameAudio.Play(
                 GameSfx.LevelUp);
+        }
+
+        // 25일차: 쇼핑몰 · 오피스 --------------------------------------
+
+        private void HandleBlackoutStarted()
+        {
+            GameVfx.FloatText(
+                "정전! 경비원 손전등만 보인다",
+                PlayerPosition + new Vector2(0f, 2.4f),
+                new Color(0.85f, 0.85f, 0.60f),
+                UiTheme.FontHeading,
+                1.4f);
+
+            GameAudio.Play(
+                GameSfx.UiStamp,
+                0.7f);
+        }
+
+        private void HandleMallClosing()
+        {
+            GameVfx.FloatText(
+                "폐점 안내 방송 · 시간이 빨리 흐릅니다",
+                PlayerPosition + new Vector2(0f, 2.4f),
+                new Color(1.00f, 0.75f, 0.40f),
+                UiTheme.FontHeading,
+                1.6f);
+
+            GameVfx.Shake(
+                Tuning.VfxShakeMedium * 0.5f,
+                Tuning.VfxShakeSeconds);
         }
 
         private void HandleFloorChanged(

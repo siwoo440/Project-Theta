@@ -372,7 +372,9 @@ namespace ProjectTheta.Hypnosis
             float scanRange =
                 _scanRange *
                 Stage.Locations.LanternLight.GetRangeMultiplier(
-                    transform.position);
+                    transform.position) *
+                // 25일차: 오피스 정전 중에는 사거리가 줄어든다.
+                Stage.Locations.Blackout.RangeMultiplier;
 
             float bestDistanceSquared =
                 float.MaxValue;

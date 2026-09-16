@@ -46,6 +46,9 @@ namespace ProjectTheta.Disruptors
         public bool IsSpotting =>
             _spottedRemaining > 0f;
 
+        /// <summary>`!`로 바뀌는 순간 알린다 (25일차, 쇼핑몰 무전). (플레이어 위치)</summary>
+        public event System.Action<Vector2> Spotted;
+
         /// <summary>이번 프레임에 플레이어가 시야 안에 있는지다. 바닥 시야 표시를 진하게 한다.</summary>
         public bool PlayerInSight { get; private set; }
 
@@ -127,6 +130,14 @@ namespace ProjectTheta.Disruptors
                     SightHalfAngle,
                     SightRange);
 
+            // 25일차: 오피스 정전 중에는 손전등을 든 경비원만 본다.
+            if (PlayerInSight &&
+                _body.Profile != null &&
+                !BlackoutLogic.CanSee(Blackout.IsActive, _body.Profile.SeesInBlackout))
+            {
+                PlayerInSight = false;
+            }
+
             // 23일차: 해변가 파라솔 그늘 안은 보이지 않는다.
             if (PlayerInSight &&
                 _body.Profile != null &&
@@ -198,6 +209,14 @@ namespace ProjectTheta.Disruptors
         {
             StageMoments.RaiseDisruptorSpotted(
                 transform.position);
+
+            // 25일차: 쇼핑몰 잠입 목표는 한 번이라도 들키면 보너스가 사라진다.
+            if (ZoneAlert.Current != null)
+            {
+                ZoneAlert.Current.MarkSpotted();
+            }
+
+            Spotted?.Invoke(player);
 
             DisruptorProfile profile =
                 _body.Profile;

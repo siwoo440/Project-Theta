@@ -267,7 +267,7 @@ namespace ProjectTheta.Tests.EditMode
         [Test]
         public void Other_Locations_Still_Have_No_Disruptors()
         {
-            // 쇼핑몰 · 오피스 타워 · 루프탑 클럽은 25일차부터 채운다.
+            // 루프탑 클럽은 26일차부터 채운다.
             foreach (LocationDefinition location in LocationCatalog.All)
             {
                 bool built =
@@ -275,7 +275,9 @@ namespace ProjectTheta.Tests.EditMode
                     location.Id == LocationId.Beach ||
                     location.Id == LocationId.NightMarket ||
                     location.Id == LocationId.SubwayStation ||
-                    location.Id == LocationId.FitnessCenter;
+                    location.Id == LocationId.FitnessCenter ||
+                    location.Id == LocationId.ShoppingMall ||
+                    location.Id == LocationId.OfficeTower;
 
                 Assert.AreEqual(
                     built,

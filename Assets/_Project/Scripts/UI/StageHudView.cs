@@ -855,6 +855,32 @@ namespace ProjectTheta.UI
                 seconds = Mathf.CeilToInt(CrowdFlow.Remaining);
                 extra = CrowdFlow.IsAnchored ? 1 : 0;
             }
+            else if (Blackout.Current != null &&
+                     (Blackout.IsActive || Blackout.Current.IsWarning))
+            {
+                state = Blackout.IsActive ? 10 : 11;
+                seconds = Mathf.CeilToInt(
+                    Blackout.IsActive
+                        ? Blackout.Current.DarkRemaining
+                        : Blackout.Current.WarningRemaining);
+            }
+            else if (ShutterGate.AnyClosed)
+            {
+                state = 12;
+                seconds = Mathf.CeilToInt(ShutterGate.LongestClosedRemaining);
+            }
+            else if (MallClosing.Current != null)
+            {
+                state = MallClosing.Current.HasAnnounced ? 13 : 14;
+                seconds = Mathf.CeilToInt(MallClosing.Current.SecondsUntilAnnouncement);
+                extra = ZoneAlert.Current != null && ZoneAlert.Current.WasSpotted ? 1 : 0;
+            }
+            else if (OfficeLayout.Active)
+            {
+                state = 15;
+                extra = PassGate.CountOpen();
+                seconds = PassGate.ActiveCount;
+            }
             else if (GymZone.IsPtActive)
             {
                 state = 6;
@@ -945,6 +971,36 @@ namespace ProjectTheta.UI
 
                 case 8:
                     text = $"열차 {extra}/{StageSessionController.SurvivalTrainsRequired}  ·  다음 열차 {seconds}초   ·   {hint}";
+                    color = UiTheme.TextMuted;
+                    break;
+
+                case 10:
+                    text = $"정전 {seconds}초  ·  손전등 경비원만 봅니다 · 최면 사거리 감소";
+                    color = new Color(0.85f, 0.85f, 0.60f);
+                    break;
+
+                case 11:
+                    text = $"전등이 깜빡입니다 · {seconds}초 뒤 정전";
+                    color = new Color(0.85f, 0.85f, 0.60f);
+                    break;
+
+                case 12:
+                    text = $"셔터 봉쇄 {seconds}초  ·  경계도를 경계(60) 아래로 유지하세요";
+                    color = UiTheme.Danger;
+                    break;
+
+                case 13:
+                    text = $"폐점 방송! 시간이 빨리 흐릅니다   ·   {(extra > 0 ? "발각됨 · 잠입 보너스 없음" : "잠입 유지 중")}";
+                    color = new Color(1.00f, 0.75f, 0.40f);
+                    break;
+
+                case 14:
+                    text = $"폐점까지 {seconds}초   ·   {(extra > 0 ? "발각됨 · 잠입 보너스 없음" : hint)}";
+                    color = extra > 0 ? UiTheme.Danger : UiTheme.TextMuted;
+                    break;
+
+                case 15:
+                    text = $"출입증 게이트 {extra}/{seconds} 열림   ·   {hint}";
                     color = UiTheme.TextMuted;
                     break;
 
@@ -1780,7 +1836,8 @@ namespace ProjectTheta.UI
                     ref _stairKey,
                     UiChangeKey.Of(
                         stairway.TargetFloor,
-                        (int)stairway.Direction)))
+                        (int)stairway.Direction,
+                        stairway.IsLocked ? 1 : 0)))
             {
                 _stairPromptText.text =
                     stairway.GetPromptText();

@@ -140,6 +140,7 @@ namespace ProjectTheta.Tests.EditMode
             Assert.AreEqual(d.HeartRateImpulseScale, asset.HeartRateImpulseScale, 0.0001f, nameof(d.HeartRateImpulseScale));
             Assert.AreEqual(d.SurvivalTrainCount, asset.SurvivalTrainCount, nameof(d.SurvivalTrainCount));
             Assert.AreEqual(d.DisruptorRampSeconds, asset.DisruptorRampSeconds, 0.0001f, nameof(d.DisruptorRampSeconds));
+            Assert.AreEqual(d.ClosingTimeScale, asset.ClosingTimeScale, 0.0001f, nameof(d.ClosingTimeScale));
         }
 
         [Test]

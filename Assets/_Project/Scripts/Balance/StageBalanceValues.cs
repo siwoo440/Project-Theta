@@ -108,6 +108,10 @@ namespace ProjectTheta.Balance
         // 방해 세력 층당 허용 인원이 1명 늘어나는 간격(초)이다. 최대 4명. 0이면 처음부터 4명.
         public float DisruptorRampSeconds = 20f;
 
+        // --- 쇼핑몰 · 오피스 (25일차) ---
+        // 쇼핑몰 폐점 방송 뒤 남은 시간이 줄어드는 배율이다.
+        public float ClosingTimeScale = 1.3f;
+
         // --- 최면 속도 (19일차) ---
         // 플레이어 최면 전체에 곱하는 기본 배율이다. 등급별 속도 표는 그대로 두고 전체만 올린다.
         // 1.3이면 모든 등급이 1.3배 빨라진다 (일반 40/초 → 52/초). 되찾기에도 똑같이 걸린다.
@@ -179,6 +183,7 @@ namespace ProjectTheta.Balance
                 HeartRateImpulseScale = HeartRateImpulseScale,
                 SurvivalTrainCount = SurvivalTrainCount,
                 DisruptorRampSeconds = DisruptorRampSeconds,
+                ClosingTimeScale = ClosingTimeScale,
                 PlayerHypnosisSpeedScale = PlayerHypnosisSpeedScale,
                 LevelBaseXp = LevelBaseXp,
                 LevelXpGrowth = LevelXpGrowth,

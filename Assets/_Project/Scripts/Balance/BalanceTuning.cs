@@ -246,6 +246,13 @@ namespace ProjectTheta.Balance
                 v => v.DisruptorRampSeconds,
                 (v, x) => v.DisruptorRampSeconds = x),
 
+            // 쇼핑몰 · 오피스 (25일차)
+            new TuningParameter(
+                nameof(StageBalanceValues.ClosingTimeScale),
+                TuningGroup.Danger, "폐점 뒤 시간 배율", 1f, 3f, false,
+                v => v.ClosingTimeScale,
+                (v, x) => v.ClosingTimeScale = x),
+
             // 연출
             new TuningParameter(
                 nameof(StageBalanceValues.VfxShakeMedium),

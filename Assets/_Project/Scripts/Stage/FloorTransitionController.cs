@@ -139,11 +139,64 @@ namespace ProjectTheta.Stage
                 return;
             }
 
+            if (_emergencyConfirmRemaining > 0f)
+            {
+                _emergencyConfirmRemaining -= Time.deltaTime;
+            }
+
             if (ReadInteractPressed())
             {
-                Travel(
+                TryUse(
                     ActiveStairway);
             }
+        }
+
+        /// <summary>잠긴 계단을 한 번 누른 뒤 남은 확인 시간이다 (25일차).</summary>
+        private float _emergencyConfirmRemaining;
+
+        /// <summary>
+        /// 25일차: 오피스 출입증 게이트가 위층 계단을 잠갔으면 한 번은 안내만 하고,
+        /// 확인 시간 안에 다시 누르면 비상계단으로 올라가되 경계도가 오른다.
+        /// </summary>
+        private void TryUse(
+            FloorStairway stairway)
+        {
+            bool locked =
+                stairway.Direction == FloorStairDirection.Up &&
+                Locations.PassGate.IsLocked(stairway.SourceFloor);
+
+            if (!locked)
+            {
+                Travel(stairway);
+
+                return;
+            }
+
+            if (_emergencyConfirmRemaining <= 0f)
+            {
+                _emergencyConfirmRemaining =
+                    Disruptors.PassGateLogic.EmergencyConfirmSeconds;
+
+                GameVfx.FloatText(
+                    $"출입증이 필요합니다 · 한 번 더 누르면 비상계단 (경계도 +{Disruptors.PassGateLogic.EmergencyStairAlertRise:0})",
+                    (Vector2)_player.position + new Vector2(0f, 2.2f),
+                    UI.Framework.UiTheme.Danger,
+                    UI.Framework.UiTheme.FontBody,
+                    1.6f);
+
+                return;
+            }
+
+            _emergencyConfirmRemaining = 0f;
+
+            if (Disruptors.ZoneAlert.Current != null)
+            {
+                Disruptors.ZoneAlert.Current.Add(
+                    Disruptors.PassGateLogic.EmergencyStairAlertRise,
+                    _player.position);
+            }
+
+            Travel(stairway);
         }
 
         /// <summary>플레이어가 선 층에서, 손이 닿는 거리의 계단을 고른다.</summary>

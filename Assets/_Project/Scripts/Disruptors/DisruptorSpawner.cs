@@ -63,6 +63,7 @@ namespace ProjectTheta.Disruptors
             // 24일차: 지난 구역의 인파 흐름 · 단체 PT 상태를 지운다. 정적 상태라 씬이 바뀌어도 남는다.
             CrowdFlow.ResetState();
             GymZone.ResetState();
+            RadioLink.ResetState();
 
             List<DisruptorPlacement> placements =
                 DisruptorCatalog.GetPlacements(
@@ -343,12 +344,14 @@ namespace ProjectTheta.Disruptors
 
             if (profile.IsObject)
             {
-                // 사람이 아닌 사물(안내 방송실)은 벽에 붙은 상자로 그린다.
+                // 사람이 아닌 사물(안내 방송실 · CCTV)은 벽이나 천장에 붙은 상자로 그린다.
+                bool camera = kind == DisruptorKind.SecurityCamera;
+
                 LocationProps.Box(
                     go.transform,
-                    "Speaker",
-                    position + new Vector2(0f, 0.5f),
-                    new Vector2(1.6f, 0.8f),
+                    camera ? "Camera" : "Speaker",
+                    position + new Vector2(0f, camera ? 2.6f : 0.5f),
+                    camera ? new Vector2(0.5f, 0.35f) : new Vector2(1.6f, 0.8f),
                     new Color(0.18f, 0.20f, 0.26f),
                     -40);
             }
@@ -465,6 +468,34 @@ namespace ProjectTheta.Disruptors
                     go.AddComponent<RescuerRole>().Configure();
                     break;
 
+                case DisruptorKind.SecurityGuard:
+                    go.AddComponent<RadioLink>().Configure(true);
+                    break;
+
+                case DisruptorKind.SecurityCamera:
+                    go.AddComponent<RadioLink>().Configure(false);
+                    break;
+
+                case DisruptorKind.PromoStaff:
+                    go.AddComponent<StallToutRole>().Configure(
+                        _followers,
+                        _player,
+                        true,
+                        3f,
+                        "시음해 보고 가세요~");
+                    break;
+
+                case DisruptorKind.OfficeManager:
+                    go.AddComponent<ManagerRole>().Configure();
+                    break;
+
+                case DisruptorKind.OfficeRomeo:
+                    go.AddComponent<ContesterRole>().Configure(
+                        _followers,
+                        _player,
+                        0);
+                    break;
+
                 case DisruptorKind.GymVeteran:
                     go.AddComponent<BrawlerRole>().Configure(
                         _followers,
@@ -514,6 +545,17 @@ namespace ProjectTheta.Disruptors
 
                 case SpecialAbilityKind.AllIn:
                     go.AddComponent<AllInAbility>();
+                    break;
+
+                case SpecialAbilityKind.ShutterLock:
+                    go.AddComponent<ShutterLockAbility>().Configure(
+                        _player);
+                    break;
+
+                case SpecialAbilityKind.EmergencyMeeting:
+                    go.AddComponent<EmergencyMeetingAbility>().Configure(
+                        _followers,
+                        _player);
                     break;
 
                 case SpecialAbilityKind.DroneTracking:

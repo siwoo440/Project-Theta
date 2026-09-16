@@ -15,6 +15,23 @@ namespace ProjectTheta.Stage.Locations
 
         private Text _label;
 
+        /// <summary>머리 위 이름과 회수 보너스다. 오피스 대표 비서처럼 다른 특수 대상에도 쓴다 (25일차).</summary>
+        private string _title = "★ 대회 앞둔 선수";
+        private int _bonus = CityAbilityValues.AthleteBonusEssence;
+
+        public void Configure(
+            string title,
+            int bonus)
+        {
+            _title = title;
+            _bonus = bonus;
+
+            if (_label != null)
+            {
+                _label.text = title;
+            }
+        }
+
         public static float GetHypnosisMultiplier(
             AthleteMark mark)
         {
@@ -32,8 +49,10 @@ namespace ProjectTheta.Stage.Locations
                 return 0;
             }
 
-            return follower.GetComponent<AthleteMark>() != null
-                ? CityAbilityValues.AthleteBonusEssence
+            AthleteMark mark = follower.GetComponent<AthleteMark>();
+
+            return mark != null
+                ? mark._bonus
                 : 0;
         }
 
@@ -47,7 +66,7 @@ namespace ProjectTheta.Stage.Locations
                     20,
                     UiTheme.Gold);
 
-            _label.text = "★ 대회 앞둔 선수";
+            _label.text = _title;
         }
     }
 }

@@ -164,6 +164,12 @@ namespace ProjectTheta.UI.DebugTools
             y += height + gap;
 
             DebugUi.Button(root, "적 최대 인원 등장", 0f, y, half, height, FillDisruptors);
+            DebugUi.Button(root, "폐점 즉시 (쇼핑몰)", half + gap, y, half, height, AnnounceClosing);
+            y += height + gap;
+
+            // 25일차: 오피스
+            DebugUi.Button(root, "정전 즉시 (오피스)", 0f, y, half, height, StartBlackout);
+            DebugUi.Button(root, "게이트 모두 열기", half + gap, y, half, height, OpenGates);
             y += height + DebugUi.SectionGap + 4f;
 
             // 시간
@@ -594,6 +600,54 @@ namespace ProjectTheta.UI.DebugTools
             DebugCheats.MarkUsed();
 
             ShowMessage($"{nearest.DisplayName} 예고를 시작했습니다");
+        }
+
+        private void AnnounceClosing()
+        {
+            if (Stage.Locations.MallClosing.Current == null)
+            {
+                ShowMessage("쇼핑몰이 아닙니다", false);
+
+                return;
+            }
+
+            Stage.Locations.MallClosing.Current.DebugAnnounce();
+
+            DebugCheats.MarkUsed();
+
+            ShowMessage("폐점 방송을 냈습니다");
+        }
+
+        private void StartBlackout()
+        {
+            if (Stage.Locations.Blackout.Current == null)
+            {
+                ShowMessage("오피스 타워가 아닙니다", false);
+
+                return;
+            }
+
+            Stage.Locations.Blackout.Current.DebugStart();
+
+            DebugCheats.MarkUsed();
+
+            ShowMessage("정전 예고를 시작했습니다");
+        }
+
+        private void OpenGates()
+        {
+            if (Stage.Locations.PassGate.ActiveCount == 0)
+            {
+                ShowMessage("출입증 게이트가 없습니다", false);
+
+                return;
+            }
+
+            Stage.Locations.PassGate.DebugOpenAll();
+
+            DebugCheats.MarkUsed();
+
+            ShowMessage("게이트를 모두 열었습니다");
         }
 
         private void FillDisruptors()
