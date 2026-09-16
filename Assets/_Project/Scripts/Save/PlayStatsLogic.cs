@@ -135,6 +135,11 @@ namespace ProjectTheta.Save
 
             record.Clears++;
 
+            if (result.RankLabel == "S")
+            {
+                stats.SRanks++;
+            }
+
             if (result.PlaySeconds > 0f &&
                 (record.BestClearSeconds <= 0f ||
                  result.PlaySeconds < record.BestClearSeconds))
@@ -256,7 +261,7 @@ namespace ProjectTheta.Save
             };
         }
 
-        /// <summary>장소별 표 한 줄이다. 도전 · 클리어 · 최고 정기 · 최단 시간 · 최고 등급.</summary>
+        /// <summary>장소별 표 한 줄이다. 도전 · 클리어 · 최고 정기 · 최단 시간 · 최고 등급 · 숙련(★).</summary>
         public static string[] BuildLocationRow(
             LocationStats record)
         {
@@ -268,13 +273,14 @@ namespace ProjectTheta.Save
                 $"{r.Clears}",
                 $"{r.BestEssence}",
                 FormatClock(r.BestClearSeconds),
-                string.IsNullOrEmpty(r.BestRank) ? "-" : r.BestRank
+                string.IsNullOrEmpty(r.BestRank) ? "-" : r.BestRank,
+                MasteryLogic.FormatStars(MasteryLogic.GetStars(r.Clears))
             };
         }
 
         public static readonly string[] LocationColumns =
         {
-            "도전", "클리어", "최고 정기", "최단 클리어", "최고 등급"
+            "도전", "클리어", "최고 정기", "최단 클리어", "최고 등급", "숙련"
         };
 
         private static LocationStats Find(

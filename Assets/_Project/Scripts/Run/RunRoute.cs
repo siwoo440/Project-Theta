@@ -104,6 +104,12 @@ namespace ProjectTheta.Run
         /// <summary>고르지 못하고 남은 레벨업 카드 수다. 같은 장소를 다시 지을 때 이어서 고른다.</summary>
         public int CarriedChoices { get; set; }
 
+        /// <summary>이 장소의 숙련도(★ 0~3)다. 출발할 때 세이브에서 읽어 둔다 (30일차).</summary>
+        public int Stars { get; set; }
+
+        /// <summary>시작 계약에서 제시하는 카드 수다. 엔딩을 보면 4장이다 (30일차).</summary>
+        public int StartChoiceCount { get; set; } = 3;
+
         /// <summary>이 도전의 결과를 이미 기록했는지다. 결과를 두 번 세지 않게 한다.</summary>
         public bool IsRecorded { get; private set; }
 
