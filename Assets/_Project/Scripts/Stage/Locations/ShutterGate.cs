@@ -67,7 +67,7 @@ namespace ProjectTheta.Stage.Locations
             _shutter.enabled = false;
 
             // 셔터 틀과 경광등은 항상 보인다. 어디가 닫힐 수 있는지 미리 알게 한다.
-            LocationProps.Box(
+            LocationProps.Structure(
                 transform,
                 "ShutterFrame",
                 FloorSpace.ToWorld(floor, new Vector2(x, top + 0.5f)),

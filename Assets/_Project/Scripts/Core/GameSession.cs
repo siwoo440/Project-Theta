@@ -184,6 +184,12 @@ namespace ProjectTheta.Core
         public bool GoTo(
             SceneDestination destination)
         {
+            // 28일차: 로딩창이 떠 있는 동안 들어온 전환은 무시한다(버튼 연타 방지).
+            if (UI.LoadingScreen.IsLoading)
+            {
+                return false;
+            }
+
             string currentScene =
                 SceneManager.GetActiveScene().name;
 
@@ -204,11 +210,10 @@ namespace ProjectTheta.Core
                 ConsumePendingResult();
             }
 
-            SceneManager.LoadScene(
+            // 28일차: 로딩창을 띄우고 그 뒤에서 불러온다.
+            return UI.LoadingScreen.Load(
                 SceneFlowLogic.GetSceneName(
                     destination));
-
-            return true;
         }
 
         private void OnApplicationQuit()
