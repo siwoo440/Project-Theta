@@ -19,7 +19,8 @@ namespace ProjectTheta.UI
     /// 29일차: 판이 없다. 장소 8곳 중 어디든 몇 번이든 골라 들어간다.
     ///   허브 ⇄ [지도] ⇄ 스테이지
     ///
-    /// 왼쪽은 장소 8곳과 길, 오른쪽은 고른 장소의 정보 · 내 기록 · 출발 버튼이다.
+    /// 가운데는 장소 8곳과 길이다. 35일차: 장소를 고르면 오른쪽에서 패널이 들어오고 지도는 왼쪽으로 비킨다.
+    /// 패널의 [적 정보] [장소 규칙] [보상] [기록] 버튼이 패널 왼쪽에 상세 창을 연다.
     /// 오른쪽 위 [통계] 버튼은 지금까지의 누적 기록 창(<see cref="StatsPanel"/>)을 연다.
     /// </summary>
     public sealed class MapScreen : MonoBehaviour
@@ -59,6 +60,7 @@ namespace ProjectTheta.UI
             public Text Name;
             public Text Detail;
             public Text Badge;
+            public Image Recommend;
         }
 
         private List<LocationId> _candidates = new List<LocationId>();
@@ -75,9 +77,22 @@ namespace ProjectTheta.UI
         private Text _infoName;
         private Text _infoSummary;
         private Text _infoRows;
-        private Text _infoDisruptors;
         private Text _runStatus;
         private UiButton _departButton;
+
+        // 35일차: 슬라이드 패널 · 상세 창 · 추천
+        private RectTransform _mapRect;
+        private RectTransform _panel;
+        private float _panelShown;
+        private Text _infoDifficulty;
+        private Text _infoNumber;
+        private Text _infoRecommend;
+        private readonly UiButton[] _detailButtons = new UiButton[4];
+        private LocationDetailKind _detail;
+        private RectTransform _detailWindow;
+        private Text _detailTitle;
+        private Text _detailBody;
+        private LocationId? _recommended;
 
         private void Start()
         {
@@ -94,9 +109,21 @@ namespace ProjectTheta.UI
             {
                 _selected = game.Run.Location;
             }
+            else
+            {
+                // 35일차: 처음 열면 추천 장소를 골라 둔다.
+                _selected =
+                    LocationGuideLogic.GetRecommended(
+                        _candidates,
+                        CurrentSave);
+            }
 
             Build();
             Refresh();
+
+            // 처음 열 때는 미끄러지지 않고 바로 제자리에 둔다.
+            _panelShown = _selected != null ? 1f : 0f;
+            AnimatePanel();
 
             // 30일차: 방금 끝낸 장소에서 달성한 업적을 알린다.
             if (game != null)
@@ -109,6 +136,8 @@ namespace ProjectTheta.UI
 
         private void Update()
         {
+            AnimatePanel();
+
             // 통계 창이 열려 있으면 지도 단축키를 받지 않는다.
             if (_stats != null &&
                 _stats.IsOpen)
@@ -170,9 +199,31 @@ namespace ProjectTheta.UI
                 Depart();
             }
 
+            // 35일차: 장소를 골랐으면 Tab은 장소 규칙, 아니면 통계다.
             if (keyboard.tabKey.wasPressedThisFrame)
             {
-                OpenStats();
+                if (_selected != null)
+                {
+                    ToggleDetail(LocationDetailKind.Rules);
+                }
+                else
+                {
+                    OpenStats();
+                }
+            }
+
+            // Esc: 상세 창 → 패널 순서로 닫는다.
+            if (keyboard.escapeKey.wasPressedThisFrame &&
+                UiEscapeStack.TryConsumeWhenEmpty(Time.frameCount))
+            {
+                if (_detail != LocationDetailKind.None)
+                {
+                    SetDetail(LocationDetailKind.None);
+                }
+                else
+                {
+                    ClosePanel();
+                }
             }
 #endif
         }
@@ -358,7 +409,7 @@ namespace ProjectTheta.UI
                 UiFactory.CreateButton(
                     parent,
                     "StatsButton",
-                    "통계  (Tab)",
+                    "통  계",
                     UiTheme.FontSubheading,
                     true);
 
@@ -404,8 +455,10 @@ namespace ProjectTheta.UI
                 map,
                 new Vector2(0f, 0.5f),
                 new Vector2(0f, 0.5f),
-                new Vector2(70f, -60f),
+                new Vector2(MapLeftCentered, -60f),
                 new Vector2(MapWidth, MapHeight));
+
+            _mapRect = map;
 
             // 바다 · 강 느낌의 옅은 띠. 해변가 쪽을 푸르게 깐다.
             Image sea =
@@ -577,11 +630,12 @@ namespace ProjectTheta.UI
                 new Vector2(22f, -12f),
                 new Vector2(NodeWidth - 40f, 32f));
 
+            // 35일차: 난이도(◆)를 시간대 앞에 둔다. 목표 방식은 패널에서 본다.
             Text detail =
                 UiFactory.CreateText(
                     fill.transform,
                     "Detail",
-                    $"{LocationCatalog.GetTimeLabel(location.TimeOfDay)} · {LocationCatalog.GetObjectiveLabel(location.Objective)}",
+                    $"난이도 {LocationGuideLogic.FormatDifficulty(LocationGuideCatalog.Get(location.Id).Difficulty)}  ·  {LocationCatalog.GetTimeLabel(location.TimeOfDay)}",
                     UiTheme.FontSmall,
                     UiTheme.TextMuted,
                     TextAnchor.MiddleLeft);
@@ -610,9 +664,44 @@ namespace ProjectTheta.UI
                 new Vector2(-12f, 6f),
                 new Vector2(NodeWidth - 30f, 22f));
 
+            // 35일차: 추천 장소 위에 뜨는 표시
+            Image recommend =
+                UiFactory.CreateImage(
+                    map,
+                    "Recommend",
+                    UiTheme.Gold);
+
+            recommend.rectTransform.anchorMin = Vector2.zero;
+            recommend.rectTransform.anchorMax = Vector2.zero;
+            recommend.rectTransform.pivot = new Vector2(0f, 0f);
+            recommend.rectTransform.anchoredPosition = position + new Vector2(-NodeWidth * 0.5f + 12f, NodeHeight * 0.5f - 4f);
+            recommend.rectTransform.sizeDelta = new Vector2(78f, 26f);
+
+            Text recommendLabel =
+                UiFactory.CreateText(
+                    recommend.transform,
+                    "Label",
+                    "◆ 추천",
+                    UiTheme.FontSmall,
+                    new Color(0.10f, 0.07f, 0.12f, 1f),
+                    TextAnchor.MiddleCenter,
+                    FontStyle.Bold);
+
+            UiFactory.Stretch(
+                recommendLabel.rectTransform);
+
+            UiPulse recommendPulse = recommend.gameObject.AddComponent<UiPulse>();
+            recommendPulse.Target = recommend;
+            recommendPulse.MinimumAlpha = 0.6f;
+            recommendPulse.MaximumAlpha = 1f;
+            recommendPulse.Period = 1.2f;
+
+            recommend.gameObject.SetActive(false);
+
             _nodes[id] =
                 new NodeView
                 {
+                    Recommend = recommend,
                     Location = location,
                     Button = button,
                     Edge = button.Background,
@@ -623,12 +712,35 @@ namespace ProjectTheta.UI
                 };
         }
 
+        // 35일차: 오른쪽 패널 --------------------------------------------
+
+        private const float PanelWidth = 540f;
+        private const float PanelMargin = 60f;
+        private const float PanelPadding = 34f;
+        private const float DetailWidth = 480f;
+        private const float DetailGap = 16f;
+        private const float SlideSeconds = 0.25f;
+
+        /// <summary>패널이 없을 때 지도는 가운데, 패널이 열리면 왼쪽으로 비킨다.</summary>
+        private const float MapLeftWithPanel = 70f;
+
+        private static float MapLeftCentered =>
+            (UiTheme.ReferenceResolution.x - MapWidth) * 0.5f;
+
+        private static float PanelHiddenX =>
+            PanelWidth + PanelMargin + 40f;
+
+        /// <summary>
+        /// 장소를 고르면 오른쪽에서 밀려 들어오는 패널이다 (35일차).
+        ///   시간대 · 목표 · 난이도 / 큰 번호 · 이름 / 소개 / 핵심 수치 / 추천
+        ///   [적 정보] [장소 규칙] [보상] [기록]
+        ///   [닫기] [출발]
+        /// 긴 정보는 버튼을 눌러 패널 왼쪽에 붙는 상세 창에서 본다.
+        /// </summary>
         private void BuildInfoPanel(
             Transform parent)
         {
-            const float width = 540f;
-            const float padding = 34f;
-            float inner = width - padding * 2f;
+            float inner = PanelWidth - PanelPadding * 2f;
 
             RectTransform panel =
                 UiFactory.CreatePanel(
@@ -641,17 +753,36 @@ namespace ProjectTheta.UI
                 panel,
                 new Vector2(1f, 0.5f),
                 new Vector2(1f, 0.5f),
-                new Vector2(-60f, -60f),
-                new Vector2(width, MapHeight));
+                new Vector2(PanelHiddenX, -60f),
+                new Vector2(PanelWidth, MapHeight));
+
+            _panel = panel;
+
+            // 패널 왼쪽 가장자리의 금색 띠
+            Image accent =
+                UiFactory.CreateImage(
+                    panel,
+                    "Accent",
+                    new Color(UiTheme.Gold.r, UiTheme.Gold.g, UiTheme.Gold.b, 0.8f));
+
+            UiFactory.Place(accent.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(5f, MapHeight));
 
             _infoTime =
-                CreateInfoText(panel, padding, 30f, inner, 26f, UiTheme.FontBody, UiTheme.Gold, true);
+                CreateInfoText(panel, PanelPadding, 30f, inner, 26f, UiTheme.FontBody, UiTheme.Gold, true);
+
+            _infoDifficulty =
+                CreateInfoText(panel, PanelPadding, 30f, inner, 26f, UiTheme.FontBody, UiTheme.TextPrimary, true);
+
+            _infoDifficulty.alignment = TextAnchor.MiddleRight;
+
+            _infoNumber =
+                CreateInfoText(panel, PanelPadding, 66f, 110f, 72f, UiTheme.FontTitle + 10, UiTheme.Gold, true);
 
             _infoName =
-                CreateInfoText(panel, padding, 60f, inner, 52f, UiTheme.FontTitle - 6, UiTheme.TextPrimary, true);
+                CreateInfoText(panel, PanelPadding + 110f, 66f, inner - 110f, 72f, UiTheme.FontTitle - 8, UiTheme.TextPrimary, true);
 
             _infoSummary =
-                CreateInfoText(panel, padding, 122f, inner, 60f, UiTheme.FontBody, UiTheme.TextMuted, false);
+                CreateInfoText(panel, PanelPadding, 146f, inner, 56f, UiTheme.FontBody, UiTheme.TextMuted, false);
 
             _infoSummary.horizontalOverflow = HorizontalWrapMode.Wrap;
             _infoSummary.alignment = TextAnchor.UpperLeft;
@@ -660,54 +791,140 @@ namespace ProjectTheta.UI
                 panel,
                 "Divider",
                 new Color(UiTheme.Gold.r, UiTheme.Gold.g, UiTheme.Gold.b, 0.5f),
-                200f,
-                padding);
+                212f,
+                PanelPadding);
 
             _infoRows =
-                CreateInfoText(panel, padding, 222f, inner, 150f, UiTheme.FontBody, UiTheme.TextPrimary, false);
+                CreateInfoText(panel, PanelPadding, 228f, inner, 100f, UiTheme.FontBody, UiTheme.TextPrimary, false);
 
             _infoRows.alignment = TextAnchor.UpperLeft;
             _infoRows.lineSpacing = 1.35f;
 
-            CreateInfoText(panel, padding, 388f, inner, 26f, UiTheme.FontSmall, UiTheme.Gold, true)
-                .text = "등장하는 방해 세력";
+            _infoRecommend =
+                CreateInfoText(panel, PanelPadding, 336f, inner, 28f, UiTheme.FontBody, UiTheme.Gold, true);
 
-            _infoDisruptors =
-                CreateInfoText(panel, padding, 416f, inner, 70f, UiTheme.FontBody, UiTheme.TextMuted, false);
+            UiPulse recommendPulse = _infoRecommend.gameObject.AddComponent<UiPulse>();
+            recommendPulse.Target = _infoRecommend;
+            recommendPulse.MinimumAlpha = 0.55f;
+            recommendPulse.MaximumAlpha = 1f;
+            recommendPulse.Period = 1.6f;
 
-            _infoDisruptors.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _infoDisruptors.alignment = TextAnchor.UpperLeft;
+            float buttonWidth = (inner - 16f) * 0.5f;
+
+            _detailButtons[0] = UiOverlay.Button(panel, "EnemyButton", "적 정보", PanelPadding, 380f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Enemies));
+            _detailButtons[1] = UiOverlay.Button(panel, "RuleButton", "장소 규칙  (Tab)", PanelPadding + buttonWidth + 16f, 380f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Rules));
+            _detailButtons[2] = UiOverlay.Button(panel, "RewardButton", "보  상", PanelPadding, 456f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Rewards));
+            _detailButtons[3] = UiOverlay.Button(panel, "RecordButton", "기  록", PanelPadding + buttonWidth + 16f, 456f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Record));
 
             UiDecor.CreateDivider(
                 panel,
                 "Divider2",
                 new Color(UiTheme.PanelEdge.r, UiTheme.PanelEdge.g, UiTheme.PanelEdge.b, 0.6f),
-                508f,
-                padding);
+                544f,
+                PanelPadding);
 
             _runStatus =
-                CreateInfoText(panel, padding, 526f, inner, 120f, UiTheme.FontBody, UiTheme.TextPrimary, false);
+                CreateInfoText(panel, PanelPadding, 560f, inner, 60f, UiTheme.FontSmall, UiTheme.TextMuted, false);
 
             _runStatus.alignment = TextAnchor.UpperLeft;
             _runStatus.lineSpacing = 1.3f;
+
+            UiButton close =
+                UiFactory.CreateButton(
+                    panel,
+                    "ClosePanel",
+                    "닫  기",
+                    UiTheme.FontBody);
+
+            UiFactory.Place(
+                close.Background.rectTransform,
+                new Vector2(0f, 0f),
+                new Vector2(0f, 0f),
+                new Vector2(PanelPadding, 40f),
+                new Vector2(140f, 70f));
+
+            close.Button.onClick.AddListener(
+                ClosePanel);
 
             _departButton =
                 UiFactory.CreateButton(
                     panel,
                     "Depart",
-                    "출  발",
+                    "출    발  ▶",
                     UiTheme.FontHeading,
                     true);
 
             UiFactory.Place(
                 _departButton.Background.rectTransform,
-                new Vector2(0.5f, 0f),
-                new Vector2(0.5f, 0f),
-                new Vector2(0f, 40f),
-                new Vector2(inner, 70f));
+                new Vector2(1f, 0f),
+                new Vector2(1f, 0f),
+                new Vector2(-PanelPadding, 40f),
+                new Vector2(inner - 156f, 70f));
 
             _departButton.Button.onClick.AddListener(
                 Depart);
+
+            BuildDetailWindow(
+                parent);
+        }
+
+        /// <summary>패널 왼쪽에 붙는 상세 창이다. 한 번에 하나만 뜬다.</summary>
+        private void BuildDetailWindow(
+            Transform parent)
+        {
+            RectTransform window =
+                UiFactory.CreatePanel(
+                    parent,
+                    "Detail",
+                    new Color(0.075f, 0.065f, 0.115f, 0.97f),
+                    UiTheme.Gold);
+
+            UiFactory.Place(
+                window,
+                new Vector2(1f, 0.5f),
+                new Vector2(1f, 0.5f),
+                new Vector2(-(PanelMargin + PanelWidth + DetailGap), -60f),
+                new Vector2(DetailWidth, MapHeight));
+
+            _detailWindow = window;
+
+            _detailTitle =
+                CreateInfoText(window, 28f, 26f, DetailWidth - 120f, 40f, UiTheme.FontHeading, UiTheme.Gold, true);
+
+            UiButton close =
+                UiFactory.CreateButton(
+                    window,
+                    "CloseDetail",
+                    "×",
+                    UiTheme.FontHeading);
+
+            UiFactory.Place(
+                close.Background.rectTransform,
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-20f, -22f),
+                new Vector2(48f, 48f));
+
+            close.Button.onClick.AddListener(
+                () => SetDetail(LocationDetailKind.None));
+
+            UiDecor.CreateDivider(
+                window,
+                "Divider",
+                new Color(UiTheme.Gold.r, UiTheme.Gold.g, UiTheme.Gold.b, 0.5f),
+                82f,
+                28f);
+
+            _detailBody =
+                CreateInfoText(window, 28f, 100f, DetailWidth - 56f, MapHeight - 130f, UiTheme.FontSmall + 1, UiTheme.TextPrimary, false);
+
+            _detailBody.alignment = TextAnchor.UpperLeft;
+            _detailBody.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _detailBody.verticalOverflow = VerticalWrapMode.Overflow;
+            _detailBody.lineSpacing = 1.2f;
+            _detailBody.supportRichText = true;
+
+            window.gameObject.SetActive(false);
         }
 
         private static Text CreateInfoText(
@@ -747,7 +964,7 @@ namespace ProjectTheta.UI
         private void Refresh()
         {
             _subtitle.text =
-                $"가고 싶은 장소를 고르세요  (숫자 키 1~{_candidates.Count} · Enter 출발)   ·   몇 번이든 다시 도전할 수 있습니다";
+                $"가고 싶은 장소를 고르세요  (숫자 키 1~{_candidates.Count} · Enter 출발 · Tab 장소 규칙 · Esc 닫기)";
 
             RefreshNodes();
             RefreshInfo();
@@ -763,6 +980,12 @@ namespace ProjectTheta.UI
         {
             SaveData save = CurrentSave;
 
+            // 35일차: 추천 장소(아직 깨지 않은 곳 중 가장 쉬운 곳)
+            _recommended =
+                LocationGuideLogic.GetRecommended(
+                    _candidates,
+                    save);
+
             foreach (KeyValuePair<LocationId, NodeView> pair in _nodes)
             {
                 NodeView view = pair.Value;
@@ -771,6 +994,7 @@ namespace ProjectTheta.UI
 
                 view.Button.Button.interactable = true;
                 view.Glow.gameObject.SetActive(state == NodeState.Selected);
+                view.Recommend.gameObject.SetActive(_recommended != null && _recommended.Value == pair.Key);
 
                 Color timeColor =
                     LocationCatalog.GetTimeColor(
@@ -840,13 +1064,10 @@ namespace ProjectTheta.UI
             _departButton.SetInteractable(
                 hasSelection);
 
+            // 35일차: 고른 장소가 없으면 패널이 빠져나간다. 글자는 빠지는 동안 그대로 둔다.
             if (!hasSelection)
             {
-                _infoTime.text = string.Empty;
-                _infoName.text = "장소를 고르세요";
-                _infoSummary.text = "지도의 장소를 누르거나 숫자 키로 고르세요. 클리어할수록 ★이 오르고 목표와 보상이 커집니다.";
-                _infoRows.text = string.Empty;
-                _infoDisruptors.text = "-";
+                SetDetail(LocationDetailKind.None);
 
                 return;
             }
@@ -855,42 +1076,35 @@ namespace ProjectTheta.UI
                 LocationCatalog.Get(
                     _selected.Value);
 
-            _infoTime.text =
-                $"{LocationCatalog.GetTimeLabel(location.TimeOfDay)}   ·   {LocationCatalog.GetObjectiveLabel(location.Objective)}";
+            LocationGuide guide =
+                LocationGuideCatalog.Get(
+                    location.Id);
 
-            _infoTime.color =
-                LocationCatalog.GetTimeColor(
-                    location.TimeOfDay);
-
-            _infoName.text = location.DisplayName;
-            _infoSummary.text = location.Summary;
-
-            int minutes = Mathf.FloorToInt(location.TimeLimitSeconds / 60f);
-            int seconds = Mathf.FloorToInt(location.TimeLimitSeconds) % 60;
-
-            // 30일차: 숙련도(★)만큼 목표 정기가 오른다.
             int stars =
                 MasteryLogic.GetStars(
                     CurrentSave,
                     (int)location.Id);
 
-            int target =
-                MasteryLogic.GetTargetEssence(
-                    location.TargetEssence,
-                    stars);
+            _infoTime.text =
+                $"{LocationCatalog.GetTimeLabel(location.TimeOfDay)}  ·  {LocationCatalog.GetObjectiveLabel(location.Objective)}";
 
-            string targetBonus =
-                stars > 0
-                    ? $"   (★{stars} · 보상 +{Mathf.RoundToInt(MasteryLogic.RewardBonusPerStar * stars * 100f)}%)"
+            _infoTime.color =
+                LocationCatalog.GetTimeColor(
+                    location.TimeOfDay);
+
+            _infoDifficulty.text = $"난이도 {LocationGuideLogic.FormatDifficulty(guide.Difficulty)}";
+            _infoNumber.text = LocationGuideLogic.FormatNumber(_candidates.IndexOf(location.Id));
+            _infoName.text = location.DisplayName;
+            _infoSummary.text = location.Summary;
+            _infoRows.text = LocationGuideLogic.BuildCoreRows(location, stars);
+
+            _infoRecommend.text =
+                _recommended != null &&
+                _recommended.Value == location.Id
+                    ? "◆ 추천 장소  ·  아직 깨지 않은 곳 중 가장 쉬워요"
                     : string.Empty;
 
-            _infoRows.text =
-                $"층 수            {location.FloorCount}개 층\n" +
-                $"제한 시간      {minutes}:{seconds:00}\n" +
-                $"목표 정기      {target}{targetBonus}\n" +
-                $"경쟁자          {(location.HasRivals ? "금태양 · 인기남" : "없음")}";
-
-            _infoDisruptors.text = location.DisruptorPreview;
+            RefreshDetail();
         }
 
         private void RefreshRunStatus()
@@ -898,34 +1112,126 @@ namespace ProjectTheta.UI
             SaveData save = CurrentSave;
             int essence = save == null ? 0 : save.ContractEssence;
 
+            _runStatus.text =
+                $"보유 계약 정기  {essence:N0}\n" +
+                "레벨 · 강화 카드는 장소마다 처음부터 시작합니다.";
+        }
+
+        // 35일차: 패널 · 상세 창 ------------------------------------------
+
+        private void ClosePanel()
+        {
             if (_selected == null)
             {
-                _runStatus.text =
-                    $"보유 계약 정기  {essence}\n" +
-                    "레벨 · 강화 카드는 장소마다 처음부터 시작합니다.";
-
                 return;
             }
 
-            LocationStats record =
-                PlayStatsLogic.Get(
-                    save,
-                    (int)_selected.Value);
+            _selected = null;
 
-            int next =
-                MasteryLogic.GetClearsToNextStar(
-                    record.Clears);
+            GameAudio.Play(
+                GameSfx.UiTick);
 
-            string mastery =
-                next > 0
-                    ? $"숙련 {MasteryLogic.FormatStars(MasteryLogic.GetStars(record.Clears))}  (다음 ★까지 클리어 {next}회)"
-                    : $"숙련 {MasteryLogic.FormatStars(MasteryLogic.MaxStars)}  (최고)";
+            Refresh();
+        }
 
-            _runStatus.text =
-                $"{mastery}\n" +
-                $"내 기록   도전 {record.Attempts} · 클리어 {record.Clears} · 최고 등급 {record.BestRank}\n" +
-                $"최고 정기 {record.BestEssence}   ·   최단 클리어 {PlayStatsLogic.FormatClock(record.BestClearSeconds)}\n" +
-                $"보유 계약 정기  {essence}";
+        private void ToggleDetail(
+            LocationDetailKind kind)
+        {
+            if (_selected == null)
+            {
+                return;
+            }
+
+            GameAudio.Play(
+                GameSfx.UiTick);
+
+            SetDetail(
+                LocationGuideLogic.Toggle(
+                    _detail,
+                    kind));
+        }
+
+        private void SetDetail(
+            LocationDetailKind kind)
+        {
+            _detail = kind;
+
+            RefreshDetail();
+        }
+
+        private void RefreshDetail()
+        {
+            bool open =
+                _detail != LocationDetailKind.None &&
+                _selected != null;
+
+            _detailWindow.gameObject.SetActive(
+                open);
+
+            for (int i = 0; i < _detailButtons.Length; i++)
+            {
+                bool selected = open && (int)_detail == i + 1;
+
+                _detailButtons[i].Background.color =
+                    selected
+                        ? UiTheme.PrimaryButtonNormal
+                        : UiTheme.ButtonNormal;
+            }
+
+            if (!open)
+            {
+                return;
+            }
+
+            LocationDefinition location =
+                LocationCatalog.Get(
+                    _selected.Value);
+
+            _detailTitle.text =
+                $"{LocationGuideLogic.GetDetailTitle(_detail)}  ·  {location.DisplayName}";
+
+            _detailBody.text =
+                LocationGuideLogic.BuildDetail(
+                    _detail,
+                    location,
+                    CurrentSave);
+        }
+
+        /// <summary>패널 · 지도를 부드럽게 옮긴다. 열릴 때 지도는 왼쪽으로 비킨다.</summary>
+        private void AnimatePanel()
+        {
+            float target =
+                _selected != null
+                    ? 1f
+                    : 0f;
+
+            _panelShown =
+                Mathf.MoveTowards(
+                    _panelShown,
+                    target,
+                    Time.unscaledDeltaTime / SlideSeconds);
+
+            float t =
+                Mathf.SmoothStep(
+                    0f,
+                    1f,
+                    _panelShown);
+
+            if (_panel != null)
+            {
+                _panel.anchoredPosition =
+                    new Vector2(
+                        Mathf.Lerp(PanelHiddenX, -PanelMargin, t),
+                        _panel.anchoredPosition.y);
+            }
+
+            if (_mapRect != null)
+            {
+                _mapRect.anchoredPosition =
+                    new Vector2(
+                        Mathf.Lerp(MapLeftCentered, MapLeftWithPanel, t),
+                        _mapRect.anchoredPosition.y);
+            }
         }
     }
 }

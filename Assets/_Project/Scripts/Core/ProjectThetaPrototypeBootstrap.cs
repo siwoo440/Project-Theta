@@ -353,6 +353,18 @@ namespace ProjectTheta.Core
                         floorTransition);
             }
 
+            // 35일차: 장소 규칙 카드. 이 칸에서 처음 도전하는 장소면 시작할 때 한 번 뜬다.
+            //         일시정지 메뉴가 찾아 쓰므로 먼저 만든다.
+            new GameObject("LocationGuide")
+                .AddComponent<LocationGuidePanel>()
+                .Configure(
+                    stage,
+                    LocationGuideLogic.IsFirstVisit(
+                        GameSession.Instance == null
+                            ? null
+                            : GameSession.Instance.Save,
+                        location.Id));
+
             // 31일차: Esc 일시정지 메뉴(계속 · 조작법 · 설정 · 포기).
             new GameObject("PauseMenu")
                 .AddComponent<UI.PauseMenu>()
