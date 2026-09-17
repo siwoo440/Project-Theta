@@ -14,7 +14,7 @@ namespace ProjectTheta.UI
     /// <summary>
     /// 스테이지 일시정지 메뉴다 (31일차). Esc로 열고 닫는다.
     ///
-    ///   계속하기 · 조작법 · 설정 · 포기하기
+    ///   계속하기 · 장소 규칙(35일차) · 조작법 · 설정 · 포기하기
     ///
     /// 카드 선택 중 · 결과 화면 · 보스 엔딩 · 로딩 중에는 열지 않는다(<see cref="PauseMenuLogic.CanOpen"/>).
     /// 포기는 한 번 더 눌러야 되고, 실패로 끝나 계약 정기는 0이다. 결과 화면은 평소처럼 뜬다.
@@ -30,6 +30,7 @@ namespace ProjectTheta.UI
         private UiButton _abandon;
         private SettingsPanel _settings;
         private ControlsPanel _controls;
+        private LocationGuidePanel _guide;
         private bool _pauseHeld;
         private float _abandonConfirm;
 
@@ -42,6 +43,7 @@ namespace ProjectTheta.UI
         {
             _stage = stage;
             _cards = FindFirstObjectByType<RunUpgradeChoicePanel>();
+            _guide = FindFirstObjectByType<LocationGuidePanel>();
 
             Build();
         }
@@ -59,7 +61,7 @@ namespace ProjectTheta.UI
                     _canvas.transform,
                     "PauseOverlay",
                     SortOrder,
-                    new Vector2(560f, 560f),
+                    new Vector2(560f, 640f),
                     "일시정지",
                     Resume);
 
@@ -80,13 +82,14 @@ namespace ProjectTheta.UI
             place.alignment = TextAnchor.MiddleLeft;
 
             UiOverlay.Button(w, "Resume", "계속하기", x, 130f, width, 60f, Resume, true);
-            UiOverlay.Button(w, "Controls", "조작법", x, 206f, width, 60f, OpenControls);
-            UiOverlay.Button(w, "Settings", "설정", x, 282f, width, 60f, OpenSettings);
-            _abandon = UiOverlay.Button(w, "Abandon", "포기하기  (보상 없음)", x, 386f, width, 60f, Abandon);
+            UiOverlay.Button(w, "Guide", "장소 규칙", x, 206f, width, 60f, OpenGuide);
+            UiOverlay.Button(w, "Controls", "조작법", x, 282f, width, 60f, OpenControls);
+            UiOverlay.Button(w, "Settings", "설정", x, 358f, width, 60f, OpenSettings);
+            _abandon = UiOverlay.Button(w, "Abandon", "포기하기  (보상 없음)", x, 462f, width, 60f, Abandon);
 
             _abandon.Background.color = new Color(0.36f, 0.12f, 0.16f, 1f);
 
-            UiOverlay.Label(w, "포기하면 실패로 끝나고 계약 정기를 받지 못합니다.", 36f, 470f, 490f, UiTheme.FontSmall, UiTheme.TextMuted);
+            UiOverlay.Label(w, "포기하면 실패로 끝나고 계약 정기를 받지 못합니다.", 36f, 546f, 490f, UiTheme.FontSmall, UiTheme.TextMuted);
 
             _settings = SettingsPanel.Create(_canvas.transform, SortOrder + 10);
             _controls = ControlsPanel.Create(_canvas.transform, SortOrder + 10);
@@ -212,6 +215,15 @@ namespace ProjectTheta.UI
 
             _controls.Open(
                 $"이번 장소 · {location.DisplayName}\n{location.Summary}\n방해 세력: {location.DisruptorPreview}");
+        }
+
+        /// <summary>35일차: 장소 규칙 카드를 일시정지 메뉴 위에 연다.</summary>
+        private void OpenGuide()
+        {
+            if (_guide != null)
+            {
+                _guide.Open();
+            }
         }
 
         private void OpenSettings()

@@ -14,6 +14,7 @@ namespace ProjectTheta.UI
     /// 씬 파일은 여전히 비어 있고, 이 스크립트가 런타임에 화면을 조립한다.
     ///
     /// 34일차: 시작 버튼을 이어하기(저장 칸 불러오기) · 처음부터(새 게임)로 나눴다.
+    /// 35일차: 처음부터로 시작하면 소개 화면(<see cref="IntroSequence"/>)을 본 뒤 허브로 간다. [소개]로 다시 본다.
     /// </summary>
     public sealed class MainMenuScreen : MonoBehaviour
     {
@@ -32,6 +33,9 @@ namespace ProjectTheta.UI
         // 34일차: 저장 칸
         private SaveSlotPanel _slots;
         private UiButton _continue;
+
+        // 35일차: 소개 화면
+        private IntroSequence _intro;
 
         private void Start()
         {
@@ -86,6 +90,8 @@ namespace ProjectTheta.UI
         {
             _slots = SaveSlotPanel.Create(canvas, 60);
             _slots.SlotChosen += HandleSlotChosen;
+
+            _intro = IntroSequence.Create(canvas, 80);
 
             _continue =
                 UiFactory.CreateButton(
@@ -151,10 +157,24 @@ namespace ProjectTheta.UI
                 return;
             }
 
+            // 35일차: 새 게임은 소개를 보고 들어간다. 이어하기는 바로 허브로.
+            if (mode == SaveSlotMode.NewGame)
+            {
+                Refresh();
+                _intro.Play(() => GameSession.Instance?.GoTo(SceneDestination.Hub));
+
+                return;
+            }
+
             session.GoTo(SceneDestination.Hub);
         }
 
-        /// <summary>시작 버튼 아래 줄이다. 설정 · 업적 · 종료.</summary>
+        /// <summary>설정 · 업적 · 소개 · 종료 버튼의 가로 위치다 (35일차에 넷이 되었다).</summary>
+        private static readonly float[] MenuRowX = { -168f, -56f, 56f, 168f };
+
+        private const float MenuButtonWidth = 104f;
+
+        /// <summary>시작 버튼 아래 줄이다. 설정 · 업적 · 소개 · 종료.</summary>
         private void BuildMenuRow(
             Transform canvas)
         {
@@ -167,7 +187,7 @@ namespace ProjectTheta.UI
             UiButton settings =
                 UiFactory.CreateButton(canvas, "SettingsButton", "설  정", UiTheme.FontBody);
 
-            UiFactory.Place(settings.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-115f, MenuRowY), new Vector2(105f, 44f));
+            UiFactory.Place(settings.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(MenuRowX[0], MenuRowY), new Vector2(MenuButtonWidth, 44f));
 
             settings.Button.onClick.AddListener(
                 () =>
@@ -179,7 +199,7 @@ namespace ProjectTheta.UI
             UiButton achievements =
                 UiFactory.CreateButton(canvas, "AchievementsButton", "업  적", UiTheme.FontBody);
 
-            UiFactory.Place(achievements.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, MenuRowY), new Vector2(105f, 44f));
+            UiFactory.Place(achievements.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(MenuRowX[1], MenuRowY), new Vector2(MenuButtonWidth, 44f));
 
             achievements.Button.onClick.AddListener(
                 () =>
@@ -191,10 +211,23 @@ namespace ProjectTheta.UI
                             : GameSession.Instance.Save);
                 });
 
+            // 35일차: 소개 다시 보기
+            UiButton intro =
+                UiFactory.CreateButton(canvas, "IntroButton", "소  개", UiTheme.FontBody);
+
+            UiFactory.Place(intro.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(MenuRowX[2], MenuRowY), new Vector2(MenuButtonWidth, 44f));
+
+            intro.Button.onClick.AddListener(
+                () =>
+                {
+                    GameAudio.Play(GameSfx.UiTick);
+                    _intro.Play(null);
+                });
+
             _quit =
                 UiFactory.CreateButton(canvas, "QuitButton", "종  료", UiTheme.FontBody);
 
-            UiFactory.Place(_quit.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(115f, MenuRowY), new Vector2(105f, 44f));
+            UiFactory.Place(_quit.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(MenuRowX[3], MenuRowY), new Vector2(MenuButtonWidth, 44f));
 
             _quit.Button.onClick.AddListener(Quit);
         }
@@ -407,7 +440,7 @@ namespace ProjectTheta.UI
                 UiFactory.CreateText(
                     canvas.transform,
                     "Footer",
-                    "34일차 · 저장 칸 3개 · Esc 일시정지 · 설정",
+                    "35일차 · 저장 칸 3개 · 지도 장소 안내 · Esc 일시정지",
                     UiTheme.FontTiny,
                     UiTheme.TextDisabled,
                     TextAnchor.LowerCenter);
