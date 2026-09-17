@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 36일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 37일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -435,7 +435,7 @@
 | 274 | 메인 메뉴 | `이어하기`(보라) · `처음부터` 두 버튼, 아래 줄 설정 · 업적 · 종료. 기록 칸 "최근 1번 칸 · 플레이 N회 …" | `MainMenuScreen.BuildStartButtons` |
 | 275 | `이어하기` | "이어하기 · 불러올 칸" 창. 1번 칸에 저장 시각 · 플레이 시간 · 계약 정기 · 클리어 장소 · 업적 수, "최근" 표시. 빈 칸 버튼은 "비어 있음"(누를 수 없음) | `SaveSlotPanel`, `SaveSlotLogic.Describe` |
 | 276 | 1번 칸 `불러오기` | 로딩 → 허브. 계약 정기 · 강화 · 업적이 예전과 같음 | `GameSession.LoadSlot` |
-| 277 | 허브 아래 줄 `저  장` | 오른쪽에 금색 "1번 칸에 저장했습니다 · 날짜 시각", 4초 뒤 사라짐 | `HubScreen.SaveNow` |
+| 277 | 허브 아래 줄 `저  장` → (37일차) 저장 칸 창에서 지금 칸 `여기에 저장` | 아래 띠에 금색 "1번 칸에 저장했습니다 · 날짜 시각", 4초 뒤 사라짐 | `HubScreen.HandleSaveSlotChosen` |
 | 278 | 타이틀로 → `처음부터` → 2번 칸(빈 칸) `새로 시작` | 허브. 계약 정기 0 · 강화 0 · 튜토리얼 안내가 다시 나옴. 설정 · 키는 그대로 | `GameSession.NewGame`, `SaveSlotLogic.CreateNewGame` |
 | 279 | 2번 칸으로 장소 하나 끝낸 뒤 타이틀로 → `이어하기` | 2번 칸이 "최근", 1번 칸 기록은 그대로 | `SaveSlotLogic.FindLatest` |
 | 280 | `처음부터` → 기록이 있는 1번 칸 `덮어쓰기` | 칸이 붉어지고 버튼 "한 번 더 누르면 덮어씀". 3초 안에 다시 누르면 새 게임, 기다리면 원래대로 | `SaveSlotLogic.CanStartNewGame` |
@@ -491,7 +491,7 @@
 | 316 | 방 물건에 마우스 올리기 | 노트 · 벽시계 · 책장 · 창문 · 일기장에 보라 빛과 이름표("계약 노트 · 강화" 등)가 서서히 뜸 | `HubHotspot` |
 | 317 | 물건 누르기 | 노트 → 강화 창, 벽시계 → 난이도, 책장 → 통계, 일기장 → 일기장, **창문 → 지도로 출격** | `HubScreen.HandleRoomObject`, `HubRoomLogic.GetPanel` |
 | 318 | 직전 결과가 있을 때 / 없을 때 | 있으면 왼쪽 아래 작은 반투명 카드(장소 · 클리어/실패 · 점수 · 계약 정기, 심야면 ☾). 없으면 카드 없음 | `HubScreen.RefreshResult` |
-| 319 | 아래 `저 장` · `타이틀로` · `출 격 ▶` | 34일차와 같이 동작. 저장 문구는 아래 띠 가운데 | `HubScreen.SaveNow` · `Sortie` |
+| 319 | 아래 `출 격 ▶` (`저 장` · `타이틀로`는 355~358번) | 지도로 감. 저장 문구는 아래 띠 가운데 | `HubScreen.Sortie` |
 | 320 | 새 게임으로 연수원 처음 출발 | 로딩 · 시작 카드 뒤 화면 아래 **대사 창**(「첫 출근」 · 이름표 · 한 글자씩). 게임 멈춤. 클릭 · Enter로 넘김(Space는 안 넘어감). 끝나면 **이어서 규칙 카드** | `StageStoryIntro`, `DialogueOverlay`, `LocationGuidePanel` |
 | 321 | 대사 중 Esc · `건너뛰기` | 대사가 닫히고 규칙 카드로 넘어감. 같은 장소 두 번째 도전에는 대사 없음 | `DialogueOverlay.SkipAll`, `StoryLogic.GetEnterScene` |
 | 322 | 연수원 클리어 → 지도로 | 지도 위에 대사 「첫 계약」. 대사 중 Enter · 숫자 키로 지도가 반응하지 않음 | `StoryPlayback.PlayPending`, `MapScreen.Update` |
@@ -512,6 +512,32 @@
 | 337 | 서큐버스 누르기 | 머리 오른쪽 위(침대 쪽처럼 오른쪽 끝이면 왼쪽 위) **말풍선**에 대사가 한 글자씩. 꼬리가 머리 쪽을 가리킴. 몇 초 뒤 사라지고, 다시 누르면 다른 대사. 창이 열려 있거나 이야기 중이면 반응 없음 | `HubSuccubus.Talk`, `HubSuccubusLogic.ShouldFlip` |
 | 338 | 진행에 따른 대사 | 새 게임: "연수원부터 가 보자" 등, 정기가 모이면 "노트에서 강화해 볼까?", 엔딩 뒤: 심야 모드 권유 | `HubSuccubusLogic.GetLines` |
 | 339 | `Resources/Characters/Succubus/`에 `Room_Stand.png` · `Room_Sit.png`(또는 `Idle.png`) 넣기 | 실루엣 대신 그림이 보이고, 발끝이 자리 위치에 맞음 | `HubSuccubus.BuildArt` |
+
+## 6-19. 배경음악 · 효과음 (37일차 추가)
+
+**가장 중요한 줄은 340번, 343번, 345번이다.** 화면마다 음악이 바뀌는지, 추격 · 위기 때 긴장 겹이 붙는지, 설정 음악 음량이 먹는지다. 음원은 모두 `Tools/generate_temp_audio.py`로 만든 **임시 음원**이다.
+
+| # | 할 것 | 보여야 · 들려야 하는 것 | 어긋나면 의심할 곳 |
+| --- | --- | --- | --- |
+| 340 | 메인 메뉴 → 허브 → 지도 → 장소 | Title → Room → City → 장소 곡으로 **부드럽게 이어짐**(1.2초 크로스페이드). 같은 곡 화면끼리는 끊기지 않음 | `MusicPlayer.UpdateTrack`, `MusicLogic.GetTrack` |
+| 341 | 장소 8곳 | 장소마다 다른 곡(연수원 · 해변가 · 지하철 · 헬스장 · 야시장 · 쇼핑몰 · 오피스), 루프탑 클럽은 빠른 Boss 곡 | `MusicLogic.GetLocationTrack` |
+| 342 | 보스 함락 | 엔딩 장면 동안 Ending 곡, 결과 뒤 지도에서 City 곡 | `EndingSequence.IsPlaying` |
+| 343 | 정기 목표 달성(추격) · 남은 15초 · 체력 30% 이하 | 추격이면 16분 하이햇 · 킥 **긴장 겹**이 60%로, 위기면 100%로 커지고 곡이 살짝 빨라짐. 박자가 곡과 맞음. 위기가 끝나면 서서히 빠짐 | `MusicLogic.GetIntensity`, `MusicPlayer.KeepTensionInStep` |
+| 344 | 심야 모드로 장소 | 곡이 살짝 낮고 느림 | `MusicLogic.GetPitch` |
+| 345 | 설정 → 음악 음량 0% / 100% | 음악이 꺼짐 / 들림(효과음은 그대로). 음악 줄 아래 문구 "(임시 음원 · 정식 음악으로 교체 예정)" | `GameAudio.MusicVolume`, `SettingsPanel` |
+| 346 | 대사 창이 뜰 때 | 음악이 60%로 줄고, 글자가 나올 때 작은 "톡" 소리(말하는 사람마다 높이가 다름, 두 글자마다). 대사가 끝나면 음악이 돌아옴 | `DialogueOverlay.RefreshLine`, `MusicLogic.ShouldBlip` |
+| 347 | 허브 서큐버스 누르기 | "뽁" 말풍선 소리 + 글자 소리 | `HubSuccubus.Talk` |
+| 348 | 허브 창 · 지도 상세 창 열고 닫기 | 열 때 올라가는 소리, 닫을 때 내려가는 소리 | `GameSfx.WindowOpen` · `WindowClose` |
+| 349 | 허브 `저 장` · 지도 `☾ 심야` 켜기 | 저장 두 음 · 낮은 종소리 | `GameSfx.Save` · `NightToggle` |
+| 350 | 정기 목표 달성 | 탈출 띠가 뜰 때 밝은 3화음, 추격 시작 알림과 함께 두 음 경보 | `ExitBanner`, `StageVfxDirector.HandleChaseStarted` |
+| 351 | 탈출 · 시간 종료 클리어 / 실패 / 포기 | 결과 화면에 팡파르 / 내려가는 음 / 소리 없음 | `StageResultPanel.TakeSnapshot` |
+| 352 | 체력이 30% 아래로 · 회수 지점 잠김 | 붉은 테두리가 켜질 때 낮은 경고음(3초에 한 번까지) | `StageVfxDirector.Update` |
+| 353 | 업적 달성 알림 | 반짝이는 상승음 | `AchievementToast` |
+| 354 | `python Tools/generate_temp_audio.py` 다시 실행 | 파일이 다시 만들어지고 `.meta` GUID는 그대로(Unity 참조 유지) | `generate_temp_assets.write_meta` |
+| 355 | 허브 `저 장` | 방 위에 "저장 · 저장할 칸" 창(열리는 소리). 지금 칸에 초록 "지금 칸", 버튼 "여기에 저장". 빈 칸 "이 칸에 저장", 기록 있는 다른 칸 "덮어쓰기" | `SaveSlotPanel`(Save 모드), `SaveSlotLogic.GetSaveButton` |
+| 356 | 다른 칸 `덮어쓰기` 한 번 → 3초 안에 한 번 더 | 첫 번째: 칸이 붉어지고 "한 번 더 누르면 덮어씀". 두 번째: 저장음, "N번 칸에 저장했습니다 · 이제 N번 칸으로 플레이". 위 띠 칸 이름이 바뀌고, 이후 장소를 마치면 그 칸에 자동 저장 | `GameSession.SaveToSlot`, `SaveSlotLogic.GetSavedMessage` |
+| 357 | 빈 칸에 저장 → 타이틀 → `이어하기` | 저장 칸 목록에 원래 칸과 새 칸이 모두 있고, 새 칸이 "최근" | `SaveSlotLogic.FindLatest` |
+| 358 | 허브 `타이틀로` 한 번 / 3초 기다리기 / 두 번 | 한 번: 버튼이 붉게 "한 번 더 누르면 나감", 경고음, 아래 띠에 붉은 "타이틀로 나갈까요? 마지막 저장 … · 한 번 더 누르면 나갑니다". 3초가 지나면 원래대로. 3초 안에 두 번째: 메인 메뉴로 감 | `HubScreen.BackToTitle`, `HubRoomLogic.GetLeaveWarning` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

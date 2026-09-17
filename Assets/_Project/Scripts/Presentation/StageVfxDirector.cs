@@ -188,7 +188,7 @@ namespace ProjectTheta.Presentation
                 session.Save == null ||
                 !session.Save.DangerEffectDisabled;
 
-            GameVfx.SetDanger(
+            float danger =
                 DangerLogic.Resolve(
                     new DangerInputs
                     {
@@ -199,8 +199,29 @@ namespace ProjectTheta.Presentation
                         Running = _stage != null && _stage.IsRunning,
                         RemainingSeconds = _stage == null ? 999f : _stage.RemainingTime
                     },
-                    enabled));
+                    enabled);
+
+            GameVfx.SetDanger(danger);
+
+            // 37일차: 위기 효과가 새로 켜질 때 낮은 경고음(3초에 한 번까지).
+            _warningCooldown -= Time.unscaledDeltaTime;
+
+            if (danger > 0f &&
+                _lastDanger <= 0f &&
+                _warningCooldown <= 0f)
+            {
+                _warningCooldown = 3f;
+
+                GameAudio.Play(
+                    GameSfx.Warning,
+                    0.6f);
+            }
+
+            _lastDanger = danger;
         }
+
+        private float _lastDanger;
+        private float _warningCooldown;
 
         private float GetRampageIntensity()
         {
@@ -814,7 +835,7 @@ namespace ProjectTheta.Presentation
                 Tuning.VfxShakeSeconds);
 
             GameAudio.Play(
-                GameSfx.UiStamp,
+                GameSfx.ChaseStart,
                 0.8f);
         }
 

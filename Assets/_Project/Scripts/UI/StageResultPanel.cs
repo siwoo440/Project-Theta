@@ -210,6 +210,16 @@ namespace ProjectTheta.UI
 
             SubmitResultToSession();
 
+            // 37일차: 탈출 성공 · 실패 소리(포기는 조용히)
+            if (_stage.State == StageState.Cleared)
+            {
+                GameAudio.Play(GameSfx.Escape, 0.8f);
+            }
+            else if (!_stage.IsAbandoned)
+            {
+                GameAudio.Play(GameSfx.Fail, 0.8f);
+            }
+
             Build();
             FillTexts();
         }

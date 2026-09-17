@@ -35,7 +35,43 @@ namespace ProjectTheta.Presentation
         DuelWin,
 
         /// <summary>층 도착. 계단 발소리.</summary>
-        FloorArrive
+        FloorArrive,
+
+        // --- 37일차 (Tools/generate_temp_audio.py) ---
+
+        /// <summary>목표 달성 뒤 추격 시작. 두 음 경보.</summary>
+        ChaseStart,
+
+        /// <summary>탈출 가능. 밝은 3화음.</summary>
+        ExitOpen,
+
+        /// <summary>탈출 성공. 짧은 팡파르.</summary>
+        Escape,
+
+        /// <summary>실패. 내려가는 음.</summary>
+        Fail,
+
+        /// <summary>대사 글자. 아주 짧은 "톡". 말하는 사람마다 높이가 다르다.</summary>
+        DialogueBlip,
+
+        /// <summary>허브 서큐버스 말풍선.</summary>
+        Bubble,
+
+        /// <summary>창 열기 · 닫기.</summary>
+        WindowOpen,
+        WindowClose,
+
+        /// <summary>저장.</summary>
+        Save,
+
+        /// <summary>심야 모드 켜기. 낮은 종.</summary>
+        NightToggle,
+
+        /// <summary>위기 화면 효과가 켜질 때의 낮은 경고음.</summary>
+        Warning,
+
+        /// <summary>업적 달성. 반짝이는 상승음.</summary>
+        Achievement
     }
 
     /// <summary>
@@ -59,6 +95,9 @@ namespace ProjectTheta.Presentation
 
         private static AudioSource _source;
 
+        // 37일차: 높이를 바꿔 내는 소리(대사 글자)는 따로 둔다. 공용 소스 높이를 바꾸면 다른 소리까지 바뀐다.
+        private static AudioSource _pitchedSource;
+
         /// <summary>효과음 크기 배율이다 (31일차, 전체 × 효과음 설정).</summary>
         public static float SfxVolume { get; set; } = 1f;
 
@@ -74,6 +113,7 @@ namespace ProjectTheta.Presentation
         private static void ResetOnPlayModeEnter()
         {
             _source = null;
+            _pitchedSource = null;
             SfxVolume = 1f;
             MusicVolume = 1f;
 
@@ -105,6 +145,50 @@ namespace ProjectTheta.Presentation
             }
 
             source.PlayOneShot(
+                clip,
+                Mathf.Clamp(
+                    volumeScale,
+                    0f,
+                    1f) *
+                Mathf.Clamp01(SfxVolume));
+        }
+
+        /// <summary>높이를 바꿔 낸다(37일차, 대사 글자 소리).</summary>
+        public static void PlayPitched(
+            GameSfx sfx,
+            float volumeScale,
+            float pitch)
+        {
+            if (ResolveSource() == null)
+            {
+                return;
+            }
+
+            if (_pitchedSource == null)
+            {
+                _pitchedSource =
+                    _source.gameObject.AddComponent<AudioSource>();
+
+                _pitchedSource.playOnAwake = false;
+                _pitchedSource.spatialBlend = 0f;
+            }
+
+            AudioClip clip =
+                ResolveClip(
+                    sfx);
+
+            if (clip == null)
+            {
+                return;
+            }
+
+            _pitchedSource.pitch =
+                Mathf.Clamp(
+                    pitch,
+                    0.5f,
+                    2f);
+
+            _pitchedSource.PlayOneShot(
                 clip,
                 Mathf.Clamp(
                     volumeScale,
@@ -256,6 +340,47 @@ namespace ProjectTheta.Presentation
                         180f,
                         0.10f,
                         0.26f,
+                        4.0f);
+
+                // 37일차 효과음: 파일이 빠졌을 때의 대체음이다.
+                case GameSfx.ChaseStart:
+                case GameSfx.Warning:
+                    return RuntimeToneFactory.CreateTone(
+                        sfx.ToString(),
+                        240f,
+                        0.30f,
+                        0.30f,
+                        2.0f);
+
+                case GameSfx.ExitOpen:
+                case GameSfx.Escape:
+                case GameSfx.Achievement:
+                case GameSfx.Save:
+                    return RuntimeToneFactory.CreateTone(
+                        sfx.ToString(),
+                        988f,
+                        0.30f,
+                        0.24f,
+                        1.8f);
+
+                case GameSfx.Fail:
+                case GameSfx.NightToggle:
+                    return RuntimeToneFactory.CreateTone(
+                        sfx.ToString(),
+                        220f,
+                        0.40f,
+                        0.26f,
+                        1.6f);
+
+                case GameSfx.DialogueBlip:
+                case GameSfx.Bubble:
+                case GameSfx.WindowOpen:
+                case GameSfx.WindowClose:
+                    return RuntimeToneFactory.CreateTone(
+                        sfx.ToString(),
+                        620f,
+                        0.04f,
+                        0.16f,
                         4.0f);
 
                 case GameSfx.UiTick:
