@@ -86,6 +86,18 @@ namespace ProjectTheta.Save
         /// </summary>
         public bool ScreenShakeDisabled;
 
+        // --- 34일차 ---
+        /// <summary>
+        /// 위기 화면 효과(가장자리 붉은 맥동)를 끈 상태인지다. 흔들림과 같은 이유로 "꺼짐"으로 저장한다.
+        /// </summary>
+        public bool DangerEffectDisabled;
+
+        /// <summary>마지막으로 저장한 때("yyyy-MM-dd HH:mm")다. 저장 칸 목록에 보여 준다.</summary>
+        public string SavedAt = string.Empty;
+
+        /// <summary>마지막으로 저장한 때(Ticks)다. 가장 최근 칸을 고를 때 쓴다.</summary>
+        public long SavedTicks;
+
         // --- 29일차 ---
         /// <summary>지금까지의 누적 통계다. 지도의 [통계] 창이 보여 준다.</summary>
         public PlayStats Stats = new PlayStats();
@@ -130,6 +142,9 @@ namespace ProjectTheta.Save
                     ContractEssence = ContractEssence,
                     TutorialCompleted = TutorialCompleted,
                     ScreenShakeDisabled = ScreenShakeDisabled,
+                    DangerEffectDisabled = DangerEffectDisabled,
+                    SavedAt = SavedAt,
+                    SavedTicks = SavedTicks,
                     UpgradeLevels = new int[UpgradeLevels?.Length ?? 4],
                     Stats = Stats == null ? new PlayStats() : Stats.Clone(),
                     LocationRecords = new LocationStats[LocationRecords?.Length ?? 0],

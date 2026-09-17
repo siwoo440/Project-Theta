@@ -97,6 +97,16 @@ namespace ProjectTheta.Stage
         /// <summary>플레이어 정신력이 무너졌다. (플레이어 위치)</summary>
         public static event Action<Vector2> MindCollapsed;
 
+        // --- 34일차 ---
+
+        /// <summary>목표를 채워 추격이 시작됐다.</summary>
+        public static event Action ChaseStarted;
+
+        public static void RaiseChaseStarted()
+        {
+            ChaseStarted?.Invoke();
+        }
+
         public static void RaiseHypnosisSucceeded(
             Vector2 position,
             bool wasReclaim)
@@ -298,6 +308,7 @@ namespace ProjectTheta.Stage
             TempoChanged = null;
             BossShieldBroken = null;
             BossDefeated = null;
+            ChaseStarted = null;
             MindCollapsed = null;
         }
     }

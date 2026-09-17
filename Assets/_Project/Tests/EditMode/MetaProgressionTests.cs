@@ -47,11 +47,12 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
-        public void Failure_Still_Pays_Half_Of_What_Was_Recovered()
+        public void Failure_Still_Pays_Part_Of_What_Was_Recovered()
         {
             // 기획서 24장: 확정 회수분 일부는 보존해 반복 실패 피로도를 줄인다.
+            // 34일차: 실패하면 절반만 받는다. 80 × 0.5 × 0.5 = 20
             Assert.AreEqual(
-                40,
+                20,
                 ContractEssenceLogic.Compute(
                     80,
                     140,
@@ -63,8 +64,9 @@ namespace ProjectTheta.Tests.EditMode
         public void Failure_Gets_No_Rank_Bonus_Or_Overflow()
         {
             // 실패했으면 랭크 라벨이 있어도 보너스를 주지 않는다.
+            // 34일차: 목표(140)를 넘긴 정기도 인정하지 않는다. 140 × 0.5 × 0.5 = 35
             Assert.AreEqual(
-                100,
+                35,
                 ContractEssenceLogic.Compute(
                     200,
                     140,

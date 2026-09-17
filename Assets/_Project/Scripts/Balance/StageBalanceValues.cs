@@ -108,6 +108,12 @@ namespace ProjectTheta.Balance
         // 방해 세력 층당 허용 인원이 1명 늘어나는 간격(초)이다. 최대 4명. 0이면 처음부터 4명.
         public float DisruptorRampSeconds = 20f;
 
+        // --- 목표 뒤 추격 (34일차) ---
+        // 목표를 채운 뒤(탈출 가능) 층당 적 최대 인원이다. 4~8.
+        public int ChaseMaxPerFloor = 6;
+        // 추격 중 층당 인원이 1명 늘어나는 간격(초)이다. 0이면 곧바로 최대.
+        public float ChaseRampSeconds = 10f;
+
         // --- 쇼핑몰 · 오피스 (25일차) ---
         // 쇼핑몰 폐점 방송 뒤 남은 시간이 줄어드는 배율이다.
         public float ClosingTimeScale = 1.3f;
@@ -191,6 +197,8 @@ namespace ProjectTheta.Balance
                 HeartRateImpulseScale = HeartRateImpulseScale,
                 SurvivalTrainCount = SurvivalTrainCount,
                 DisruptorRampSeconds = DisruptorRampSeconds,
+                ChaseMaxPerFloor = ChaseMaxPerFloor,
+                ChaseRampSeconds = ChaseRampSeconds,
                 ClosingTimeScale = ClosingTimeScale,
                 DropHypnosisScale = DropHypnosisScale,
                 BossAdvantageRatio = BossAdvantageRatio,

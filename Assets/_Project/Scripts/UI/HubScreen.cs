@@ -59,6 +59,10 @@ namespace ProjectTheta.UI
         private Text _difficultyHintText;
         private UiButton _shakeButton;
 
+        // 34일차: 저장 버튼 · 결과 문구
+        private Text _saveMessage;
+        private float _saveMessageRemaining;
+
         private bool _resultApplied;
 
         private StageResultSummary _lastResult =
@@ -1051,6 +1055,87 @@ namespace ProjectTheta.UI
                     GameSession.Instance?.GoTo(
                         SceneDestination.MainMenu);
                 });
+
+            // 34일차: 지금 칸에 바로 저장한다(장소를 마칠 때도 자동 저장된다).
+            UiButton save =
+                UiFactory.CreateButton(
+                    footer,
+                    "SaveNow",
+                    "저  장",
+                    UiTheme.FontBody);
+
+            UiFactory.Place(
+                save.Background.rectTransform,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(-400f, 0f),
+                new Vector2(200f, 54f));
+
+            save.Button.onClick.AddListener(
+                SaveNow);
+
+            _saveMessage =
+                UiFactory.CreateText(
+                    footer,
+                    "SaveMessage",
+                    string.Empty,
+                    UiTheme.FontBody,
+                    UiTheme.Gold,
+                    TextAnchor.MiddleLeft);
+
+            UiFactory.Place(
+                _saveMessage.rectTransform,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 0.5f),
+                new Vector2(300f, 0f),
+                new Vector2(560f, 40f));
+        }
+
+        private void SaveNow()
+        {
+            GameSession session =
+                GameSession.Instance;
+
+            if (session == null)
+            {
+                return;
+            }
+
+            bool saved =
+                session.SaveNow();
+
+            GameAudio.Play(
+                saved
+                    ? GameSfx.UiStamp
+                    : GameSfx.UiTick);
+
+            _saveMessage.color =
+                saved
+                    ? UiTheme.Gold
+                    : UiTheme.Danger;
+
+            _saveMessage.text =
+                saved
+                    ? $"{SaveSlotLogic.GetSlotLabel(session.ActiveSlot)}에 저장했습니다  ·  {session.Save.SavedAt}"
+                    : "저장하지 못했습니다";
+
+            _saveMessageRemaining = 4f;
+        }
+
+        private void LateUpdate()
+        {
+            if (_saveMessageRemaining <= 0f ||
+                _saveMessage == null)
+            {
+                return;
+            }
+
+            _saveMessageRemaining -= Time.unscaledDeltaTime;
+
+            if (_saveMessageRemaining <= 0f)
+            {
+                _saveMessage.text = string.Empty;
+            }
         }
 
         // 표시 갱신 ------------------------------------------------------

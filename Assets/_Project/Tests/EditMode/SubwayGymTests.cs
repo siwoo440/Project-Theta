@@ -32,7 +32,8 @@ namespace ProjectTheta.Tests.EditMode
         {
             Assert.AreEqual(2, PopulationLogic.GetFreeSlots(3, 1));
             Assert.AreEqual(0, PopulationLogic.GetFreeSlots(2, 5));
-            Assert.AreEqual(4, PopulationLogic.GetFreeSlots(10, 0));
+            // 34일차: 추격 중에는 허용 인원이 4를 넘을 수 있어 막는 값이 HardMaxPerFloor(8)다.
+            Assert.AreEqual(PopulationLogic.HardMaxPerFloor, PopulationLogic.GetFreeSlots(10, 0));
             Assert.AreEqual(0, PopulationLogic.GetFreeSlots(-1, 0));
         }
 
