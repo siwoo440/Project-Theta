@@ -156,7 +156,8 @@ namespace ProjectTheta.UI
             top += RowGap;
             _music = VolumeRow(w, "음악", top, out _musicValue);
 
-            UiOverlay.Label(w, "(배경음악은 준비 중)", ControlX, top + 30f, 400f, UiTheme.FontTiny, UiTheme.TextDisabled);
+            // 37일차: 배경음악이 생겨 "준비 중" 문구를 뺐다. 임시 음원이다.
+            UiOverlay.Label(w, "(임시 음원 · 정식 음악으로 교체 예정)", ControlX, top + 30f, 400f, UiTheme.FontTiny, UiTheme.TextDisabled);
             top += RowGap + 12f;
 
             UiOverlay.Label(w, "화면", LabelX, top, 220f, UiTheme.FontSubheading, UiTheme.TextPrimary, true);

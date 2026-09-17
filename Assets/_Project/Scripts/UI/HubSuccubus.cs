@@ -43,6 +43,7 @@ namespace ProjectTheta.UI
         private float _elapsed;
         private string _line = string.Empty;
         private float _lineElapsed;
+        private int _lastVisible;
         private float _bubbleRemaining;
 
         /// <summary>지금 서 있는 자리 이름이다(확인용).</summary>
@@ -217,10 +218,11 @@ namespace ProjectTheta.UI
             _bubbleText.text = string.Empty;
 
             _lineElapsed = 0f;
+            _lastVisible = 0;
             _bubbleRemaining = HubSuccubusLogic.GetBubbleSeconds(_line) + StoryLogic.GetLineSeconds(_line.Length);
             _bubble.gameObject.SetActive(true);
 
-            GameAudio.Play(GameSfx.UiTick, 0.7f);
+            GameAudio.Play(GameSfx.Bubble, 0.8f);
         }
 
         private void Update()
@@ -241,7 +243,16 @@ namespace ProjectTheta.UI
             }
 
             _lineElapsed += delta;
-            _bubbleText.text = _line.Substring(0, StoryLogic.GetVisibleCharacters(_lineElapsed, _line.Length));
+
+            int visible = StoryLogic.GetVisibleCharacters(_lineElapsed, _line.Length);
+
+            if (MusicLogic.ShouldBlip(_lastVisible, visible, _line))
+            {
+                GameAudio.PlayPitched(GameSfx.DialogueBlip, 0.25f, MusicLogic.GetBlipPitch(StoryCatalog.Me));
+            }
+
+            _lastVisible = visible;
+            _bubbleText.text = _line.Substring(0, visible);
 
             // 시간이 지나면 말풍선을 닫는다.
             _bubbleRemaining -= delta;

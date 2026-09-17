@@ -1185,8 +1185,11 @@ namespace ProjectTheta.UI
 
             _nightMode = !_nightMode;
 
+            // 37일차: 켤 때는 낮은 종, 끌 때는 짧은 소리
             GameAudio.Play(
-                GameSfx.UiTick);
+                _nightMode
+                    ? GameSfx.NightToggle
+                    : GameSfx.UiTick);
 
             Refresh();
         }
@@ -1214,13 +1217,17 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            GameAudio.Play(
-                GameSfx.UiTick);
-
-            SetDetail(
+            LocationDetailKind next =
                 LocationGuideLogic.Toggle(
                     _detail,
-                    kind));
+                    kind);
+
+            GameAudio.Play(
+                next == LocationDetailKind.None
+                    ? GameSfx.WindowClose
+                    : GameSfx.WindowOpen);
+
+            SetDetail(next);
         }
 
         private void SetDetail(

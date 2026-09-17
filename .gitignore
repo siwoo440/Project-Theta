@@ -33,3 +33,6 @@ Desktop.ini
 
 # Unity crash reports
 sysinfo.txt
+
+# 37일차: 임시 음원 생성기(Tools)가 만드는 파이썬 캐시
+__pycache__/
