@@ -183,6 +183,8 @@ namespace ProjectTheta.Core
         /// </summary>
         private void LoadPreview()
         {
+            // 38일차: 회사 · 제품 이름이 바뀌어 저장 폴더가 달라졌으면 예전 폴더에서 먼저 가져온다.
+            SaveSystem.CopyOldFolderIfNeeded();
             SaveSystem.MigrateLegacyIfNeeded();
 
             SaveSlotSummary[] summaries =

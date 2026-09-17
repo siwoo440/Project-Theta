@@ -76,7 +76,7 @@ python Tools/generate_temp_audio.py sfx    # 효과음만
 
 ## B. 배경음악 재생 (`Presentation/MusicLogic`, `Presentation/MusicPlayer`)
 
-- `MusicPlayer`는 첫 씬 뒤 하나만 만들어져 씬을 넘어 산다. 소스 A · B(크로스페이드)와 긴장 소스 3개를 쓴다.
+- `MusicPlayer`는 첫 씬 뒤 하나만 만들어져 씬을 넘어 산다. 소스 A · B(크로스페이드)와 긴장 소스, 모두 3개를 쓴다.
 - 곡 고르기: 씬 이름 + 지금 장소 + 엔딩 재생 중인지 → `MusicLogic.GetTrack`. 같은 곡이 이어지는 화면끼리는 끊기지 않는다.
 
 | 긴장 단계 | 조건 | 긴장 겹 음량 |

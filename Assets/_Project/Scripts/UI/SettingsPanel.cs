@@ -196,6 +196,12 @@ namespace ProjectTheta.UI
             UiOverlay.Label(w, "위기 화면 효과", LabelX, top, 240f, UiTheme.FontSubheading, UiTheme.TextPrimary, true);
             _dangerOn = UiOverlay.Button(w, "DangerOn", "켜짐", ControlX, top, 180f, 40f, () => SetDanger(true));
             _dangerOff = UiOverlay.Button(w, "DangerOff", "꺼짐", ControlX + 190f, top, 180f, 40f, () => SetDanger(false));
+            top += RowGap;
+
+            // 38일차: 실행 파일에서 저장 파일 위치를 찾기 쉽게 한다.
+            UiOverlay.Label(w, "저장 폴더", LabelX, top, 220f, UiTheme.FontSubheading, UiTheme.TextPrimary, true);
+            UiOverlay.Button(w, "OpenSaveFolder", "폴더 열기", ControlX, top, 180f, 40f, OpenSaveFolder);
+            UiOverlay.Label(w, SettingsLogic.GetFolderLabel(SaveSystem.Folder), ControlX + 190f, top + 2f, 480f, UiTheme.FontTiny, UiTheme.TextDisabled);
 
             Text note =
                 UiFactory.CreateText(
@@ -207,6 +213,12 @@ namespace ProjectTheta.UI
                     TextAnchor.MiddleLeft);
 
             UiFactory.Place(note.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(LabelX, 22f), new Vector2(900f, 28f));
+        }
+
+        private static void OpenSaveFolder()
+        {
+            GameAudio.Play(GameSfx.UiTick);
+            Application.OpenURL(SettingsLogic.GetFolderUrl(SaveSystem.Folder));
         }
 
         private Slider VolumeRow(

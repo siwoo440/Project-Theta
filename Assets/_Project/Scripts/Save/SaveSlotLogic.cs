@@ -282,6 +282,72 @@ namespace ProjectTheta.Save
         /// 옛 세이브를 1번 칸으로 옮길지다.
         /// 설정 파일이나 칸 파일이 하나라도 있으면 이미 옮긴 것이므로 다시 하지 않는다.
         /// </summary>
+        // 저장 폴더 옮기기 (38일차) --------------------------------------
+
+        /// <summary>
+        /// 37일차까지 Unity 기본 회사 · 제품 이름으로 쓰던 저장 폴더 이름이다.
+        /// 38일차부터 빌드 도구가 회사 · 제품 이름을 바꿔 저장 폴더(persistentDataPath)도 바뀐다.
+        /// </summary>
+        public const string OldCompanyFolder = "DefaultCompany";
+        public const string OldProductFolder = "Project-Theta";
+
+        /// <summary>
+        /// 지금 저장 폴더(…/회사/제품) 기준 예전 저장 폴더(…/DefaultCompany/Project-Theta)다.
+        /// 계산할 수 없거나 지금 폴더와 같으면 빈 문자열이다.
+        /// </summary>
+        public static string GetOldFolder(
+            string currentFolder)
+        {
+            if (string.IsNullOrEmpty(currentFolder))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = currentFolder.TrimEnd('/', '\\');
+            string company = System.IO.Path.GetDirectoryName(trimmed);
+            string root = string.IsNullOrEmpty(company)
+                ? null
+                : System.IO.Path.GetDirectoryName(company);
+
+            if (string.IsNullOrEmpty(root))
+            {
+                return string.Empty;
+            }
+
+            string old = System.IO.Path.Combine(root, OldCompanyFolder, OldProductFolder);
+
+            return string.Equals(
+                    old.Replace('\\', '/'),
+                    trimmed.Replace('\\', '/'),
+                    StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : old;
+        }
+
+        /// <summary>예전 폴더에서 가져올 파일 이름이다(설정 · 칸 3개 · 옛 세이브).</summary>
+        public static List<string> GetCopyFileNames()
+        {
+            List<string> names = new List<string> { SettingsFileName };
+
+            for (int i = 0; i < SlotCount; i++)
+            {
+                names.Add(GetFileName(i));
+            }
+
+            names.Add(LegacyFileName);
+
+            return names;
+        }
+
+        /// <summary>새 폴더에 아무 저장도 없고 예전 폴더에 저장이 있을 때만 한 번 가져온다.</summary>
+        public static bool ShouldCopyOldFolder(
+            bool oldHasSave,
+            bool newHasSave)
+        {
+            return oldHasSave &&
+                   !newHasSave;
+        }
+
         public static bool ShouldMigrate(
             bool legacyExists,
             bool settingsExists,

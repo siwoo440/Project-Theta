@@ -5,10 +5,10 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 37일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 38일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
-> **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
-> 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
+> **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다. 38일차부터는 예전 폴더(`LocalLow/DefaultCompany/Project-Theta`)의 세이브도 함께 지워야 다시 복사되지 않는다.
+> 세이브 위치는 `Application.persistentDataPath`(38일차부터 `LocalLow/siwoo440/Project Theta`)의 `projecttheta_slot1~3.json` · `projecttheta_settings.json`이다. 설정 창 `폴더 열기`로 열 수 있다.
 
 ---
 
@@ -538,6 +538,26 @@
 | 356 | 다른 칸 `덮어쓰기` 한 번 → 3초 안에 한 번 더 | 첫 번째: 칸이 붉어지고 "한 번 더 누르면 덮어씀". 두 번째: 저장음, "N번 칸에 저장했습니다 · 이제 N번 칸으로 플레이". 위 띠 칸 이름이 바뀌고, 이후 장소를 마치면 그 칸에 자동 저장 | `GameSession.SaveToSlot`, `SaveSlotLogic.GetSavedMessage` |
 | 357 | 빈 칸에 저장 → 타이틀 → `이어하기` | 저장 칸 목록에 원래 칸과 새 칸이 모두 있고, 새 칸이 "최근" | `SaveSlotLogic.FindLatest` |
 | 358 | 허브 `타이틀로` 한 번 / 3초 기다리기 / 두 번 | 한 번: 버튼이 붉게 "한 번 더 누르면 나감", 경고음, 아래 띠에 붉은 "타이틀로 나갈까요? 마지막 저장 … · 한 번 더 누르면 나갑니다". 3초가 지나면 원래대로. 3초 안에 두 번째: 메인 메뉴로 감 | `HubScreen.BackToTitle`, `HubRoomLogic.GetLeaveWarning` |
+
+## 6-20. 성능 표시 · 실행 파일 (38일차 추가)
+
+> 실행 파일로 도는 빠른 점검은 `Devlogs/Day38/RUN1.md`에 따로 있다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| ---: | --- | --- | --- |
+| 359 | 메인 메뉴 맨 아래 | "v0.38 · 저장 칸 3개 · Esc 일시정지 · F3 성능 표시" (에디터 · 개발 빌드는 "v0.38 · 개발 빌드") | `BuildInfo.GetFooter` |
+| 360 | 아무 화면에서 `F3` | 왼쪽 위 작은 창: FPS · ms, 1% 느린 FPS · 최장, GC · 메모리. 다시 `F3`이면 사라짐. 클릭을 가로채지 않음 | `PerfOverlay`, `PerfLogic.Format` |
+| 361 | 창을 켠 채 허브 → 지도 → 장소 | 씬이 바뀌어도 창이 유지됨. 장소 안에서만 "NPC N · 방해자 N" 줄이 보임 | `PerfOverlay.CountActors` |
+| 362 | 루프탑 클럽 · 심야 모드 추격 중 `F3` | 1% 느린 FPS가 30 이상이면 초록, 30 미만 노랑, 20 미만 빨강 (값을 기록에 적기) | `PerfLogic.GetGrade` |
+| 363 | 조작법 창 | "화면" 묶음에 "성능 표시 켜기 · 끄기 — F3 (고정)" | `ControlsCatalog` |
+| 364 | 설정 창 일반 탭 맨 아래 | "저장 폴더" 줄, 경로가 짧게 보임. `폴더 열기` → 파일 탐색기에 `projecttheta_slot*.json`이 있는 폴더 | `SettingsLogic.GetFolderUrl` |
+| 365 | 메뉴 `Project Theta/빌드/Windows 실행 파일` | 빌드 완료 창(크기 · 시간 · 경고 수), `Builds/Windows/ProjectTheta.exe`와 `build_report.txt` 생성 | `Editor/BuildTool` |
+| 366 | Build Settings에서 Boot를 첫 칸이 아니게 바꾸고 빌드 (확인 뒤 되돌리기) | "빌드할 수 없습니다 · 첫 씬이 Boot가 아닙니다" 창, 빌드하지 않음 | `BuildInfo.CheckScenes` |
+| 367 | 실행 파일 실행 | 창 제목 "Project Theta", 1920×1080 전체 화면, 한글 · 음악 · 효과음 정상 | `BuildTool.ApplyPlayerSettings` |
+| 368 | 실행 파일에서 `F1` | 디버그 창이 **뜨지 않음** | `ProjectThetaPrototypeBootstrap.CreateDebugPanel` |
+| 369 | 실행 파일을 두 번 실행 | 두 번째 창이 뜨지 않고 첫 창만 남음 | `PlayerSettings.forceSingleInstance` |
+| 370 | 메뉴 `Windows 개발 빌드`로 만든 실행 파일에서 장소 1곳 마치기 | 오른쪽 아래 "Development Build" 표시, `F1` 디버그 창 열림, 저장 폴더 `RunLogs/perf_log.txt`에 한 줄(장소 · 평균 FPS · 최장 · 끊김 · GC) | `PerfOverlay.WriteRunLog` |
+| 371 | 빌드를 한 번 한 뒤 에디터 재생 → `이어하기` | 예전 저장 칸이 그대로 보임(Console "[SaveSystem] 예전 저장 폴더에서 파일 N개를 가져왔습니다"). 저장 폴더가 `LocalLow/siwoo440/Project Theta`로 바뀜 | `SaveSystem.CopyOldFolderIfNeeded`, `SaveSlotLogic.GetOldFolder` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
@@ -146,6 +147,66 @@ namespace ProjectTheta.Save
                 JsonUtility.ToJson(
                     settings,
                     true));
+        }
+
+        // 예전 저장 폴더 가져오기 (38일차) ---------------------------------
+
+        /// <summary>
+        /// 회사 · 제품 이름이 바뀌어 저장 폴더가 달라졌을 때, 예전 폴더의 저장 파일을 한 번 복사해 온다.
+        /// 새 폴더에 저장이 하나라도 있으면 하지 않는다. 예전 파일은 지우지 않는다.
+        /// </summary>
+        public static bool CopyOldFolderIfNeeded()
+        {
+            try
+            {
+                string oldFolder = SaveSlotLogic.GetOldFolder(Folder);
+
+                if (string.IsNullOrEmpty(oldFolder) ||
+                    !Directory.Exists(oldFolder))
+                {
+                    return false;
+                }
+
+                List<string> names = SaveSlotLogic.GetCopyFileNames();
+                bool oldHasSave = false;
+                bool newHasSave = false;
+
+                foreach (string name in names)
+                {
+                    oldHasSave |= File.Exists(Path.Combine(oldFolder, name));
+                    newHasSave |= File.Exists(Path.Combine(Folder, name));
+                }
+
+                if (!SaveSlotLogic.ShouldCopyOldFolder(oldHasSave, newHasSave))
+                {
+                    return false;
+                }
+
+                Directory.CreateDirectory(Folder);
+
+                int copied = 0;
+
+                foreach (string name in names)
+                {
+                    string source = Path.Combine(oldFolder, name);
+
+                    if (File.Exists(source))
+                    {
+                        File.Copy(source, Path.Combine(Folder, name), false);
+                        copied++;
+                    }
+                }
+
+                Debug.Log($"[SaveSystem] 예전 저장 폴더에서 파일 {copied}개를 가져왔습니다. 원본은 그대로 남겨 둡니다. ({oldFolder})");
+
+                return copied > 0;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"[SaveSystem] 예전 저장 폴더를 가져오지 못했습니다: {exception.Message}");
+
+                return false;
+            }
         }
 
         // 옛 세이브 옮기기 -----------------------------------------------
