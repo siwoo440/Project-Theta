@@ -440,7 +440,7 @@ namespace ProjectTheta.UI
                 UiFactory.CreateText(
                     canvas.transform,
                     "Footer",
-                    "35일차 · 저장 칸 3개 · 지도 장소 안내 · Esc 일시정지",
+                    BuildInfo.GetFooter(Debug.isDebugBuild),
                     UiTheme.FontTiny,
                     UiTheme.TextDisabled,
                     TextAnchor.LowerCenter);
