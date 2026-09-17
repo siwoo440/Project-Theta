@@ -43,11 +43,32 @@ namespace ProjectTheta.Disruptors
 
         private float _elapsed;
 
+        // 34일차: 목표 뒤 추격
+        private readonly List<DisruptorPlacement> _roster =
+            new List<DisruptorPlacement>();
+
+        private bool _chasing;
+        private float _chaseElapsed;
+
+        /// <summary>목표를 채운 뒤 추격 중인지다.</summary>
+        public bool IsChasing =>
+            _chasing;
+
         /// <summary>지금 한 층에 허용되는 인원이다.</summary>
         public int AllowedPerFloor =>
             PopulationLogic.GetAllowed(
                 _elapsed,
-                Balance.BalanceOverrides.StageOrDefault.DisruptorRampSeconds);
+                Balance.BalanceOverrides.StageOrDefault.DisruptorRampSeconds,
+                _chasing,
+                _chaseElapsed,
+                Balance.BalanceOverrides.StageOrDefault.ChaseRampSeconds,
+                Balance.BalanceOverrides.StageOrDefault.ChaseMaxPerFloor);
+
+        /// <summary>지금 층당 최대 인원이다(증원 제한에 쓴다).</summary>
+        private int FloorCap =>
+            PopulationLogic.GetCap(
+                _chasing,
+                Balance.BalanceOverrides.StageOrDefault.ChaseMaxPerFloor);
 
         /// <summary>아직 등장하지 않은 배치 인원이다.</summary>
         public int PendingCount =>
@@ -114,6 +135,7 @@ namespace ProjectTheta.Disruptors
                 else
                 {
                     spawner._pending.Add(placements[i]);
+                    spawner._roster.Add(placements[i]);
                 }
             }
 
@@ -133,7 +155,37 @@ namespace ProjectTheta.Disruptors
 
             _elapsed += Time.deltaTime;
 
+            UpdateChase();
+
             SpawnDue();
+        }
+
+        /// <summary>
+        /// 34일차: 목표를 채우면 추격이 시작된다.
+        /// 층당 허용 인원이 늘고, 배치표를 한 번 더 대기열에 넣어 늘어난 자리를 채운다.
+        /// </summary>
+        private void UpdateChase()
+        {
+            if (_chasing)
+            {
+                _chaseElapsed += Time.deltaTime;
+
+                return;
+            }
+
+            if (_stage == null ||
+                !_stage.IsExitReady)
+            {
+                return;
+            }
+
+            _chasing = true;
+            _chaseElapsed = 0f;
+
+            _pending.AddRange(
+                _roster);
+
+            StageMoments.RaiseChaseStarted();
         }
 
         /// <summary>디버그 치트: 시간을 건너뛰어 층마다 최대 인원까지 바로 내보낸다.</summary>
@@ -284,8 +336,8 @@ namespace ProjectTheta.Disruptors
                         lastSeen.y),
                     _floorCount);
 
-            // 24일차: 증원도 층당 최대 인원을 넘지 않는다.
-            if (CountAlive(floor) >= PopulationLogic.MaxPerFloor)
+            // 24일차: 증원도 층당 최대 인원을 넘지 않는다. 34일차: 추격 중에는 추격 최대.
+            if (CountAlive(floor) >= FloorCap)
             {
                 return;
             }

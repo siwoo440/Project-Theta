@@ -15,6 +15,9 @@ namespace ProjectTheta.Disruptors
     {
         public const int MaxPerFloor = 4;
 
+        /// <summary>추격 중에도 넘지 않는 층당 인원이다 (34일차). 밸런스 값이 커도 여기서 막는다.</summary>
+        public const int HardMaxPerFloor = 8;
+
         /// <summary>허용 인원이 1명 늘어나는 간격의 기본값이다. 20초면 80초에 최대가 된다.</summary>
         public const float DefaultRampSeconds = 20f;
 
@@ -43,6 +46,65 @@ namespace ProjectTheta.Disruptors
                 Math.Floor(elapsed / rampSeconds));
         }
 
+        /// <summary>
+        /// 추격을 반영한 허용 인원이다 (34일차).
+        ///   목표를 채운 뒤(탈출 가능)에는 곧바로 1명이 더 허용되고,
+        ///   추격 간격마다 1명씩 늘어 <paramref name="chaseMax"/>까지 간다.
+        /// </summary>
+        public static int GetAllowed(
+            float elapsed,
+            float rampSeconds,
+            bool chasing,
+            float chaseElapsed,
+            float chaseRampSeconds,
+            int chaseMax)
+        {
+            int normal =
+                GetAllowed(
+                    elapsed,
+                    rampSeconds);
+
+            if (!chasing)
+            {
+                return normal;
+            }
+
+            int cap =
+                GetCap(
+                    true,
+                    chaseMax);
+
+            if (float.IsNaN(chaseRampSeconds) ||
+                chaseRampSeconds <= 0f)
+            {
+                return cap;
+            }
+
+            double steps =
+                float.IsNaN(chaseElapsed) ||
+                chaseElapsed <= 0f
+                    ? 0d
+                    : Math.Floor(chaseElapsed / chaseRampSeconds);
+
+            return (int)Math.Min(
+                cap,
+                normal + 1d + steps);
+        }
+
+        /// <summary>층당 최대 인원이다. 추격 중이면 밸런스 값(4~8)을 쓴다.</summary>
+        public static int GetCap(
+            bool chasing,
+            int chaseMax)
+        {
+            return chasing
+                ? Math.Max(
+                    MaxPerFloor,
+                    Math.Min(
+                        HardMaxPerFloor,
+                        chaseMax))
+                : MaxPerFloor;
+        }
+
         /// <summary>더 내보낼 수 있는 인원이다.</summary>
         public static int GetFreeSlots(
             int allowed,
@@ -50,7 +112,7 @@ namespace ProjectTheta.Disruptors
         {
             int cap =
                 Math.Min(
-                    MaxPerFloor,
+                    HardMaxPerFloor,
                     Math.Max(0, allowed));
 
             return Math.Max(0, cap - Math.Max(0, alive));

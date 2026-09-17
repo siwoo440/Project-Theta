@@ -246,6 +246,18 @@ namespace ProjectTheta.Balance
                 v => v.DisruptorRampSeconds,
                 (v, x) => v.DisruptorRampSeconds = x),
 
+            // 목표 뒤 추격 (34일차)
+            new TuningParameter(
+                nameof(StageBalanceValues.ChaseMaxPerFloor),
+                TuningGroup.Danger, "추격 층당 적 최대", 4f, 8f, true,
+                v => v.ChaseMaxPerFloor,
+                (v, x) => v.ChaseMaxPerFloor = (int)x),
+            new TuningParameter(
+                nameof(StageBalanceValues.ChaseRampSeconds),
+                TuningGroup.Danger, "추격 적 증가 간격(초)", 0f, 30f, false,
+                v => v.ChaseRampSeconds,
+                (v, x) => v.ChaseRampSeconds = x),
+
             // 쇼핑몰 · 오피스 (25일차)
             new TuningParameter(
                 nameof(StageBalanceValues.ClosingTimeScale),

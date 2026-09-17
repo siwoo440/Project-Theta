@@ -34,6 +34,61 @@ namespace ProjectTheta.Disruptors
         private Transform _player;
         private int _pairIndex;
 
+        // 34일차: 위기 화면 효과가 "빼앗기기 직전"을 알 수 있게 살아 있는 쟁탈자를 모아 둔다.
+        private static readonly List<ContesterRole> Active =
+            new List<ContesterRole>();
+
+        /// <summary>쟁탈 중인 경쟁자 게이지 중 가장 높은 값(0~1)이다.</summary>
+        public static float HighestClaimProgress
+        {
+            get
+            {
+                float highest = 0f;
+
+                for (int i = Active.Count - 1;
+                     i >= 0;
+                     i--)
+                {
+                    ContesterRole role = Active[i];
+
+                    if (role == null)
+                    {
+                        Active.RemoveAt(i);
+
+                        continue;
+                    }
+
+                    if (role.HasTarget &&
+                        role.ClaimProgress > highest)
+                    {
+                        highest = role.ClaimProgress;
+                    }
+                }
+
+                return highest;
+            }
+        }
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetActive()
+        {
+            Active.Clear();
+        }
+
+        private void OnEnable()
+        {
+            if (!Active.Contains(this))
+            {
+                Active.Add(this);
+            }
+        }
+
+        private void OnDisable()
+        {
+            Active.Remove(this);
+        }
+
         private FollowerController _target;
         private float _gauge;
         private float _repathRemaining;

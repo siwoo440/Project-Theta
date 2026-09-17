@@ -12,6 +12,8 @@ namespace ProjectTheta.UI
     ///
     /// 15일차에 IMGUI를 걷어내고 Canvas(uGUI)로 다시 만들었다.
     /// 씬 파일은 여전히 비어 있고, 이 스크립트가 런타임에 화면을 조립한다.
+    ///
+    /// 34일차: 시작 버튼을 이어하기(저장 칸 불러오기) · 처음부터(새 게임)로 나눴다.
     /// </summary>
     public sealed class MainMenuScreen : MonoBehaviour
     {
@@ -26,6 +28,10 @@ namespace ProjectTheta.UI
         private AchievementPanel _achievements;
         private UiButton _quit;
         private float _quitConfirm;
+
+        // 34일차: 저장 칸
+        private SaveSlotPanel _slots;
+        private UiButton _continue;
 
         private void Start()
         {
@@ -68,6 +74,86 @@ namespace ProjectTheta.UI
             _titleGlow.color = color;
         }
 
+        /// <summary>설정 · 업적 · 종료 줄의 높이다. 34일차에 시작 버튼이 둘이 되어 아래로 내렸다.</summary>
+        private const float MenuRowY = -96f;
+
+        /// <summary>
+        /// 이어하기 · 처음부터 버튼이다 (34일차).
+        /// 이어하기는 저장된 칸이 없으면 누를 수 없다.
+        /// </summary>
+        private void BuildStartButtons(
+            Transform canvas)
+        {
+            _slots = SaveSlotPanel.Create(canvas, 60);
+            _slots.SlotChosen += HandleSlotChosen;
+
+            _continue =
+                UiFactory.CreateButton(
+                    canvas,
+                    "ContinueButton",
+                    "이어하기",
+                    UiTheme.FontHeading,
+                    true);
+
+            UiFactory.Place(_continue.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 36f), new Vector2(340f, 60f));
+
+            _continue.Button.onClick.AddListener(
+                () => OpenSlots(SaveSlotMode.Load));
+
+            UiButton newGame =
+                UiFactory.CreateButton(
+                    canvas,
+                    "NewGameButton",
+                    "처음부터",
+                    UiTheme.FontSubheading);
+
+            UiFactory.Place(newGame.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -30f), new Vector2(340f, 48f));
+
+            newGame.Button.onClick.AddListener(
+                () => OpenSlots(SaveSlotMode.NewGame));
+        }
+
+        private void OpenSlots(
+            SaveSlotMode mode)
+        {
+            GameSession session = GameSession.Instance;
+
+            if (session == null)
+            {
+                return;
+            }
+
+            GameAudio.Play(GameSfx.UiTick);
+            _slots.Open(mode, session.GetSlotSummaries());
+        }
+
+        private void HandleSlotChosen(
+            SaveSlotMode mode,
+            int slot)
+        {
+            GameSession session = GameSession.Instance;
+
+            if (session == null)
+            {
+                return;
+            }
+
+            bool ready =
+                mode == SaveSlotMode.Load
+                    ? session.LoadSlot(slot)
+                    : session.NewGame(slot);
+
+            if (!ready)
+            {
+                Debug.LogWarning($"[MainMenu] {SaveSlotLogic.GetSlotLabel(slot)}을 준비하지 못했습니다.");
+                Refresh();
+
+                return;
+            }
+
+            session.GoTo(SceneDestination.Hub);
+        }
+
         /// <summary>시작 버튼 아래 줄이다. 설정 · 업적 · 종료.</summary>
         private void BuildMenuRow(
             Transform canvas)
@@ -81,7 +167,7 @@ namespace ProjectTheta.UI
             UiButton settings =
                 UiFactory.CreateButton(canvas, "SettingsButton", "설  정", UiTheme.FontBody);
 
-            UiFactory.Place(settings.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-115f, -62f), new Vector2(105f, 44f));
+            UiFactory.Place(settings.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-115f, MenuRowY), new Vector2(105f, 44f));
 
             settings.Button.onClick.AddListener(
                 () =>
@@ -93,7 +179,7 @@ namespace ProjectTheta.UI
             UiButton achievements =
                 UiFactory.CreateButton(canvas, "AchievementsButton", "업  적", UiTheme.FontBody);
 
-            UiFactory.Place(achievements.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -62f), new Vector2(105f, 44f));
+            UiFactory.Place(achievements.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, MenuRowY), new Vector2(105f, 44f));
 
             achievements.Button.onClick.AddListener(
                 () =>
@@ -108,7 +194,7 @@ namespace ProjectTheta.UI
             _quit =
                 UiFactory.CreateButton(canvas, "QuitButton", "종  료", UiTheme.FontBody);
 
-            UiFactory.Place(_quit.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(115f, -62f), new Vector2(105f, 44f));
+            UiFactory.Place(_quit.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(115f, MenuRowY), new Vector2(105f, 44f));
 
             _quit.Button.onClick.AddListener(Quit);
         }
@@ -260,28 +346,9 @@ namespace ProjectTheta.UI
                 new Vector2(0f, 88f),
                 new Vector2(320f, 2f));
 
-            // 시작 버튼 -------------------------------------------------
-            UiButton start =
-                UiFactory.CreateButton(
-                    canvas.transform,
-                    "StartButton",
-                    "시  작",
-                    UiTheme.FontHeading,
-                    true);
-
-            UiFactory.Place(
-                start.Background.rectTransform,
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 10f),
-                new Vector2(340f, 64f));
-
-            start.Button.onClick.AddListener(
-                () =>
-                {
-                    GameSession.Instance?.GoTo(
-                        SceneDestination.Hub);
-                });
+            // 시작 버튼 (34일차: 이어하기 · 처음부터) --------------------
+            BuildStartButtons(
+                canvas.transform);
 
             // 31일차: 설정 · 조작법 · 종료 -------------------------------
             BuildMenuRow(
@@ -299,8 +366,8 @@ namespace ProjectTheta.UI
                 recordPanel,
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -150f),
-                new Vector2(460f, 104f));
+                new Vector2(0f, -190f),
+                new Vector2(560f, 104f));
 
             _statsText =
                 UiFactory.CreateText(
@@ -316,7 +383,7 @@ namespace ProjectTheta.UI
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 20f),
-                new Vector2(440f, 26f));
+                new Vector2(540f, 26f));
 
             _bestScoreText =
                 UiFactory.CreateText(
@@ -333,14 +400,14 @@ namespace ProjectTheta.UI
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0f, -16f),
-                new Vector2(440f, 30f));
+                new Vector2(540f, 30f));
 
             // 하단 표기 -------------------------------------------------
             Text footer =
                 UiFactory.CreateText(
                     canvas.transform,
                     "Footer",
-                    "31일차 · Esc 일시정지 · 설정",
+                    "34일차 · 저장 칸 3개 · Esc 일시정지 · 설정",
                     UiTheme.FontTiny,
                     UiTheme.TextDisabled,
                     TextAnchor.LowerCenter);
@@ -357,17 +424,32 @@ namespace ProjectTheta.UI
 
         private void Refresh()
         {
+            GameSession session = GameSession.Instance;
+
+            SaveSlotSummary[] summaries =
+                session == null
+                    ? new SaveSlotSummary[0]
+                    : session.GetSlotSummaries();
+
+            int latest =
+                SaveSlotLogic.FindLatest(
+                    summaries);
+
+            // 34일차: 저장된 칸이 없으면 이어하기를 막고 기록 칸도 비운다.
+            _continue.SetInteractable(latest >= 0);
+
             SaveData save =
-                GameSession.Instance == null
+                session == null ||
+                latest < 0
                     ? null
-                    : GameSession.Instance.Save;
+                    : session.Save;
 
             if (_statsText != null)
             {
                 _statsText.text =
                     save == null
-                        ? "저장 정보 없음"
-                        : $"플레이 {save.PlayCount}회      클리어 {save.ClearCount}회      최고 랭크 {save.BestRankLabel}";
+                        ? "저장된 칸이 없습니다 · 처음부터 시작하세요"
+                        : $"최근 {SaveSlotLogic.GetSlotLabel(latest)}   ·   플레이 {save.PlayCount}회   클리어 {save.ClearCount}회   최고 랭크 {save.BestRankLabel}";
             }
 
             if (_bestScoreText != null)

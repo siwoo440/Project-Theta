@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 33일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 34일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -424,6 +424,33 @@
 | 270 | 탈출 가능 상태에서 Esc → 설정 → 조작법 | 조작법 창에 "탈출 (목표 달성 뒤) · 1F 회수 지점에서 F" 줄 | `ControlsCatalog` |
 | 271 | 장소 몇 곳을 끝낸 뒤 F1 → 기록 탭 → `보고서 만들기` | 금색 한 줄 "장소 N곳 · 기록 N개 · 평균 m:ss → report.md". 기록 폴더의 `report.md`에 장소별 기록 수 · 클리어율 · 탈출률 · 평균/최소~최대 시간 · 목표 뒤 머문 시간 · 평균 정기/목표 · 최면 · 레벨 · 폭주 · 빼앗김 표. 치트 기록은 빠짐 | `BalanceReportLogic`, `DebugRecordTab.MakeReport` |
 | 272 | 새 기록 json | `Exit`(Escaped / TimeUp / None), `TargetEssence`, `SecondsAfterGoal` 항목이 있음 | `RunStatsRecorder` |
+
+## 6-16. 실패 보상 · 추격 · 위기 화면 효과 · 저장/불러오기 (34일차 추가)
+
+**가장 중요한 줄은 273번, 276번, 278번이다.** 예전 세이브가 1번 칸으로 옮겨졌는지, 이어하기 · 처음부터가 맞게 동작하는지다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| --- | --- | --- | --- |
+| 273 | 33일차 세이브가 있는 채로 처음 재생 | 콘솔 "[SaveSystem] 예전 세이브를 1번 칸으로 옮겼습니다". 저장 폴더에 `projecttheta_slot1.json` · `projecttheta_settings.json`이 생기고 `projecttheta_save.json`은 그대로 남음 | `SaveSystem.MigrateLegacyIfNeeded` |
+| 274 | 메인 메뉴 | `이어하기`(보라) · `처음부터` 두 버튼, 아래 줄 설정 · 업적 · 종료. 기록 칸 "최근 1번 칸 · 플레이 N회 …" | `MainMenuScreen.BuildStartButtons` |
+| 275 | `이어하기` | "이어하기 · 불러올 칸" 창. 1번 칸에 저장 시각 · 플레이 시간 · 계약 정기 · 클리어 장소 · 업적 수, "최근" 표시. 빈 칸 버튼은 "비어 있음"(누를 수 없음) | `SaveSlotPanel`, `SaveSlotLogic.Describe` |
+| 276 | 1번 칸 `불러오기` | 로딩 → 허브. 계약 정기 · 강화 · 업적이 예전과 같음 | `GameSession.LoadSlot` |
+| 277 | 허브 아래 줄 `저  장` | 오른쪽에 금색 "1번 칸에 저장했습니다 · 날짜 시각", 4초 뒤 사라짐 | `HubScreen.SaveNow` |
+| 278 | 타이틀로 → `처음부터` → 2번 칸(빈 칸) `새로 시작` | 허브. 계약 정기 0 · 강화 0 · 튜토리얼 안내가 다시 나옴. 설정 · 키는 그대로 | `GameSession.NewGame`, `SaveSlotLogic.CreateNewGame` |
+| 279 | 2번 칸으로 장소 하나 끝낸 뒤 타이틀로 → `이어하기` | 2번 칸이 "최근", 1번 칸 기록은 그대로 | `SaveSlotLogic.FindLatest` |
+| 280 | `처음부터` → 기록이 있는 1번 칸 `덮어쓰기` | 칸이 붉어지고 버튼 "한 번 더 누르면 덮어씀". 3초 안에 다시 누르면 새 게임, 기다리면 원래대로 | `SaveSlotLogic.CanStartNewGame` |
+| 281 | 저장 칸 창에서 Esc · 닫기 | 창만 닫힘 | `UiEscapeStack` |
+| 282 | 저장된 칸이 하나도 없는 상태(저장 폴더 비우기) | `이어하기`가 흐리고 눌리지 않음. 기록 칸 "저장된 칸이 없습니다 · 처음부터 시작하세요" | `MainMenuScreen.Refresh` |
+| 283 | 설정에서 음량 · 키를 바꾸고 다른 칸 불러오기 | 바꾼 설정 · 키가 그대로 | `SaveSystem.SaveSettings`(`projecttheta_settings.json`) |
+| 284 | 허브 씬을 바로 재생 | 콘솔 "칸을 고르지 않고 들어와 N번 칸을 씁니다". 저장하면 그 칸에 저장됨 | `GameSession.HandleSceneLoaded` |
+| 285 | 정기 목표 장소에서 시간 초과 실패 | 결과 계약 정기 줄 "+N  실패 · 보상 50% (−M)" 빨간 글자. 예전의 절반 | `ContractEssenceLogic.Compute` |
+| 286 | 목표를 넘긴 뒤(탈출 가능) 쓰러짐 | 초과분은 빠지고 목표까지만 절반으로 계산 | `ContractEssenceLogic.Compute` |
+| 287 | 도중 포기 | 여전히 +0, 실패 문구 없음 | `PauseMenuLogic.GetContractEssence` |
+| 288 | 정기 목표를 채움 | 플레이어 위 붉은 "추격 시작! 적이 늘어납니다", 흔들림 · 효과음. 곧 적이 늘어 층당 최대 6명(10초마다 1명) | `DisruptorSpawner.UpdateChase`, `PopulationLogic` |
+| 289 | F1 튜닝 → 위험 묶음 | "추격 층당 적 최대"(4~8) · "추격 적 증가 간격(초)" 항목, 바꾸면 바로 반영 | `BalanceTuning` |
+| 290 | 체력 30% 이하 / 헌팅남이 동행자 게이지 절반 넘김 / 회수 지점 잠김 / 남은 15초 | 화면 가장자리가 붉게 맥동. 급할수록 진함 | `DangerLogic`, `StageVfxDirector.Update` |
+| 291 | 설정 → 일반 → 위기 화면 효과 `꺼짐` | 위 상황 · 폭주 모두 붉은 테두리가 나오지 않음. 다시 켜면 나옴 | `SaveData.DangerEffectDisabled` |
+| 292 | 로딩 화면 TIP 몇 번 보기 | 추격 · 실패 보상 · 위기 효과 · 저장 버튼 TIP이 섞여 나옴 | `LoadingTips` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 
