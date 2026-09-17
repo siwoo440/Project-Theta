@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 34일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 35일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -142,7 +142,7 @@
 
 | # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
 | ---: | --- | --- | --- |
-| 85 | 허브 → `출 격` | **도시 지도** 화면. 장소 8곳 모두 누를 수 있고 배지 "[1] 새 장소" · 클럽은 "[8] 보스". 위쪽에 구역 경로 줄 · 판 포기 버튼이 **없음**. 오른쪽 위 `통계 (Tab)` · `허브로` | `HubScreen` 출격, `MapScreen`, `RunRouteLogic.GetLocations` |
+| 85 | 허브 → `출 격` | **도시 지도** 화면. 장소 8곳 모두 누를 수 있고 배지 "[1] 새 장소" · 클럽은 "[8] 보스". 위쪽에 구역 경로 줄 · 판 포기 버튼이 **없음**. 오른쪽 위 `통  계` · `허브로` (35일차: 장소 칸에 난이도 ◆, 오른쪽 패널은 6-17 참고) | `HubScreen` 출격, `MapScreen`, `RunRouteLogic.GetLocations` |
 | 86 | 기업 연수원 선택 → `출  발` (또는 Enter) | 연수원 4층 시작, 우상단 "기업 연수원 · 낮"(구역 번호 없음), 층 표시 "교육동 1F", 시작 계약 카드 | `GameSession.BeginLocation`, `LocationContext` |
 | 87 | F1 → 치트 → `장소 즉시 클리어` → 결과 | 제목 "기업 연수원 — CLEAR", 아래 버튼 **`지도로` · `허브로`** 두 개 | `StageResultPanel` |
 | 88 | 지도로 → 아무 장소 선택 → 출발 | **Lv 1 · 카드 0장으로 시작**하고 시작 계약 카드가 **다시 뜸**. 저녁/밤이면 화면이 주황/남색. 튜토리얼 안내 없음 | `RunSession`, `RunProgression.Configure`, `TimeOfDayOverlay` |
@@ -337,7 +337,7 @@
 
 | # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
 | --- | --- | --- | --- |
-| 215 | 지도에서 `통계 (Tab)` 버튼 또는 Tab | 지도 위에 어두운 막과 "플레이 통계" 창. 위에 카드 5장(전체 / 최면 · 동행 / 정기 / 위기 / 성장), 아래 장소 8곳 표(도전 · 클리어 · 최고 정기 · 최단 클리어 · 최고 등급). 처음이면 0 · "-" | `StatsPanel`, `PlayStatsLogic.BuildSections` |
+| 215 | 지도에서 `통  계` 버튼, 또는 장소를 고르지 않은 상태에서 Tab | 지도 위에 어두운 막과 "플레이 통계" 창. 위에 카드 5장(전체 / 최면 · 동행 / 정기 / 위기 / 성장), 아래 장소 8곳 표(도전 · 클리어 · 최고 정기 · 최단 클리어 · 최고 등급). 처음이면 0 · "-" | `StatsPanel`, `PlayStatsLogic.BuildSections` |
 | 216 | 통계 창에서 Esc · Tab · `닫기` | 창이 닫히고 곧바로 다시 열리지 않음. 창이 열린 동안 숫자 키 · Enter로 지도가 반응하지 않음 | `StatsPanel.Close`, `MapScreen.Update` |
 | 217 | 연수원을 한 번 클리어 → `지도로` → 통계 | 장소 도전 1 · 클리어 1 · 클리어율 100% · 최면 성공 수 · 최대 동행자 · 회수한 정기가 늘어남. 연수원 줄에 최단 클리어 시간 · 등급 | `StageResultPanel.SubmitResultToSession`, `PlayStatsLogic.Apply` |
 | 218 | 한 번 실패 → 통계 | 도전만 늘고 클리어는 그대로, 클리어율이 내려감. 최단 클리어 시간은 바뀌지 않음 | `PlayStatsLogic.Apply` |
@@ -451,6 +451,32 @@
 | 290 | 체력 30% 이하 / 헌팅남이 동행자 게이지 절반 넘김 / 회수 지점 잠김 / 남은 15초 | 화면 가장자리가 붉게 맥동. 급할수록 진함 | `DangerLogic`, `StageVfxDirector.Update` |
 | 291 | 설정 → 일반 → 위기 화면 효과 `꺼짐` | 위 상황 · 폭주 모두 붉은 테두리가 나오지 않음. 다시 켜면 나옴 | `SaveData.DangerEffectDisabled` |
 | 292 | 로딩 화면 TIP 몇 번 보기 | 추격 · 실패 보상 · 위기 효과 · 저장 버튼 TIP이 섞여 나옴 | `LoadingTips` |
+
+## 6-17. 지도 장소 패널 · 장소 규칙 · 추천 · 첫 소개 화면 (35일차 추가)
+
+**가장 중요한 줄은 293번, 296번, 303번이다.** 장소를 고르면 패널이 들어오는지, 버튼마다 상세 창이 뜨는지, 처음 들어간 장소에서 규칙 카드가 뜨고 게임이 멈추는지다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| --- | --- | --- | --- |
+| 293 | 새 게임(모든 장소 미도전)으로 지도 열기 | 기업 연수원이 골라진 채로 오른쪽 패널이 **바로** 떠 있음. 연수원 칸 위에 금색 "◆ 추천"이 깜빡임 | `MapScreen.Start`, `LocationGuideLogic.GetRecommended` |
+| 294 | 장소 칸 모양 | 둘째 줄 "난이도 ◆◇◇◇◇ · 낮"(클럽은 ◆◆◆◆◆). 배지의 숙련 ★과 모양이 다름 | `MapScreen.BuildNode` |
+| 295 | 패널 내용 | 위: 시간대 · 목표(왼쪽) · "난이도 ◆…"(오른쪽). 큰 금색 번호 "01" + 이름, 소개, 핵심 수치 3줄(제한 시간 · 목표 정기 / 층 · 경쟁자 / 숙련), 추천이면 "◆ 추천 장소 …" 깜빡임. 버튼 4개, 보유 계약 정기, `닫 기` · `출 발 ▶` | `MapScreen.BuildInfoPanel`, `LocationGuideLogic.BuildCoreRows` |
+| 296 | `적 정보` · `장소 규칙` · `보 상` · `기 록`을 차례로 누르기 | 패널 왼쪽에 금색 테두리 상세 창. 누른 버튼만 보라색. 같은 버튼을 다시 누르거나 `×`를 누르면 닫힘 | `MapScreen.ToggleDetail`, `LocationGuideLogic.Toggle` |
+| 297 | 해변가 → `적 정보` | 라이프가드 · 헌팅남 · 라이프가드 반장 · 드론 촬영자 + 금태양 · 인기남, 각 "대처" 줄 | `LocationGuideCatalog`, `BuildEnemyText` |
+| 298 | 루프탑 클럽 → `적 정보` · 핵심 수치 | 바운서 · 클럽 MD · DJ · 라이벌 서큐버스만. **금태양 · 인기남 없음**, 핵심 수치 "경쟁자 없음" | `LocationGuideCatalog.RivalsAppear` |
+| 299 | `장소 규칙` (지하철 · 클럽 · 나머지 하나씩) | 목표 문구가 각각 열차 생존 / 보스 함락 / 정기 + 탈출. 이 장소의 규칙 · 공략 팁 | `BuildRuleText`, `GetObjectiveGuide` |
+| 300 | `보 상` | 계약 정기 계산(클리어 · 등급 보너스 · 실패 50% · 포기 0), 숙련 단계와 다음 ★까지, 연수원 · 클럽은 "이 장소의 업적" | `BuildRewardText` |
+| 301 | `기 록` (미도전 / 도전한 장소) | 미도전: "아직 도전하지 않은 장소입니다". 도전함: 도전 · 클리어(비율) · 최고 등급 · 최고 정기 · 최단 클리어 · 다음 ★ | `BuildRecordText` |
+| 302 | Tab / Esc / 빈 곳 | 장소를 고른 상태에서 Tab은 장소 규칙 열고 닫기, Esc는 상세 창 → 패널 순서로 닫힘. 패널이 닫히면 오른쪽으로 빠지고 지도가 가운데로 옴. 고른 장소가 없으면 Tab이 통계 | `MapScreen.ReadKeyboard`, `AnimatePanel` |
+| 303 | 처음 도전하는 장소로 출발 | 로딩 · 시작 카드 선택이 끝난 뒤 "장소 규칙 · 장소 이름" 카드(왼쪽 규칙 · 오른쪽 적). 게임 멈춤. `확인` · Enter · Esc로 닫으면 게임이 흐름 | `LocationGuidePanel`, `LocationGuideLogic.IsFirstVisit` |
+| 304 | 같은 장소 두 번째 도전 | 규칙 카드가 자동으로 뜨지 않음 | `PlayStats` 장소 기록 `Attempts` |
+| 305 | 장소 안에서 Esc | 일시정지 메뉴가 계속하기 · **장소 규칙** · 조작법 · 설정 · 포기하기 순서. `장소 규칙`을 누르면 카드가 메뉴 위에 뜨고 Esc로 카드만 닫힘 | `PauseMenu.OpenGuide` |
+| 306 | 다른 저장 칸으로 새 게임 → 이미 다른 칸에서 가 본 장소 | 새 칸 기준 첫 도전이라 카드가 다시 뜸 | 칸별 `LocationRecords` |
+| 307 | 메인 메뉴 → `처음부터` → 칸 고르기 | 허브로 가기 전에 검은 소개 화면 5장. 제목이 아래에서 떠오르고 "1 / 5". 클릭 · Space · Enter로 넘김, 마지막 장 버튼 "시작하기 ▶" → 허브 | `IntroSequence`, `MainMenuScreen.HandleSlotChosen` |
+| 308 | 소개 도중 `건너뛰기` · Esc | 곧바로 허브로 감(새 게임은 이미 저장됨) | `IntroSequence.Finish` |
+| 309 | `이어하기` | 소개 없이 바로 허브 | `MainMenuScreen.HandleSlotChosen` |
+| 310 | 메인 메뉴 아래 줄 | 설정 · 업적 · **소개** · 종료 네 버튼. `소 개`는 소개만 보고 메인 메뉴로 돌아옴 | `MainMenuScreen.BuildMenuRow` |
+| 311 | 로딩 TIP | 장소 규칙 · 추천 · 일시정지 규칙 카드 TIP이 섞여 나옴 | `LoadingTips` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 
