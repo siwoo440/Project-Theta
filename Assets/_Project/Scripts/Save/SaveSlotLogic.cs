@@ -35,6 +35,9 @@ namespace ProjectTheta.Save
         public int Endings;
         public float PlaySeconds;
         public int Achievements;
+
+        /// <summary>36일차: 도시 지배도(%)다.</summary>
+        public int DominionPercent;
     }
 
     /// <summary>
@@ -184,6 +187,7 @@ namespace ProjectTheta.Save
             summary.Endings = save.Stats == null ? 0 : save.Stats.Endings;
             summary.PlaySeconds = save.Stats == null ? 0f : save.Stats.TotalSeconds;
             summary.Achievements = save.UnlockedAchievements == null ? 0 : save.UnlockedAchievements.Length;
+            summary.DominionPercent = DominionLogic.GetPercent(save);
 
             if (save.LocationRecords != null)
             {
@@ -237,7 +241,8 @@ namespace ProjectTheta.Save
 
             return
                 $"{savedAt}  ·  플레이 {FormatPlayTime(summary.PlaySeconds)}\n" +
-                $"계약 정기 {summary.ContractEssence:N0}  ·  클리어 장소 {summary.ClearedLocations}/{Math.Max(0, totalLocations)}  ·  업적 {summary.Achievements}{ending}";
+                $"계약 정기 {summary.ContractEssence:N0}  ·  클리어 장소 {summary.ClearedLocations}/{Math.Max(0, totalLocations)}  ·  업적 {summary.Achievements}{ending}\n" +
+                $"도시 지배도 {summary.DominionPercent}%  「{DominionLogic.GetTitle(summary.DominionPercent)}」";
         }
 
         /// <summary>가장 최근에 저장한 칸이다. 없으면 -1. 시각이 같으면 앞 칸이다.</summary>

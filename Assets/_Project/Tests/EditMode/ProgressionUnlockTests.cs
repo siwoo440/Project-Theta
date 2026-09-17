@@ -147,11 +147,9 @@ namespace ProjectTheta.Tests.EditMode
                 Assert.Greater(definition.Reward, 0, definition.Id);
             }
 
-            // 32일차: 23개 → 46개.
-            Assert.AreEqual(46, AchievementLogic.All.Length);
-
-            // 업적 창 세 줄(한 줄 16칸)에 들어가야 한다.
-            Assert.LessOrEqual(AchievementLogic.All.Length, 48);
+            // 32일차: 23개 → 46개. 36일차: 심야 모드 3개 → 49개.
+            // (32일차부터 업적 창은 한 줄씩 스크롤이라 칸 수 제한은 없다.)
+            Assert.AreEqual(49, AchievementLogic.All.Length);
 
             // 장소를 지정하는 업적만 장소 번호가 있다.
             foreach (AchievementDefinition definition in AchievementLogic.All)
@@ -384,7 +382,8 @@ namespace ProjectTheta.Tests.EditMode
             }
 
             // 30일차 23개 2,690 + 32일차 23개 6,000.
-            Assert.AreEqual(8690, total);
+            // 36일차: 심야 업적 150 + 300 + 600
+            Assert.AreEqual(9740, total);
         }
 
         [Test]

@@ -96,10 +96,13 @@ namespace ProjectTheta.Disruptors
                 HasLastSeen = true;
             }
 
+            // 36일차: 심야 모드면 경계도가 더 빨리 오른다.
             SetValue(
                 ZoneAlertLogic.Add(
                     Value,
-                    amount));
+                    Run.NightModeLogic.GetAlertAmount(
+                        amount,
+                        Run.NightModeState.Active)));
         }
 
         /// <summary>디버그 치트용. 경계도를 바로 정한다.</summary>

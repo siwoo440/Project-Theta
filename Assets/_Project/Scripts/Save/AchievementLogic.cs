@@ -36,7 +36,11 @@ namespace ProjectTheta.Save
         LocationSRank,
 
         /// <summary>최고 등급이 S인 장소 수다.</summary>
-        SRankLocations
+        SRankLocations,
+
+        // --- 36일차 ---
+        /// <summary>심야 모드로 클리어한 장소 수다.</summary>
+        NightLocations
     }
 
     /// <summary>업적 하나의 정의다.</summary>
@@ -147,7 +151,12 @@ namespace ProjectTheta.Save
             new AchievementDefinition("cards_50", "카드 수집가", "강화 카드 50장 고르기", AchievementStat.CardsPicked, 50, 50),
             new AchievementDefinition("cards_200", "카드 도감", "강화 카드 200장 고르기", AchievementStat.CardsPicked, 200, 200),
             new AchievementDefinition("hours_1", "야근 수당", "총 60분 플레이", AchievementStat.PlayMinutes, 60, 60),
-            new AchievementDefinition("hours_5", "밤샘 근무", "총 300분 플레이", AchievementStat.PlayMinutes, 300, 300)
+            new AchievementDefinition("hours_5", "밤샘 근무", "총 300분 플레이", AchievementStat.PlayMinutes, 300, 300),
+
+            // 36일차: 심야 모드
+            new AchievementDefinition("night_1", "심야 영업", "심야 모드로 장소 클리어", AchievementStat.NightLocations, 1, 150),
+            new AchievementDefinition("night_4", "밤의 순찰", "심야 모드로 장소 4곳 클리어", AchievementStat.NightLocations, 4, 300),
+            new AchievementDefinition("night_8", "잠들지 않는 도시", "심야 모드로 장소 8곳 모두 클리어", AchievementStat.NightLocations, 8, 600)
         };
 
         public static AchievementDefinition Get(
@@ -250,6 +259,7 @@ namespace ProjectTheta.Save
                 case AchievementStat.CleanClears: return s.CleanClears;
                 case AchievementStat.FastClearLocations: return CountRecords(save, r => r.BestClearSeconds > 0f && r.BestClearSeconds <= FastClearSeconds);
                 case AchievementStat.SRankLocations: return CountRecords(save, r => r.BestRank == "S");
+                case AchievementStat.NightLocations: return CountRecords(save, r => r.NightClears > 0);
                 default: return 0;
             }
         }

@@ -110,6 +110,9 @@ namespace ProjectTheta.Run
         /// <summary>시작 계약에서 제시하는 카드 수다. 엔딩을 보면 4장이다 (30일차).</summary>
         public int StartChoiceCount { get; set; } = 3;
 
+        /// <summary>36일차: 심야 모드로 도전하는지다. 엔딩을 본 칸에서만 켜진다.</summary>
+        public bool NightMode { get; set; }
+
         /// <summary>이 도전의 결과를 이미 기록했는지다. 결과를 두 번 세지 않게 한다.</summary>
         public bool IsRecorded { get; private set; }
 

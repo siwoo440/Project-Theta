@@ -234,18 +234,21 @@ namespace ProjectTheta.UI
 
             // 30일차: 숙련도(★)마다 계약 정기 보상이 커진다.
             // 31일차: 도중에 포기했으면 0이다.
+            // 36일차: 심야 모드면 ×1.5.
             _contractEssence =
                 PauseMenuLogic.GetContractEssence(
                     _stage.IsAbandoned,
-                    MasteryLogic.GetContractEssence(
-                    ContractEssenceLogic.Compute(
-                        _tracker.RecoveredEssence,
-                        _stage.TargetEssence,
-                        cleared,
-                        rankLabel),
-                    GameSession.Instance.Run == null
-                        ? 0
-                        : GameSession.Instance.Run.Stars));
+                    NightModeLogic.GetReward(
+                        MasteryLogic.GetContractEssence(
+                            ContractEssenceLogic.Compute(
+                                _tracker.RecoveredEssence,
+                                _stage.TargetEssence,
+                                cleared,
+                                rankLabel),
+                            GameSession.Instance.Run == null
+                                ? 0
+                                : GameSession.Instance.Run.Stars),
+                        NightModeState.Active));
 
             // 34일차: 실패하면 보상이 줄어든다. 줄어든 만큼을 빨갛게 보여 준다.
             _failed =
@@ -256,12 +259,14 @@ namespace ProjectTheta.UI
                 _failed
                     ? Mathf.Max(
                         0,
-                        MasteryLogic.GetContractEssence(
-                            ContractEssenceLogic.GetFullRate(
-                                _tracker.RecoveredEssence),
-                            GameSession.Instance.Run == null
-                                ? 0
-                                : GameSession.Instance.Run.Stars) -
+                        NightModeLogic.GetReward(
+                            MasteryLogic.GetContractEssence(
+                                ContractEssenceLogic.GetFullRate(
+                                    _tracker.RecoveredEssence),
+                                GameSession.Instance.Run == null
+                                    ? 0
+                                    : GameSession.Instance.Run.Stars),
+                            NightModeState.Active) -
                         _contractEssence)
                     : 0;
 
@@ -301,6 +306,7 @@ namespace ProjectTheta.UI
                     LevelUps = stats == null ? 0 : stats.LevelUpTimes.Count,
                     CardsPicked = _run == null ? 0 : _run.Upgrades.PickCount,
                     Cleared = cleared,
+                    NightMode = NightModeState.Active,
                     RecoveredEssence =
                         _tracker.RecoveredEssence,
                     // 31일차: 포기한 도전은 최고 점수에 넣지 않는다.
@@ -680,7 +686,7 @@ namespace ProjectTheta.UI
                 }
 
                 _titleText.text =
-                    $"{zone}  —  {_stage.GetStateLabel()}{boss}{exit}";
+                    $"{zone}  —  {_stage.GetStateLabel()}{NightModeLogic.GetTitleSuffix(NightModeState.Active)}{boss}{exit}";
             }
 
             for (int i = 0;

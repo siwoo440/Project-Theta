@@ -62,13 +62,19 @@ namespace ProjectTheta.Disruptors
                 _chasing,
                 _chaseElapsed,
                 Balance.BalanceOverrides.StageOrDefault.ChaseRampSeconds,
-                Balance.BalanceOverrides.StageOrDefault.ChaseMaxPerFloor);
+                ChaseMax);
+
+        /// <summary>추격 최대 인원이다. 36일차: 심야 모드면 7명.</summary>
+        private static int ChaseMax =>
+            Run.NightModeLogic.GetChaseMax(
+                Balance.BalanceOverrides.StageOrDefault.ChaseMaxPerFloor,
+                Run.NightModeState.Active);
 
         /// <summary>지금 층당 최대 인원이다(증원 제한에 쓴다).</summary>
         private int FloorCap =>
             PopulationLogic.GetCap(
                 _chasing,
-                Balance.BalanceOverrides.StageOrDefault.ChaseMaxPerFloor);
+                ChaseMax);
 
         /// <summary>아직 등장하지 않은 배치 인원이다.</summary>
         public int PendingCount =>

@@ -87,7 +87,13 @@ namespace ProjectTheta.UI
         private Text _infoDifficulty;
         private Text _infoNumber;
         private Text _infoRecommend;
-        private readonly UiButton[] _detailButtons = new UiButton[4];
+        private readonly UiButton[] _detailButtons = new UiButton[5];
+
+        // 36일차: 심야 모드 · 이야기
+        private bool _nightMode;
+        private UiButton _nightButton;
+        private Image _panelEdge;
+        private DialogueOverlay _story;
         private LocationDetailKind _detail;
         private RectTransform _detailWindow;
         private Text _detailTitle;
@@ -132,11 +138,22 @@ namespace ProjectTheta.UI
                     _canvas.transform,
                     game.TakeNewAchievements());
             }
+
+            // 36일차: 첫 클리어 · 라이벌 도발 · 후일담
+            _story = DialogueOverlay.Create(_canvas.transform, StoryPlayback.SortOrder);
+            StoryPlayback.PlayPending(_story, Refresh);
         }
 
         private void Update()
         {
             AnimatePanel();
+
+            // 36일차: 대사가 나오는 동안 지도 단축키(Enter 출발 등)를 받지 않는다.
+            if (_story != null &&
+                _story.IsPlaying)
+            {
+                return;
+            }
 
             // 통계 창이 열려 있으면 지도 단축키를 받지 않는다.
             if (_stats != null &&
@@ -269,8 +286,10 @@ namespace ProjectTheta.UI
             }
 
             // 29일차: 출발할 때마다 새 도전을 만든다. 레벨 · 카드는 장소마다 처음부터다.
+            // 36일차: 심야 모드를 켰으면 함께 넘긴다.
             game.BeginLocation(
-                _selected.Value);
+                _selected.Value,
+                _nightMode);
 
             GameAudio.Play(
                 GameSfx.UiStamp);
@@ -801,7 +820,7 @@ namespace ProjectTheta.UI
             _infoRows.lineSpacing = 1.35f;
 
             _infoRecommend =
-                CreateInfoText(panel, PanelPadding, 336f, inner, 28f, UiTheme.FontBody, UiTheme.Gold, true);
+                CreateInfoText(panel, PanelPadding, 334f, inner, 42f, UiTheme.FontBody, UiTheme.Gold, true);
 
             UiPulse recommendPulse = _infoRecommend.gameObject.AddComponent<UiPulse>();
             recommendPulse.Target = _infoRecommend;
@@ -809,12 +828,20 @@ namespace ProjectTheta.UI
             recommendPulse.MaximumAlpha = 1f;
             recommendPulse.Period = 1.6f;
 
-            float buttonWidth = (inner - 16f) * 0.5f;
+            _infoRecommend.horizontalOverflow = HorizontalWrapMode.Wrap;
 
-            _detailButtons[0] = UiOverlay.Button(panel, "EnemyButton", "적 정보", PanelPadding, 380f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Enemies));
-            _detailButtons[1] = UiOverlay.Button(panel, "RuleButton", "장소 규칙  (Tab)", PanelPadding + buttonWidth + 16f, 380f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Rules));
-            _detailButtons[2] = UiOverlay.Button(panel, "RewardButton", "보  상", PanelPadding, 456f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Rewards));
-            _detailButtons[3] = UiOverlay.Button(panel, "RecordButton", "기  록", PanelPadding + buttonWidth + 16f, 456f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Record));
+            _panelEdge = panel.GetComponent<Image>();
+
+            // 36일차: 버튼 3칸 × 2줄. 마지막 칸은 심야 모드 켜기/끄기다.
+            float buttonWidth = (inner - 32f) / 3f;
+            float Column(int index) => PanelPadding + index * (buttonWidth + 16f);
+
+            _detailButtons[0] = UiOverlay.Button(panel, "EnemyButton", "적 정보", Column(0), 380f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Enemies));
+            _detailButtons[1] = UiOverlay.Button(panel, "RuleButton", "규칙 (Tab)", Column(1), 380f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Rules));
+            _detailButtons[2] = UiOverlay.Button(panel, "RewardButton", "보  상", Column(2), 380f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Rewards));
+            _detailButtons[3] = UiOverlay.Button(panel, "RecordButton", "기  록", Column(0), 456f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Record));
+            _detailButtons[4] = UiOverlay.Button(panel, "StoryButton", "이야기", Column(1), 456f, buttonWidth, 64f, () => ToggleDetail(LocationDetailKind.Story));
+            _nightButton = UiOverlay.Button(panel, "NightButton", "-", Column(2), 456f, buttonWidth, 64f, ToggleNight);
 
             UiDecor.CreateDivider(
                 panel,
@@ -1018,7 +1045,10 @@ namespace ProjectTheta.UI
                         view.Edge.color = timeColor;
                         view.Name.color = UiTheme.TextPrimary;
                         view.Detail.color = UiTheme.TextMuted;
-                        view.Badge.text = $"{number} 클리어 {record.Clears} · {record.BestRank}";
+                        view.Badge.text =
+                            record.NightClears > 0
+                                ? $"{number} 클리어 {record.Clears} · {record.BestRank} · ☾"
+                                : $"{number} 클리어 {record.Clears} · {record.BestRank}";
                         view.Badge.color = UiTheme.Gold;
                         break;
 
@@ -1096,13 +1126,36 @@ namespace ProjectTheta.UI
             _infoNumber.text = LocationGuideLogic.FormatNumber(_candidates.IndexOf(location.Id));
             _infoName.text = location.DisplayName;
             _infoSummary.text = location.Summary;
-            _infoRows.text = LocationGuideLogic.BuildCoreRows(location, stars);
+            _infoRows.text = LocationGuideLogic.BuildCoreRows(location, stars, _nightMode);
 
             _infoRecommend.text =
                 _recommended != null &&
                 _recommended.Value == location.Id
                     ? "◆ 추천 장소  ·  아직 깨지 않은 곳 중 가장 쉬워요"
                     : string.Empty;
+
+            // 36일차: 심야 모드
+            bool unlocked = NightModeLogic.IsUnlocked(CurrentSave);
+
+            if (!unlocked)
+            {
+                _nightMode = false;
+            }
+
+            _nightButton.SetText(NightModeLogic.GetToggleLabel(unlocked, _nightMode));
+            _nightButton.SetInteractable(unlocked);
+            _nightButton.Background.color = _nightMode ? NightColor : UiTheme.ButtonNormal;
+            _panelEdge.color = _nightMode ? NightColor : UiTheme.PanelEdge;
+
+            if (_nightMode)
+            {
+                _infoRecommend.text = NightModeLogic.GetShortSummary();
+                _infoRecommend.fontSize = UiTheme.FontSmall;
+            }
+            else
+            {
+                _infoRecommend.fontSize = UiTheme.FontBody;
+            }
 
             RefreshDetail();
         }
@@ -1118,6 +1171,25 @@ namespace ProjectTheta.UI
         }
 
         // 35일차: 패널 · 상세 창 ------------------------------------------
+
+        private static readonly Color NightColor =
+            new Color(0.28f, 0.34f, 0.78f, 1f);
+
+        /// <summary>36일차: 엔딩을 본 칸에서만 켤 수 있다.</summary>
+        private void ToggleNight()
+        {
+            if (!NightModeLogic.IsUnlocked(CurrentSave))
+            {
+                return;
+            }
+
+            _nightMode = !_nightMode;
+
+            GameAudio.Play(
+                GameSfx.UiTick);
+
+            Refresh();
+        }
 
         private void ClosePanel()
         {

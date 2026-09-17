@@ -116,6 +116,9 @@ namespace ProjectTheta.Save
                 data);
 
             // 30일차: 알 수 없는 업적 ID를 지운다.
+            Story.StoryLogic.Normalize(
+                data);
+
             AchievementLogic.Normalize(
                 data);
 
