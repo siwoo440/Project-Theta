@@ -190,6 +190,7 @@ namespace ProjectTheta.UI
                 new ControlRow("최면", "최면 (NPC에 커서를 대고 유지)", D(Core.GameAction.Hypnosis)),
                 new ControlRow("최면", "파동 (주변을 잠깐 멍하게, 유지)", D(Core.GameAction.Wave)),
                 new ControlRow("최면", "동행자 회수", "동행자를 데리고 회수 지점으로"),
+                new ControlRow("최면", "탈출 (목표 달성 뒤)", $"1F 회수 지점에서 {D(Core.GameAction.Interact)}"),
                 new ControlRow("위기", "붙잡힘 탈출 · 힘겨루기", $"{D(Core.GameAction.StruggleLeft)} · {D(Core.GameAction.StruggleRight)} 번갈아"),
                 new ControlRow("아이템", "아이템 1 · 2", $"{D(Core.GameAction.Item1)} · {D(Core.GameAction.Item2)}"),
                 new ControlRow("화면", "강화 카드 고르기", "클릭  /  숫자 1~4  (고정)"),

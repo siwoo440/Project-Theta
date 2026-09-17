@@ -641,8 +641,24 @@ namespace ProjectTheta.UI
                             ? "  ·  라이벌 서큐버스 함락"
                             : $"  ·  라이벌 보호막 {battle.ShieldsLeft}장 남음";
 
+                // 33일차: 탈출했는지 · 시간이 끝났는지.
+                string exit =
+                    StageExitLogic.GetTitleSuffix(
+                        _stage.ExitKind);
+
+                int overflow =
+                    StageExitLogic.GetOverflow(
+                        _tracker.RecoveredEssence,
+                        _stage.TargetEssence);
+
+                if (overflow > 0 &&
+                    _stage.State == StageState.Cleared)
+                {
+                    exit += $"  ·  초과 정기 +{overflow}";
+                }
+
                 _titleText.text =
-                    $"{zone}  —  {_stage.GetStateLabel()}{boss}";
+                    $"{zone}  —  {_stage.GetStateLabel()}{boss}{exit}";
             }
 
             for (int i = 0;
