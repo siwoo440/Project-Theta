@@ -91,8 +91,46 @@ namespace ProjectTheta.Stage
                 1,
                 _captureMaxDamage);
 
+        /// <summary>게임이 진행 중인지다. 33일차부터 "탈출 가능" 상태도 진행 중이다.</summary>
         public bool IsRunning =>
-            State == StageState.Running;
+            State == StageState.Running ||
+            State == StageState.ExitReady;
+
+        /// <summary>목표를 채워 탈출할 수 있는 상태인지다 (33일차).</summary>
+        public bool IsExitReady =>
+            State == StageState.ExitReady;
+
+        /// <summary>탈출을 눌렀는지다. 결과 화면이 "탈출 성공"과 "시간 종료"를 가른다.</summary>
+        public bool ExitRequested { get; private set; }
+
+        /// <summary>처음 목표를 채운 뒤 흐른 시간이다(더 머문 시간, 기록용).</summary>
+        public float SecondsAfterGoal { get; private set; }
+
+        /// <summary>끝난 방식이다 (33일차).</summary>
+        public StageExitKind ExitKind =>
+            StageExitLogic.GetExitKind(
+                ResolveObjective(),
+                State,
+                ExitRequested);
+
+        /// <summary>
+        /// 1F 회수 지점에서 탈출한다 (33일차). 탈출 가능 상태일 때만 된다.
+        /// 남은 회수 묶음을 먼저 확정해 마지막으로 데려온 동행자도 정기에 들어가게 한다.
+        /// </summary>
+        public bool RequestExit()
+        {
+            if (State != StageState.ExitReady)
+            {
+                return false;
+            }
+
+            FlushPendingBatch();
+
+            ExitRequested = true;
+            EvaluateState();
+
+            return State == StageState.Cleared;
+        }
 
         public float EssenceNormalized =>
             Mathf.Clamp01(
@@ -125,6 +163,8 @@ namespace ProjectTheta.Stage
             RecoveredFollowerCount = 0;
             ClearPendingBatch();
             State = StageState.Running;
+            ExitRequested = false;
+            SecondsAfterGoal = 0f;
 
             _playerHealth =
                 GetComponent<PlayerHealth>();
@@ -192,6 +232,11 @@ namespace ProjectTheta.Stage
                     Mathf.Max(0f, TimeFlowMultiplier));
 
             UpdateRecoveryBatch();
+
+            if (State == StageState.ExitReady)
+            {
+                SecondsAfterGoal += Time.deltaTime;
+            }
 
             if (RemainingTime <= 0f)
             {
@@ -473,6 +518,9 @@ namespace ProjectTheta.Stage
                 case StageState.Abandoned:
                     return "GAVE UP";
 
+                case StageState.ExitReady:
+                    return "EXIT READY";
+
                 case StageState.Running:
                 default:
                     return "RUNNING";
@@ -497,27 +545,14 @@ namespace ProjectTheta.Stage
                 Locations.TrainArrival.Current;
 
             Locations.LocationObjective objective =
-                Locations.LocationContext.Current.Objective;
+                ResolveObjective();
 
-            // 열차가 없는 곳에서 생존 목표를 쓰면 끝날 수 없으므로 정기 목표로 돌린다.
-            if (objective == Locations.LocationObjective.Survival &&
-                train == null)
-            {
-                objective = Locations.LocationObjective.EssenceQuota;
-            }
-
-            // 26일차: 보스전이 없는 곳에서 보스 목표를 쓰면 끝날 수 없으므로 정기 목표로 돌린다.
             Boss.BossBattle battle =
                 Boss.BossBattle.Current;
 
-            if (objective == Locations.LocationObjective.Boss &&
-                battle == null)
-            {
-                objective = Locations.LocationObjective.EssenceQuota;
-            }
-
+            // 33일차: 정기 목표를 채우면 곧바로 끝나지 않고 탈출 가능 상태가 된다.
             State =
-                Locations.ObjectiveStateLogic.Resolve(
+                StageExitLogic.Resolve(
                     objective,
                     RemainingTime,
                     CurrentEssence,
@@ -531,7 +566,31 @@ namespace ProjectTheta.Stage
                         ? 0
                         : _followers.Count,
                     battle != null &&
-                    battle.IsDefeated);
+                    battle.IsDefeated,
+                    ExitRequested);
+        }
+
+        /// <summary>이 장소에서 실제로 쓰는 목표다. 열차 · 보스가 없으면 정기 목표로 돌린다.</summary>
+        private Locations.LocationObjective ResolveObjective()
+        {
+            Locations.LocationObjective objective =
+                Locations.LocationContext.Current.Objective;
+
+            // 열차가 없는 곳에서 생존 목표를 쓰면 끝날 수 없으므로 정기 목표로 돌린다.
+            if (objective == Locations.LocationObjective.Survival &&
+                Locations.TrainArrival.Current == null)
+            {
+                return Locations.LocationObjective.EssenceQuota;
+            }
+
+            // 26일차: 보스전이 없는 곳에서 보스 목표를 쓰면 끝날 수 없으므로 정기 목표로 돌린다.
+            if (objective == Locations.LocationObjective.Boss &&
+                Boss.BossBattle.Current == null)
+            {
+                return Locations.LocationObjective.EssenceQuota;
+            }
+
+            return objective;
         }
     }
 }

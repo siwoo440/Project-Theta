@@ -327,6 +327,32 @@ namespace ProjectTheta.Core
                     floorTransition,
                     runProgression);
 
+            // 33일차: 목표를 채우면 1F 회수 지점이 탈출구가 된다(정기 목표 장소).
+            if (StageExitLogic.UsesExit(location.Objective))
+            {
+                new GameObject("ExitGate")
+                    .AddComponent<ExitGate>()
+                    .Configure(
+                        stage,
+                        floorTransition,
+                        player.transform,
+                        FloorSpace.ToWorld(
+                            StageExitLogic.ExitFloor,
+                            new Vector2(
+                                FloorLayout.RecoveryX,
+                                FloorLayout.RecoveryY)),
+                        new Vector2(
+                            FloorLayout.RecoveryWidth,
+                            5.0f));
+
+                new GameObject("ExitBanner")
+                    .AddComponent<UI.ExitBanner>()
+                    .Configure(
+                        stage,
+                        scoreTracker,
+                        floorTransition);
+            }
+
             // 31일차: Esc 일시정지 메뉴(계속 · 조작법 · 설정 · 포기).
             new GameObject("PauseMenu")
                 .AddComponent<UI.PauseMenu>()

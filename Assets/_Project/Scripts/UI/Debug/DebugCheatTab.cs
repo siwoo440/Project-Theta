@@ -403,6 +403,9 @@ namespace ProjectTheta.UI.DebugTools
             _context.Stage.AddEssence(
                 _context.Stage.TargetEssence);
 
+            // 33일차: 목표를 채우면 탈출 가능 상태가 되므로 바로 탈출까지 한다.
+            _context.Stage.RequestExit();
+
             DebugCheats.MarkUsed();
         }
 
