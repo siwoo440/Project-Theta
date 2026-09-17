@@ -25,6 +25,9 @@ namespace ProjectTheta.Run
         public int TargetEssence;
         public float SecondsAfterGoal;
 
+        /// <summary>36일차: 심야 모드 도전인지다. 보고서에서 따로 묶는다.</summary>
+        public bool NightMode;
+
         public string Difficulty;
         public bool TuningModified;
         public float PlayerHypnosisSpeedScale;
@@ -183,6 +186,7 @@ namespace ProjectTheta.Run
                         Exit = _stage.ExitKind.ToString(),
                         TargetEssence = _stage.TargetEssence,
                         SecondsAfterGoal = _stage.SecondsAfterGoal,
+                        NightMode = NightModeState.Active,
                         Difficulty = BalanceOverrides.Difficulty == null
                             ? "-"
                             : BalanceOverrides.Difficulty.Level.ToString(),

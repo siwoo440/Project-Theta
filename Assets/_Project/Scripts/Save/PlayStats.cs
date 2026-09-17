@@ -65,6 +65,9 @@ namespace ProjectTheta.Save
 
         public string BestRank = "-";
 
+        /// <summary>36일차: 심야 모드로 클리어한 횟수다. 1 이상이면 지도에 ☾.</summary>
+        public int NightClears;
+
         public LocationStats Clone()
         {
             return (LocationStats)MemberwiseClone();

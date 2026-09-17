@@ -14,7 +14,10 @@ namespace ProjectTheta.UI
         Enemies = 1,
         Rules = 2,
         Rewards = 3,
-        Record = 4
+        Record = 4,
+
+        /// <summary>36일차: 그 장소에서 본 이야기</summary>
+        Story = 5
     }
 
     /// <summary>
@@ -44,6 +47,9 @@ namespace ProjectTheta.UI
 
                 case LocationDetailKind.Record:
                     return "기록";
+
+                case LocationDetailKind.Story:
+                    return "이야기";
 
                 default:
                     return string.Empty;
@@ -155,12 +161,16 @@ namespace ProjectTheta.UI
         /// <summary>패널의 핵심 수치 세 줄이다.</summary>
         public static string BuildCoreRows(
             LocationDefinition location,
-            int stars)
+            int stars,
+            bool night = false)
         {
+            // 36일차: 심야 모드면 목표 · 시간이 바뀐 값을 보여 준다.
             int target =
-                MasteryLogic.GetTargetEssence(
-                    location.TargetEssence,
-                    stars);
+                Run.NightModeLogic.GetTarget(
+                    MasteryLogic.GetTargetEssence(
+                        location.TargetEssence,
+                        stars),
+                    night);
 
             string mastery =
                 stars > 0
@@ -168,7 +178,7 @@ namespace ProjectTheta.UI
                     : MasteryLogic.FormatStars(0);
 
             return
-                $"제한 시간  {PlayStatsLogic.FormatClock(location.TimeLimitSeconds)}     목표 정기  {target}\n" +
+                $"제한 시간  {PlayStatsLogic.FormatClock(Run.NightModeLogic.GetTimeLimit(location.TimeLimitSeconds, night))}     목표 정기  {target}\n" +
                 $"층  {location.FloorCount}개     경쟁자  {(LocationGuideCatalog.RivalsAppear(location) ? "금태양 · 인기남" : "없음")}\n" +
                 $"숙련  {mastery}";
         }
@@ -194,6 +204,11 @@ namespace ProjectTheta.UI
 
                 case LocationDetailKind.Record:
                     return BuildRecordText(record);
+
+                case LocationDetailKind.Story:
+                    return ProjectTheta.Story.StoryLogic.BuildTranscript(
+                        ProjectTheta.Story.StoryLogic.GetSeenForLocation(save, location.Id),
+                        ProjectTheta.Story.StoryLogic.CountForLocation(location.Id));
 
                 default:
                     return string.Empty;

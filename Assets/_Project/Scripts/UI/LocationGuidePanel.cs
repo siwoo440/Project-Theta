@@ -16,7 +16,7 @@ namespace ProjectTheta.UI
     ///
     ///   왼쪽: 목표 · 이 장소의 규칙 · 공략 팁      오른쪽: 적 정보
     ///
-    /// 이 칸에서 처음 도전하는 장소면 로딩 · 시작 카드 선택이 끝난 뒤 한 번 자동으로 뜬다.
+    /// 이 칸에서 처음 도전하는 장소면 로딩 · 시작 카드 선택 · 입장 이야기(36일차)가 끝난 뒤 한 번 자동으로 뜬다.
     /// 일시정지 메뉴의 [장소 규칙]으로 언제든 다시 연다. 열려 있는 동안 게임은 멈춘다.
     /// Enter · Esc · 버튼으로 닫는다(Space는 대시와 겹쳐 쓰지 않는다).
     /// </summary>
@@ -73,7 +73,9 @@ namespace ProjectTheta.UI
 
             UiOverlay.Label(
                 w,
-                $"난이도 {LocationGuideLogic.FormatDifficulty(guide.Difficulty)}   ·   {LocationCatalog.GetTimeLabel(location.TimeOfDay)}   ·   {location.Summary}",
+                Run.NightModeState.Active
+                    ? $"난이도 {LocationGuideLogic.FormatDifficulty(guide.Difficulty)}   ·   {Run.NightModeLogic.GetShortSummary()}"
+                    : $"난이도 {LocationGuideLogic.FormatDifficulty(guide.Difficulty)}   ·   {LocationCatalog.GetTimeLabel(location.TimeOfDay)}   ·   {location.Summary}",
                 40f,
                 80f,
                 WindowWidth - 80f,
@@ -214,6 +216,7 @@ namespace ProjectTheta.UI
                     _cards != null && _cards.IsOpen,
                     Boss.EndingSequence.IsPlaying,
                     LoadingScreen.IsLoading) &&
+                !DialogueOverlay.Busy &&
                 UiEscapeStack.IsEmpty)
             {
                 Open();

@@ -75,11 +75,14 @@ namespace ProjectTheta.Run
                         continue;
                     }
 
-                    if (!groups.TryGetValue(entry.Location, out List<RunLogEntry> list))
+                    // 36일차: 심야 모드 기록은 "장소 ☾" 줄로 따로 묶는다.
+                    string key = GetGroupKey(entry);
+
+                    if (!groups.TryGetValue(key, out List<RunLogEntry> list))
                     {
                         list = new List<RunLogEntry>();
-                        groups[entry.Location] = list;
-                        order.Add(entry.Location);
+                        groups[key] = list;
+                        order.Add(key);
                     }
 
                     list.Add(entry);
@@ -232,6 +235,14 @@ namespace ProjectTheta.Run
             float value)
         {
             return value.ToString("0.0", CultureInfo.InvariantCulture);
+        }
+
+        public static string GetGroupKey(
+            RunLogEntry entry)
+        {
+            return entry.NightMode
+                ? $"{entry.Location} ☾"
+                : entry.Location;
         }
     }
 }

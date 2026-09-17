@@ -135,6 +135,12 @@ namespace ProjectTheta.Save
 
             record.Clears++;
 
+            // 36일차: 심야 모드 클리어
+            if (result.NightMode)
+            {
+                record.NightClears++;
+            }
+
             if (result.RankLabel == "S")
             {
                 stats.SRanks++;
@@ -275,7 +281,9 @@ namespace ProjectTheta.Save
             return new[]
             {
                 $"{r.Attempts}",
-                $"{r.Clears}",
+                r.NightClears > 0
+                    ? $"{r.Clears} (☾{r.NightClears})"
+                    : $"{r.Clears}",
                 $"{r.BestEssence}",
                 FormatClock(r.BestClearSeconds),
                 string.IsNullOrEmpty(r.BestRank) ? "-" : r.BestRank,

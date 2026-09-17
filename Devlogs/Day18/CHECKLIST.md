@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 35일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 36일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -17,8 +17,8 @@
 | # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
 | ---: | --- | --- | --- |
 | 1 | 재생 | 타이틀 "프로젝트 θ"가 **한글로** 보임 (네모 아님) | `UiFontProvider` |
-| 2 | `시 작` | 허브로 넘어감 | `SceneBootstrapRouter`, `GameSession` |
-| 3 | 허브 확인 | 계약 정기, 성장 4행, 난이도 3버튼, "밸런스 자산 적용됨" | `BalanceBootstrap` |
+| 2 | `이어하기` 또는 `처음부터` (34일차) | 허브로 넘어감 | `SceneBootstrapRouter`, `GameSession` |
+| 3 | 허브 확인 (36일차: 학생의 방) | 위 띠에 계약 정기. `강 화` 창에 성장 4행, `난이도` 창에 3버튼, `통 계` 창에 "밸런스 자산 적용됨" | `BalanceBootstrap` |
 | 4 | 난이도 `보통` 선택 | 보통 버튼이 보라로 채워짐 | `HubScreen.RefreshDifficulty` |
 
 ## 2. 출격 → 1층 (연습 층)
@@ -102,7 +102,7 @@
 | 55 | 힘겨루기 승리 | 흰 파편 + 멈칫 + 흔들림, 묵직한 소리 | `HandleDuelWon` |
 | 56 | 계단으로 층 이동 | 화면이 **잠깐 어두워졌다 밝아짐**, 발소리 | `HandleFloorChanged`, `GameVfx.Fade` |
 | 57 | 다른 층에서 폭주·최면이 일어남 | **지금 층 화면에는 연출이 안 뜸** | `GameVfx.IsVisible` |
-| 58 | 허브 → 설정 → `화면 흔들림 꺼짐` → 출격 | 흔들림만 사라지고 **파문·빛기둥은 그대로** | `CameraShake.Enabled`, `SaveData.ScreenShakeDisabled` |
+| 58 | 허브 위 `설 정` → `화면 흔들림 꺼짐` → 출격 | 흔들림만 사라지고 **파문·빛기둥은 그대로** | `CameraShake.Enabled`, `SaveData.ScreenShakeDisabled` |
 | 59 | 게임 재실행 | 흔들림 꺼짐 설정이 유지됨 | `HubScreen.ToggleScreenShake` |
 | 60 | 연출이 많이 겹치게 (체인 최면 + 대량 회수) | 멈추거나 끊기지 않음, 오래된 연출부터 사라짐 | `VfxRunner.MaximumWorld` |
 | 62 | 집중력이 남은 상태로 최면 | 좌상단 "최면 가속 ×1.6", 게이지가 눈에 띄게 빨리 참 | `PlayerFocus.HypnosisSpeedMultiplier` |
@@ -359,7 +359,7 @@
 | 226 | ★1 장소를 고름 → 정보창 · 출발 | 목표 정기가 기본값의 105%로 표시되고 "(★1 · 보상 +10%)". 스테이지 HUD 목표 정기도 같은 값. 클리어 시 계약 정기가 10% 더 많음 | `MasteryLogic.GetTargetEssence`, `StageResultPanel.SubmitResultToSession` |
 | 227 | 같은 장소 3번 · 6번 클리어 | ★★☆ → ★★★, 목표 +10% → +15%. ★★★이 되면 "단골 장소" 업적 | `MasteryLogic.StarClears` |
 | 228 | 지도 `통계` 창 | 장소별 표 오른쪽 끝에 "숙련" 열(★) | `PlayStatsLogic.BuildLocationRow` |
-| 229 | 허브 → 왼쪽 "누적 기록" 카드 · `업적 보기` | 카드에 플레이 시간 · 도전 · 클리어(율) · 업적 N/46 · 엔딩 상태. 버튼을 누르면 업적 46개가 한 줄씩 늘어선 창(32일차, 마우스 휠 · 오른쪽 막대로 스크롤), 달성은 금색 "달성", 나머지는 진행 막대와 "값 / 목표". Esc · 닫기로 닫힘 | `HubScreen.RefreshStats`, `AchievementPanel` |
+| 229 | 허브 → `통 계` 창 · `업적 보기` (36일차: 카드가 창으로 바뀜) | 창에 플레이 시간 · 도전 · 클리어(율) · 업적 N/49 · 엔딩 상태. 버튼을 누르면 업적 49개가 한 줄씩 늘어선 창(32일차, 마우스 휠 · 오른쪽 막대로 스크롤), 달성은 금색 "달성", 나머지는 진행 막대와 "값 / 목표". Esc · 닫기로 닫힘 | `HubScreen.RefreshStats`, `AchievementPanel` |
 | 230 | 루프탑 클럽 보스 함락(엔딩) 뒤 아무 장소 출발 | 시작 계약 카드가 **4장**(모두 다른 계열), 키 1~4로 고를 수 있음. 허브 카드에 "해금: 시작 계약 카드 4장". 레벨업 카드는 여전히 3장 | `MasteryLogic.GetStartChoiceCount`, `RunProgression.OpenNextChoice`, `RunUpgradeChoicePanel` |
 | 231 | 지도를 거쳐 허브로 | 허브 "직전 도전" 카드에 장소 이름 · 결과 · 계약 정기가 보임(스테이지에서 바로 허브로 오지 않아도) | `GameSession.LastResult` |
 | 232 | 게임 종료 → 다시 실행 | 업적 · ★이 그대로이고 알림이 다시 뜨지 않음 | `SaveData.UnlockedAchievements` |
@@ -376,10 +376,10 @@
 | 236 | 카드 선택 중 · 결과 화면 · 보스 엔딩 · 로딩 중 Esc | 일시정지 창이 뜨지 않음 | `PauseMenuLogic.CanOpen` |
 | 237 | 일시정지 → `조작법` → Esc → Esc | 조작법 창(이동 · 대시 · F · 최면 · 파동 · 회수 · 탈출 · 카드 · 지도 · Esc)과 아래에 이번 장소 설명 · 방해 세력. 첫 Esc는 조작법만, 두 번째 Esc는 일시정지를 닫음 | `ControlsPanel`, `UiEscapeStack` |
 | 238 | 일시정지 → `포기하기` 두 번 | "한 번 더 누르면 포기합니다" → 결과 화면 제목 "… — GAVE UP", 계약 정기 **+0**, `지도로` · `허브로`. 통계에 도전 1회 · 클리어 0 | `StageSessionController.Abandon`, `PauseMenuLogic.GetContractEssence` |
-| 239 | 설정 창(메인 메뉴 · 허브 `설정 더 보기` · 일시정지) | 전체 음량 · 효과음 · 음악 슬라이더와 %, 화면(전체화면 · 창 모드), 해상도 3개, 커서 크기 3개, 화면 흔들림 켜짐 · 꺼짐. 고른 값은 보라색 | `SettingsPanel` |
+| 239 | 설정 창(메인 메뉴 · 허브 위 `설 정` · 일시정지) | 전체 음량 · 효과음 · 음악 슬라이더와 %, 화면(전체화면 · 창 모드), 해상도 3개, 커서 크기 3개, 화면 흔들림 켜짐 · 꺼짐. 고른 값은 보라색 | `SettingsPanel` |
 | 240 | 효과음 · 전체 음량을 끌기 | 끄는 동안 "딱" 소리가 점점 작아짐. 0%면 게임 효과음이 들리지 않음 | `GameAudio.SfxVolume`, `SettingsApplier` |
 | 241 | 스테이지에서 커서 크기 작게 · 크게 | 동전 커서 · 최면 커서가 바로 작아지거나 커짐 | `HypnosisCursorController.HandleSettingsChanged` |
-| 242 | 설정 창 화면 흔들림 끔 → 허브 설정 카드 | 허브의 흔들림 버튼도 "꺼짐"으로 바뀜(같은 값) | `SettingsPanel.Closed`, `HubScreen.Refresh` |
+| 242 | (36일차: 허브 설정 카드가 없어짐) 설정 창 화면 흔들림 끔 → 창을 닫고 다시 열기 | 여전히 "꺼짐" | `SettingsPanel`, `SaveData.ScreenShakeDisabled` |
 | 243 | 설정 바꿈 → 게임 종료 → 다시 실행 | 음량 · 커서 · 흔들림이 그대로. 예전 세이브로 시작해도 소리가 남(80%) | `SaveData.SettingsInitialized`, `SettingsLogic.Normalize` |
 | 244 | (실행 파일) 해상도 · 창 모드 바꾸기 | 창 크기가 1280×720 · 1600×900 · 1920×1080으로 바뀌고 UI 배치가 유지됨. 에디터에서는 바뀌지 않음(정상) | `SettingsApplier.ApplyScreen` |
 | 245 | 지도 통계 창 · 허브 업적 창에서 Esc | 창만 닫히고 다른 것은 열리지 않음 | `StatsPanel`, `AchievementPanel` |
@@ -477,6 +477,41 @@
 | 309 | `이어하기` | 소개 없이 바로 허브 | `MainMenuScreen.HandleSlotChosen` |
 | 310 | 메인 메뉴 아래 줄 | 설정 · 업적 · **소개** · 종료 네 버튼. `소 개`는 소개만 보고 메인 메뉴로 돌아옴 | `MainMenuScreen.BuildMenuRow` |
 | 311 | 로딩 TIP | 장소 규칙 · 추천 · 일시정지 규칙 카드 TIP이 섞여 나옴 | `LoadingTips` |
+
+## 6-18. 학생의 방 허브 · 이야기 · 심야 모드 · 도시 지배도 (36일차 추가)
+
+**가장 중요한 줄은 312번, 314번, 320번, 326번이다.** 허브 배경이 방으로 보이는지, 강화 창을 켜고 끌 수 있는지, 입장 이야기 → 규칙 카드 순서가 맞는지, 심야 모드가 적용되는지다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| --- | --- | --- | --- |
+| 312 | 허브 들어가기 | 화면 대부분이 **밤의 학생 방**: 창문(밤하늘 · 달 · 도시 실루엣 · 깜빡이는 불빛) · 커튼 · 포스터 · 벽시계(실제 시각) · 책장 · 책상(보라 노트 · 스탠드 불빛) · 의자 · 협탁(일기장) · 침대 · 러그. UI는 위 · 아래 **반투명 띠**뿐 | `HubRoomBackdrop`, `HubScreen.Build` |
+| 313 | 위 띠 | 왼쪽 "학생의 방 · N번 칸" · 계약 정기, 가운데 "도시 지배도 N% 「칭호」 · 다음 칭호 N%" + 보라 막대, 오른쪽 `업 적` `조작법` `설 정` | `HubScreen.BuildTopBar`, `DominionLogic.GetSummary` |
+| 314 | 아래 `강 화` | 방이 살짝만 어두워지고 가운데 반투명 창 "강화 · 계약 노트"(보유 계약 정기 · 4계열 · 구매). 버튼이 보라색. 다시 누르기 · `×` · 어두운 곳 클릭 · Esc로 닫힘 | `HubWindow`, `HubScreen.SetPanel`, `HubRoomLogic.Toggle` |
+| 315 | `통 계` · `난이도` · `일기장` 차례로 | 한 번에 하나만 열림. 통계 창: 요약 3줄 · 장소 8곳 지배도 내역("클리어 ✓ · ★★☆ · ☾ ✗ 3/5") · `업적 보기` · `자세한 통계`(지도와 같은 통계 창). 난이도 창: 3버튼. 일기장: 이야기 20칸, 본 것만 제목 · 나머지 "？？？" | `HubScreen.BuildStatsWindow` · `BuildDifficultyWindow` · `BuildDiaryWindow` |
+| 316 | 방 물건에 마우스 올리기 | 노트 · 벽시계 · 책장 · 창문 · 일기장에 보라 빛과 이름표("계약 노트 · 강화" 등)가 서서히 뜸 | `HubHotspot` |
+| 317 | 물건 누르기 | 노트 → 강화 창, 벽시계 → 난이도, 책장 → 통계, 일기장 → 일기장, **창문 → 지도로 출격** | `HubScreen.HandleRoomObject`, `HubRoomLogic.GetPanel` |
+| 318 | 직전 결과가 있을 때 / 없을 때 | 있으면 왼쪽 아래 작은 반투명 카드(장소 · 클리어/실패 · 점수 · 계약 정기, 심야면 ☾). 없으면 카드 없음 | `HubScreen.RefreshResult` |
+| 319 | 아래 `저 장` · `타이틀로` · `출 격 ▶` | 34일차와 같이 동작. 저장 문구는 아래 띠 가운데 | `HubScreen.SaveNow` · `Sortie` |
+| 320 | 새 게임으로 연수원 처음 출발 | 로딩 · 시작 카드 뒤 화면 아래 **대사 창**(「첫 출근」 · 이름표 · 한 글자씩). 게임 멈춤. 클릭 · Enter로 넘김(Space는 안 넘어감). 끝나면 **이어서 규칙 카드** | `StageStoryIntro`, `DialogueOverlay`, `LocationGuidePanel` |
+| 321 | 대사 중 Esc · `건너뛰기` | 대사가 닫히고 규칙 카드로 넘어감. 같은 장소 두 번째 도전에는 대사 없음 | `DialogueOverlay.SkipAll`, `StoryLogic.GetEnterScene` |
+| 322 | 연수원 클리어 → 지도로 | 지도 위에 대사 「첫 계약」. 대사 중 Enter · 숫자 키로 지도가 반응하지 않음 | `StoryPlayback.PlayPending`, `MapScreen.Update` |
+| 323 | 서로 다른 장소 3곳 · 6곳 클리어 뒤 지도/허브 | 라이벌 도발 「지켜보는 눈」 · 「초대장」 | `StoryTrigger.LocationsCleared` |
+| 324 | 루프탑 클럽 처음 입장 · 엔딩 뒤 | 입장 대사 「라이벌」(라이벌 이름표 분홍). 엔딩 뒤 지도/허브에 「후일담 · 새벽」 | `StoryCatalog` |
+| 325 | 지도 패널 `이야기` · 허브 일기장 제목 누르기 | 지도: 상세 창에 그 장소에서 본 대사 전문("본 이야기 N / 2"). 허브: 누른 장면이 대사 창으로 다시 재생 | `LocationDetailKind.Story`, `HubScreen.ReplayStory` |
+| 326 | 엔딩을 본 칸에서 지도 → 패널 `☾ 심야 꺼짐` 누르기 | "☾ 심야 켜짐", 패널 테두리 남색, 추천 줄 자리에 "☾ 심야 목표 ×1.3 · 시간 ×0.9 · 추격 7명 · 보상 ×1.5", 핵심 수치의 목표 · 제한 시간이 바뀐 값 | `MapScreen.ToggleNight`, `NightModeLogic` |
+| 327 | 엔딩 전 칸 | 버튼 "☾ 심야 (잠김)", 누를 수 없음 | `NightModeLogic.IsUnlocked` |
+| 328 | 심야로 출발 | 스테이지 목표 정기 ×1.3 · 제한 시간 ×0.9, 규칙 카드 윗줄에 심야 요약, 목표 달성 뒤 층당 적 최대 7명, 경계도가 더 빨리 오름 | `ProjectThetaPrototypeBootstrap`, `NightModeState`, `DisruptorSpawner.ChaseMax`, `ZoneAlert.Add` |
+| 329 | 심야 클리어 결과 | 제목에 "· ☾ 심야", 계약 정기 ×1.5. 지도 장소 칸 배지 끝에 "☾", 통계 표 클리어 칸 "N (☾1)", 업적 "심야 영업" | `StageResultPanel`, `PlayStatsLogic`, `AchievementLogic` |
+| 330 | 심야 실패 | "실패 · 보상 50%"도 심야 배율까지 반영, 장소 ☾는 생기지 않음 | `StageResultPanel`, `PlayStatsLogic.Apply` |
+| 331 | 치트 없이 심야 몇 판 → F1 기록 → `보고서 만들기` | 표에 "장소 ☾" 줄이 따로 생김 | `BalanceReportLogic.GetGroupKey` |
+| 332 | 클리어 · ★ · 심야가 늘어날 때 | 허브 지배도 %가 오르고 창밖 불빛이 그만큼 **보라색**으로 물듦. 25 · 50 · 75 · 100%에서 칭호가 바뀜 | `DominionLogic`, `HubRoomBackdrop.SetDominion` |
+| 333 | 지배도 100% | 지도/허브에 「후일담 · 도시의 주인」 | `StoryTrigger.Dominion` |
+| 334 | 메인 메뉴 저장 칸 창 | 칸마다 셋째 줄 "도시 지배도 N% 「칭호」" | `SaveSlotLogic.Describe` |
+| 335 | 35일차 이전 세이브(클리어한 장소가 있는 칸)로 이어하기 | 이미 깬 장소들의 클리어 장면이 지도/허브 도착 때 이어서 나옴(Esc로 한꺼번에 건너뛰기 가능) | `StoryLogic.GetPending` |
+| 336 | 허브에 여러 번 들어가기(지도 ↔ 허브) | 서큐버스(그림이 없으면 보라 실루엣)가 창가 · 책상 옆 · 침대 위 · 책장 앞 · 러그 위 · 침대 앞 중 한 곳에 있고, **바로 전과 다른 자리**. 숨 쉬듯 살짝 오르내림. 앉은 자리는 작게 | `HubSuccubus`, `HubSuccubusLogic.PickSpot` |
+| 337 | 서큐버스 누르기 | 머리 오른쪽 위(침대 쪽처럼 오른쪽 끝이면 왼쪽 위) **말풍선**에 대사가 한 글자씩. 꼬리가 머리 쪽을 가리킴. 몇 초 뒤 사라지고, 다시 누르면 다른 대사. 창이 열려 있거나 이야기 중이면 반응 없음 | `HubSuccubus.Talk`, `HubSuccubusLogic.ShouldFlip` |
+| 338 | 진행에 따른 대사 | 새 게임: "연수원부터 가 보자" 등, 정기가 모이면 "노트에서 강화해 볼까?", 엔딩 뒤: 심야 모드 권유 | `HubSuccubusLogic.GetLines` |
+| 339 | `Resources/Characters/Succubus/`에 `Room_Stand.png` · `Room_Sit.png`(또는 `Idle.png`) 넣기 | 실루엣 대신 그림이 보이고, 발끝이 자리 위치에 맞음 | `HubSuccubus.BuildArt` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 
