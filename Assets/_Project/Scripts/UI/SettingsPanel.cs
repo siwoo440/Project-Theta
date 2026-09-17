@@ -14,7 +14,7 @@ namespace ProjectTheta.UI
     /// <summary>
     /// 설정 창이다 (31일차). 메인 메뉴 · 허브 · 일시정지 메뉴가 같이 쓴다.
     ///
-    ///   [일반]     음량 3종 · 화면 · 해상도 · 커서 크기 · 화면 흔들림
+    ///   [일반]     음량 3종 · 화면 · 해상도 · 커서 크기 · 화면 흔들림 · 위기 화면 효과(34일차)
     ///   [키 설정]  조작마다 기본 · 보조 키 (32일차)
     ///
     /// 값은 바꾸는 즉시 적용하고, 창을 닫을 때 저장한다.
@@ -66,6 +66,8 @@ namespace ProjectTheta.UI
         private readonly UiButton[] _cursors = new UiButton[3];
         private UiButton _shakeOn;
         private UiButton _shakeOff;
+        private UiButton _dangerOn;
+        private UiButton _dangerOff;
         private bool _filling;
         private float _lastPreview;
 
@@ -187,6 +189,12 @@ namespace ProjectTheta.UI
             UiOverlay.Label(w, "화면 흔들림", LabelX, top, 220f, UiTheme.FontSubheading, UiTheme.TextPrimary, true);
             _shakeOn = UiOverlay.Button(w, "ShakeOn", "켜짐", ControlX, top, 180f, 40f, () => SetShake(true));
             _shakeOff = UiOverlay.Button(w, "ShakeOff", "꺼짐", ControlX + 190f, top, 180f, 40f, () => SetShake(false));
+            top += RowGap;
+
+            // 34일차: 체력 · 빼앗김 직전 · 회수 잠김 · 남은 시간 때 화면 가장자리가 붉게 물든다.
+            UiOverlay.Label(w, "위기 화면 효과", LabelX, top, 240f, UiTheme.FontSubheading, UiTheme.TextPrimary, true);
+            _dangerOn = UiOverlay.Button(w, "DangerOn", "켜짐", ControlX, top, 180f, 40f, () => SetDanger(true));
+            _dangerOff = UiOverlay.Button(w, "DangerOff", "꺼짐", ControlX + 190f, top, 180f, 40f, () => SetDanger(false));
 
             Text note =
                 UiFactory.CreateText(
@@ -478,6 +486,8 @@ namespace ProjectTheta.UI
 
             Mark(_shakeOn, !save.ScreenShakeDisabled);
             Mark(_shakeOff, save.ScreenShakeDisabled);
+            Mark(_dangerOn, !save.DangerEffectDisabled);
+            Mark(_dangerOff, save.DangerEffectDisabled);
         }
 
         /// <summary>고른 버튼은 보라, 나머지는 기본색이다.</summary>
@@ -550,6 +560,12 @@ namespace ProjectTheta.UI
             bool enabled)
         {
             Change(save => save.ScreenShakeDisabled = !enabled);
+        }
+
+        private void SetDanger(
+            bool enabled)
+        {
+            Change(save => save.DangerEffectDisabled = !enabled);
         }
 
         private void Change(

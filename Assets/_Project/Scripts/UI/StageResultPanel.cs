@@ -51,6 +51,10 @@ namespace ProjectTheta.UI
         private StageScoreBreakdown _breakdown;
         private StageRank _rank;
         private int _contractEssence;
+
+        // 34일차: 실패로 잃은 계약 정기(표시용)
+        private int _lostEssence;
+        private bool _failed;
         private bool _snapshotTaken;
         private bool _skipped;
         private float _elapsed;
@@ -242,6 +246,24 @@ namespace ProjectTheta.UI
                     GameSession.Instance.Run == null
                         ? 0
                         : GameSession.Instance.Run.Stars));
+
+            // 34일차: 실패하면 보상이 줄어든다. 줄어든 만큼을 빨갛게 보여 준다.
+            _failed =
+                !cleared &&
+                !_stage.IsAbandoned;
+
+            _lostEssence =
+                _failed
+                    ? Mathf.Max(
+                        0,
+                        MasteryLogic.GetContractEssence(
+                            ContractEssenceLogic.GetFullRate(
+                                _tracker.RecoveredEssence),
+                            GameSession.Instance.Run == null
+                                ? 0
+                                : GameSession.Instance.Run.Stars) -
+                        _contractEssence)
+                    : 0;
 
             // 29일차: 같은 도전을 두 번 세지 않는다. 판이 없으므로 구역 기록 대신 통계 숫자를 넘긴다.
             RunSession session =
@@ -941,7 +963,9 @@ namespace ProjectTheta.UI
                     return $"{_breakdown.Total:N0}";
 
                 default:
-                    return $"+{_contractEssence:N0}";
+                    return _failed
+                        ? $"+{_contractEssence:N0}   <color=#FF6B6B>{ContractEssenceLogic.GetFailureNote(_lostEssence)}</color>"
+                        : $"+{_contractEssence:N0}";
             }
         }
 

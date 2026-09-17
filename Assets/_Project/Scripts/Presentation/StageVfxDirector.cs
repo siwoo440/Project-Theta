@@ -27,6 +27,8 @@ namespace ProjectTheta.Presentation
     ///   포획당함                     강한 흔들림
     ///   힘겨루기 승리                 파편 + 멈칫 + 흔들림
     ///   층 도착                     짧은 페이드 + 발소리
+    ///   추격 시작 (34일차)            붉은 글자 + 흔들림
+    ///   위기 (34일차)                체력 · 빼앗김 직전 · 회수 잠김 · 남은 시간도 붉은 맥동 (<see cref="DangerLogic"/>)
     /// </summary>
     public sealed class StageVfxDirector : MonoBehaviour
     {
@@ -46,6 +48,8 @@ namespace ProjectTheta.Presentation
         private RunProgression _run;
         private FloorTransitionController _floors;
         private RampageCoordinator _rampage;
+        private StageSessionController _stage;
+        private Player.PlayerHealth _health;
 
         private static StageBalanceValues Tuning =>
             BalanceOverrides.StageOrDefault;
@@ -60,6 +64,13 @@ namespace ProjectTheta.Presentation
             _run = run;
             _floors = floors;
             _rampage = rampage;
+
+            // 34일차: 위기 화면 효과 재료. 스테이지 · 체력은 플레이어 몸에 붙어 있다.
+            if (player != null)
+            {
+                _stage = player.GetComponent<StageSessionController>();
+                _health = player.GetComponent<Player.PlayerHealth>();
+            }
 
             ApplyShakeSetting();
 
@@ -110,6 +121,7 @@ namespace ProjectTheta.Presentation
             StageMoments.BossShieldBroken += HandleBossShieldBroken;
             StageMoments.BossDefeated += HandleBossDefeated;
             StageMoments.MindCollapsed += HandleMindCollapsed;
+            StageMoments.ChaseStarted += HandleChaseStarted;
 
             if (_run != null)
             {
@@ -148,6 +160,7 @@ namespace ProjectTheta.Presentation
             StageMoments.BossShieldBroken -= HandleBossShieldBroken;
             StageMoments.BossDefeated -= HandleBossDefeated;
             StageMoments.MindCollapsed -= HandleMindCollapsed;
+            StageMoments.ChaseStarted -= HandleChaseStarted;
 
             if (_run != null)
             {
@@ -161,14 +174,35 @@ namespace ProjectTheta.Presentation
             }
         }
 
-        /// <summary>폭주가 진행 중인 동안 화면 가장자리를 붉게 맥동시킨다.</summary>
+        /// <summary>
+        /// 위기 중에는 화면 가장자리를 붉게 맥동시킨다.
+        /// 19일차에는 폭주만, 34일차부터 체력 · 빼앗김 직전 · 회수 잠김 · 남은 시간도 본다.
+        /// </summary>
         private void Update()
         {
+            GameSession session =
+                GameSession.Instance;
+
+            bool enabled =
+                session == null ||
+                session.Save == null ||
+                !session.Save.DangerEffectDisabled;
+
             GameVfx.SetDanger(
-                GetDangerIntensity());
+                DangerLogic.Resolve(
+                    new DangerInputs
+                    {
+                        Rampage = GetRampageIntensity(),
+                        HealthNormalized = _health == null ? 1f : _health.HealthNormalized,
+                        StealProgress = ContesterRole.HighestClaimProgress,
+                        RecoveryLocked = RecoveryPoint.IsLocked,
+                        Running = _stage != null && _stage.IsRunning,
+                        RemainingSeconds = _stage == null ? 999f : _stage.RemainingTime
+                    },
+                    enabled));
         }
 
-        private float GetDangerIntensity()
+        private float GetRampageIntensity()
         {
             if (_rampage == null ||
                 _rampage.ActiveMeter == null)
@@ -764,6 +798,24 @@ namespace ProjectTheta.Presentation
             GameVfx.Shake(
                 Tuning.VfxShakeMedium,
                 Tuning.VfxShakeSeconds);
+        }
+
+        private void HandleChaseStarted()
+        {
+            GameVfx.FloatText(
+                "추격 시작! 적이 늘어납니다",
+                PlayerPosition + new Vector2(0f, 2.8f),
+                UiTheme.Danger,
+                UiTheme.FontHeading,
+                1.6f);
+
+            GameVfx.Shake(
+                Tuning.VfxShakeMedium,
+                Tuning.VfxShakeSeconds);
+
+            GameAudio.Play(
+                GameSfx.UiStamp,
+                0.8f);
         }
 
         private void HandleFloorChanged(

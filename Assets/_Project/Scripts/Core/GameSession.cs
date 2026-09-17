@@ -27,6 +27,21 @@ namespace ProjectTheta.Core
         public SaveData Save =>
             _saveData;
 
+        // --- 34일차: 저장 칸 ---
+
+        /// <summary>
+        /// 지금 플레이 중인 저장 칸이다. 메인 메뉴에서 칸을 고르기 전에는 -1이다.
+        /// 그 동안 <see cref="Save"/>는 가장 최근 칸을 미리 읽어 둔 것이라 메인 메뉴 기록 · 업적 창이 보여 준다.
+        /// </summary>
+        public int ActiveSlot { get; private set; } = -1;
+
+        public bool HasActiveSlot =>
+            SaveSlotLogic.IsValid(
+                ActiveSlot);
+
+        // 칸을 고르지 않았을 때 쓸 칸(가장 최근 칸, 없으면 1번 칸)이다.
+        private int _previewSlot;
+
         public bool HasPendingResult =>
             _hasPendingResult;
 
@@ -139,11 +154,142 @@ namespace ProjectTheta.Core
 
             if (_saveData == null)
             {
-                _saveData =
-                    SaveSystem.Load();
+                LoadPreview();
             }
 
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+
             // 31일차: 음량 · 화면 · 커서 설정을 게임 시작 때 적용한다.
+            SettingsApplier.Apply(
+                _saveData);
+        }
+
+        private void OnDestroy()
+        {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+        }
+
+        /// <summary>
+        /// 게임을 켤 때: 옛 세이브를 옮기고, 공용 설정과 가장 최근 칸을 읽는다.
+        /// 칸은 아직 고르지 않은 상태다(메인 메뉴에서 이어하기 · 처음부터로 고른다).
+        /// </summary>
+        private void LoadPreview()
+        {
+            SaveSystem.MigrateLegacyIfNeeded();
+
+            SaveSlotSummary[] summaries =
+                SaveSystem.GetSummaries();
+
+            _previewSlot =
+                SaveSlotLogic.GetFallbackSlot(
+                    summaries);
+
+            _saveData =
+                SaveSystem.LoadSlot(
+                    _previewSlot);
+
+            SaveSlotLogic.ApplySettings(
+                SaveSystem.LoadSettings(),
+                _saveData);
+
+            ActiveSlot = -1;
+        }
+
+        /// <summary>
+        /// 에디터에서 허브 · 지도 · 스테이지 씬을 바로 재생하면 칸을 고를 수 없다.
+        /// 그때는 미리 읽어 둔 칸(가장 최근 · 없으면 1번)으로 이어서 저장한다.
+        /// </summary>
+        private void HandleSceneLoaded(
+            Scene scene,
+            LoadSceneMode mode)
+        {
+            if (HasActiveSlot ||
+                scene.name == SceneNames.MainMenu ||
+                scene.name == SceneNames.Boot)
+            {
+                return;
+            }
+
+            ActiveSlot =
+                _previewSlot;
+
+            Debug.Log(
+                $"[GameSession] 칸을 고르지 않고 들어와 {SaveSlotLogic.GetSlotLabel(ActiveSlot)}을 씁니다.");
+        }
+
+        /// <summary>저장 칸 요약 3개다. 메인 메뉴 칸 목록이 쓴다.</summary>
+        public SaveSlotSummary[] GetSlotSummaries()
+        {
+            return SaveSystem.GetSummaries();
+        }
+
+        /// <summary>이어하기: 저장된 칸을 불러온다. 설정은 공용 설정을 그대로 쓴다.</summary>
+        public bool LoadSlot(
+            int slot)
+        {
+            SaveData loaded =
+                SaveSystem.TryLoadSlot(
+                    slot);
+
+            if (loaded == null)
+            {
+                return false;
+            }
+
+            SaveSlotLogic.ApplySettings(
+                SaveSlotLogic.ExtractSettings(
+                    _saveData),
+                loaded);
+
+            BeginSlot(
+                slot,
+                loaded);
+
+            return true;
+        }
+
+        /// <summary>처음부터: 고른 칸을 새 게임으로 덮어쓰고 바로 저장한다.</summary>
+        public bool NewGame(
+            int slot)
+        {
+            if (!SaveSlotLogic.IsValid(slot))
+            {
+                return false;
+            }
+
+            BeginSlot(
+                slot,
+                SaveSlotLogic.CreateNewGame(
+                    SaveSlotLogic.ExtractSettings(
+                        _saveData)));
+
+            return WriteSave();
+        }
+
+        /// <summary>허브의 저장 버튼이다. 칸을 고르지 않았으면 저장하지 않는다.</summary>
+        public bool SaveNow()
+        {
+            return HasActiveSlot &&
+                   WriteSave();
+        }
+
+        private void BeginSlot(
+            int slot,
+            SaveData data)
+        {
+            _saveData = data;
+            ActiveSlot = slot;
+            _previewSlot = slot;
+
+            // 다른 칸의 도전 · 결과 · 업적 알림이 섞이지 않게 비운다.
+            Run = null;
+            _hasPendingResult = false;
+            _pendingResult = StageResultSummary.Empty;
+            LastResult = StageResultSummary.Empty;
+            HasLastResult = false;
+            _newAchievements.Clear();
+
             SettingsApplier.Apply(
                 _saveData);
         }
@@ -216,15 +362,37 @@ namespace ProjectTheta.Core
             _pendingResult =
                 StageResultSummary.Empty;
 
-            SaveSystem.Save(
-                _saveData);
+            WriteSave();
 
             return true;
         }
 
-        public void WriteSave()
+        /// <summary>
+        /// 공용 설정은 늘 저장하고, 칸을 골랐으면 칸도 저장한다 (34일차).
+        /// 칸 저장에 성공했는지를 돌려준다.
+        /// </summary>
+        public bool WriteSave()
         {
-            SaveSystem.Save(
+            if (_saveData == null)
+            {
+                return false;
+            }
+
+            SaveSystem.SaveSettings(
+                SaveSlotLogic.ExtractSettings(
+                    _saveData));
+
+            if (!HasActiveSlot)
+            {
+                return false;
+            }
+
+            SaveSlotLogic.Stamp(
+                _saveData,
+                System.DateTime.Now);
+
+            return SaveSystem.SaveSlot(
+                ActiveSlot,
                 _saveData);
         }
 
