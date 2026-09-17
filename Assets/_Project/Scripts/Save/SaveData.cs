@@ -13,6 +13,9 @@ namespace ProjectTheta.Save
         public int TotalScore;
         public string RankLabel;
 
+        /// <summary>36일차: 심야 모드로 도전했는지다.</summary>
+        public bool NightMode;
+
         /// <summary>이번 판에서 환산된 계약 정기다.</summary>
         public int ContractEssence;
         public int TargetEssence;
@@ -98,6 +101,10 @@ namespace ProjectTheta.Save
         /// <summary>마지막으로 저장한 때(Ticks)다. 가장 최근 칸을 고를 때 쓴다.</summary>
         public long SavedTicks;
 
+        // --- 36일차 ---
+        /// <summary>본 이야기 장면 ID다 (<see cref="Story.StoryLogic"/>).</summary>
+        public string[] SeenStories = new string[0];
+
         // --- 29일차 ---
         /// <summary>지금까지의 누적 통계다. 지도의 [통계] 창이 보여 준다.</summary>
         public PlayStats Stats = new PlayStats();
@@ -145,6 +152,9 @@ namespace ProjectTheta.Save
                     DangerEffectDisabled = DangerEffectDisabled,
                     SavedAt = SavedAt,
                     SavedTicks = SavedTicks,
+                    SeenStories = SeenStories == null
+                        ? new string[0]
+                        : (string[])SeenStories.Clone(),
                     UpgradeLevels = new int[UpgradeLevels?.Length ?? 4],
                     Stats = Stats == null ? new PlayStats() : Stats.Clone(),
                     LocationRecords = new LocationStats[LocationRecords?.Length ?? 0],

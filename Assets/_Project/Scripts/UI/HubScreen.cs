@@ -1,10 +1,15 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 using ProjectTheta.Balance;
 using ProjectTheta.Core;
 using ProjectTheta.Presentation;
 using ProjectTheta.Save;
 using ProjectTheta.Stage.Locations;
+using ProjectTheta.Story;
 using ProjectTheta.UI.Framework;
 
 namespace ProjectTheta.UI
@@ -15,6 +20,12 @@ namespace ProjectTheta.UI
     /// 스테이지에서 돌아온 결과를 세이브에 반영하고,
     /// 계약 정기로 4계열 영구 성장을 구매한다.
     /// 15일차에 IMGUI를 걷어내고 Canvas(uGUI)로 다시 만들었다.
+    ///
+    /// 36일차: 배경을 "밤의 학생 방"(<see cref="HubRoomBackdrop"/>)으로 바꾸고 UI를 가장자리 반투명 띠로 줄였다.
+    ///   위 띠   : 칸 · 계약 정기 · 도시 지배도 · [업적] [조작법] [설정]
+    ///   아래 띠 : [강화] [통계] [난이도] [일기장] [저장] [타이틀로] ········ [출격 ▶]
+    ///   창      : 강화 · 통계 · 난이도 · 일기장은 버튼(또는 방 물건)으로 켜고 끈다. 한 번에 하나.
+    ///   서큐버스 : 들어올 때마다 방 안 무작위 자리. 누르면 머리 위 말풍선(<see cref="HubSuccubus"/>).
     /// </summary>
     public sealed class HubScreen : MonoBehaviour
     {
@@ -33,6 +44,9 @@ namespace ProjectTheta.UI
             DifficultyLevel.Challenge
         };
 
+        private const float TopBarHeight = 76f;
+        private const float BottomBarHeight = 96f;
+
         /// <summary>업그레이드 한 줄을 이루는 조각 묶음이다.</summary>
         private sealed class UpgradeRow
         {
@@ -44,20 +58,34 @@ namespace ProjectTheta.UI
             public Image Background;
         }
 
+        /// <summary>창이 열려 있는 동안 Esc 순서에 올리는 표식이다.</summary>
+        private sealed class WindowToken
+        {
+        }
+
         private readonly UpgradeRow[] _rows =
             new UpgradeRow[4];
 
         private readonly UiButton[] _difficultyButtons =
             new UiButton[3];
 
+        private Text _slotText;
         private Text _essenceText;
+        private Text _dominionText;
+        private UiBar _dominionBar;
+
+        private GameObject _resultCard;
         private Text _resultText;
         private Text _resultDetailText;
         private Image _resultAccent;
+
+        private Text _upgradeEssence;
         private Text _statsText;
+        private Text _dominionDetail;
         private Text _assetText;
         private Text _difficultyHintText;
-        private UiButton _shakeButton;
+        private Text _diaryHint;
+        private readonly List<UiButton> _diaryButtons = new List<UiButton>();
 
         // 34일차: 저장 버튼 · 결과 문구
         private Text _saveMessage;
@@ -71,9 +99,18 @@ namespace ProjectTheta.UI
         private bool _hasLastResult;
 
         private AchievementPanel _achievements;
+        private StatsPanel _statsPanel;
         private SettingsPanel _settings;
         private ControlsPanel _controls;
         private Canvas _canvas;
+
+        // 36일차: 방 · 창 · 이야기
+        private HubRoomBackdrop _room;
+        private readonly Dictionary<HubPanel, HubWindow> _windows = new Dictionary<HubPanel, HubWindow>();
+        private readonly Dictionary<HubPanel, UiButton> _panelButtons = new Dictionary<HubPanel, UiButton>();
+        private readonly WindowToken _windowToken = new WindowToken();
+        private HubPanel _openPanel;
+        private DialogueOverlay _story;
 
         private void Start()
         {
@@ -106,6 +143,45 @@ namespace ProjectTheta.UI
                     _canvas.transform,
                     game.TakeNewAchievements());
             }
+
+            // 36일차: 첫 클리어 · 라이벌 도발 · 후일담
+            StoryPlayback.PlayPending(_story, Refresh);
+        }
+
+        private void Update()
+        {
+            if (_saveMessageRemaining > 0f &&
+                _saveMessage != null)
+            {
+                _saveMessageRemaining -= Time.unscaledDeltaTime;
+
+                if (_saveMessageRemaining <= 0f)
+                {
+                    _saveMessage.text = string.Empty;
+                }
+            }
+
+#if ENABLE_INPUT_SYSTEM
+            if (_openPanel == HubPanel.None ||
+                (_story != null && _story.IsPlaying))
+            {
+                return;
+            }
+
+            Keyboard keyboard = Keyboard.current;
+
+            if (keyboard != null &&
+                keyboard.escapeKey.wasPressedThisFrame &&
+                UiEscapeStack.TryConsume(_windowToken, Time.frameCount))
+            {
+                SetPanel(HubPanel.None);
+            }
+#endif
+        }
+
+        private void OnDestroy()
+        {
+            UiEscapeStack.Remove(_windowToken);
         }
 
         // 화면 조립 ------------------------------------------------------
@@ -120,16 +196,18 @@ namespace ProjectTheta.UI
 
             _canvas = canvas;
 
-            Image backdrop =
-                UiFactory.CreateImage(
-                    canvas.transform,
-                    "Backdrop",
-                    UiTheme.Backdrop);
+            // 36일차: 배경은 밤의 학생 방이다.
+            _room = gameObject.AddComponent<HubRoomBackdrop>();
+            _room.Build(canvas.transform);
+            _room.ObjectClicked += HandleRoomObject;
 
-            UiFactory.Stretch(
-                backdrop.rectTransform);
+            // 36일차: 방 안의 서큐버스. 매번 다른 자리에 있고 누르면 말풍선으로 말한다.
+            gameObject.AddComponent<HubSuccubus>().Build(
+                canvas.transform,
+                () => CurrentSave,
+                () => _openPanel != HubPanel.None ||
+                      (_story != null && _story.IsPlaying));
 
-            // 20일차 꾸미기: 배경에 느리게 떠오르는 보라 빛 알갱이
             RectTransform motes =
                 UiFactory.CreateRect(
                     canvas.transform,
@@ -143,65 +221,29 @@ namespace ProjectTheta.UI
                     UiTheme.Accent.r,
                     UiTheme.Accent.g,
                     UiTheme.Accent.b,
-                    0.22f));
+                    0.16f));
 
-            BuildHeader(
-                canvas.transform);
+            BuildTopBar(canvas.transform);
+            BuildResultCard(canvas.transform);
+            BuildBottomBar(canvas.transform);
 
-            // 본문은 좌(정보) · 우(성장)로 나눈다.
-            RectTransform body =
-                UiFactory.CreateRect(
-                    canvas.transform,
-                    "Body");
-
-            body.anchorMin = new Vector2(0f, 0f);
-            body.anchorMax = new Vector2(1f, 1f);
-            body.offsetMin = new Vector2(80f, 132f);
-            body.offsetMax = new Vector2(-80f, -128f);
-
-            RectTransform left =
-                UiFactory.CreateRect(
-                    body,
-                    "LeftColumn");
-
-            left.anchorMin = new Vector2(0f, 0f);
-            left.anchorMax = new Vector2(0.34f, 1f);
-            left.offsetMin = Vector2.zero;
-            left.offsetMax = new Vector2(-16f, 0f);
-
-            RectTransform right =
-                UiFactory.CreateRect(
-                    body,
-                    "RightColumn");
-
-            right.anchorMin = new Vector2(0.34f, 0f);
-            right.anchorMax = new Vector2(1f, 1f);
-            right.offsetMin = new Vector2(16f, 0f);
-            right.offsetMax = Vector2.zero;
-
-            BuildResultCard(
-                left);
-
-            BuildStatsCard(
-                left);
-
-            BuildUpgradeCard(
-                right);
-
-            BuildDifficultyCard(
-                right);
-
-            BuildSettingsCard(
-                right);
-
-            BuildFooter(
-                canvas.transform);
+            BuildUpgradeWindow(canvas.transform);
+            BuildStatsWindow(canvas.transform);
+            BuildDifficultyWindow(canvas.transform);
+            BuildDiaryWindow(canvas.transform);
 
             // 30일차: 업적 목록 창.
             _achievements =
                 gameObject.AddComponent<AchievementPanel>();
 
             _achievements.Build(
+                canvas.transform);
+
+            // 36일차: 자세한 통계 창(지도와 같은 창).
+            _statsPanel =
+                gameObject.AddComponent<StatsPanel>();
+
+            _statsPanel.Build(
                 canvas.transform);
 
             // 31일차: 공용 설정 · 조작법 창.
@@ -216,119 +258,84 @@ namespace ProjectTheta.UI
                 ControlsPanel.Create(
                     canvas.transform,
                     60);
+
+            _story = DialogueOverlay.Create(canvas.transform, StoryPlayback.SortOrder);
         }
 
-        private void BuildHeader(
+        private static RectTransform CreateBar(
+            Transform parent,
+            string name,
+            bool top,
+            float height)
+        {
+            RectTransform bar = UiFactory.CreateRect(parent, name);
+
+            bar.anchorMin = new Vector2(0f, top ? 1f : 0f);
+            bar.anchorMax = new Vector2(1f, top ? 1f : 0f);
+            bar.pivot = new Vector2(0.5f, top ? 1f : 0f);
+            bar.offsetMin = Vector2.zero;
+            bar.offsetMax = Vector2.zero;
+            bar.sizeDelta = new Vector2(0f, height);
+            bar.anchoredPosition = Vector2.zero;
+
+            Image fill = UiFactory.CreateImage(bar, "Fill", new Color(0.04f, 0.03f, 0.07f, HubRoomLogic.BarAlpha));
+            UiFactory.Stretch(fill.rectTransform);
+
+            Image line = UiFactory.CreateImage(bar, "Line", new Color(UiTheme.AccentSoft.r, UiTheme.AccentSoft.g, UiTheme.AccentSoft.b, 0.5f));
+            line.rectTransform.anchorMin = new Vector2(0f, top ? 0f : 1f);
+            line.rectTransform.anchorMax = new Vector2(1f, top ? 0f : 1f);
+            line.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            line.rectTransform.sizeDelta = new Vector2(0f, 2f);
+            line.rectTransform.anchoredPosition = Vector2.zero;
+
+            return bar;
+        }
+
+        private void BuildTopBar(
             Transform parent)
         {
-            RectTransform header =
-                UiFactory.CreateRect(
-                    parent,
-                    "Header");
+            RectTransform bar = CreateBar(parent, "TopBar", true, TopBarHeight);
 
-            header.anchorMin = new Vector2(0f, 1f);
-            header.anchorMax = new Vector2(1f, 1f);
-            header.pivot = new Vector2(0.5f, 1f);
-            header.offsetMin = new Vector2(0f, 0f);
-            header.offsetMax = new Vector2(0f, 0f);
-            header.sizeDelta = new Vector2(0f, 112f);
+            _slotText = UiFactory.CreateText(bar, "Slot", string.Empty, UiTheme.FontSmall, UiTheme.TextMuted, TextAnchor.MiddleLeft);
+            UiFactory.Place(_slotText.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(40f, 14f), new Vector2(360f, 24f));
 
-            Image fill =
-                UiFactory.CreateImage(
-                    header,
-                    "Fill",
-                    new Color(
-                        0.085f,
-                        0.065f,
-                        0.125f,
-                        1f));
+            Text caption = UiFactory.CreateText(bar, "EssenceCaption", "계약 정기", UiTheme.FontSmall, UiTheme.TextMuted, TextAnchor.MiddleLeft);
+            UiFactory.Place(caption.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(40f, -14f), new Vector2(100f, 24f));
 
-            UiFactory.Stretch(
-                fill.rectTransform);
+            _essenceText = UiFactory.CreateText(bar, "Essence", "-", UiTheme.FontHeading + 4, UiTheme.Gold, TextAnchor.MiddleLeft, FontStyle.Bold);
+            UiFactory.Place(_essenceText.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(130f, -12f), new Vector2(260f, 34f));
 
-            Image underline =
-                UiFactory.CreateImage(
-                    header,
-                    "Underline",
-                    UiTheme.PanelEdge);
+            // 도시 지배도 막대
+            _dominionText = UiFactory.CreateText(bar, "Dominion", string.Empty, UiTheme.FontBody, UiTheme.TextPrimary, TextAnchor.MiddleCenter, FontStyle.Bold);
+            UiFactory.Place(_dominionText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 14f), new Vector2(620f, 26f));
 
-            RectTransform underlineRect =
-                underline.rectTransform;
+            _dominionBar = UiFactory.CreateBar(bar, "DominionBar", new Color(0.78f, 0.45f, 1f, 1f), UiTheme.TrackFill);
+            UiFactory.Place(_dominionBar.Root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -16f), new Vector2(480f, 12f));
 
-            underlineRect.anchorMin = new Vector2(0f, 0f);
-            underlineRect.anchorMax = new Vector2(1f, 0f);
-            underlineRect.pivot = new Vector2(0.5f, 0f);
-            underlineRect.offsetMin = Vector2.zero;
-            underlineRect.offsetMax = Vector2.zero;
-            underlineRect.sizeDelta = new Vector2(0f, 2f);
-
-            Text title =
-                UiFactory.CreateText(
-                    header,
-                    "Title",
-                    "계약 서큐버스 허브",
-                    UiTheme.FontHeading + 4,
-                    UiTheme.TextPrimary,
-                    TextAnchor.MiddleLeft,
-                    FontStyle.Bold);
-
-            UiFactory.Place(
-                title.rectTransform,
-                new Vector2(0f, 0.5f),
-                new Vector2(0f, 0.5f),
-                new Vector2(80f, 8f),
-                new Vector2(700f, 36f));
-
-            Text caption =
-                UiFactory.CreateText(
-                    header,
-                    "Caption",
-                    "출격 준비 · 영구 성장 · 난이도 선택",
-                    UiTheme.FontSmall,
-                    UiTheme.TextMuted,
-                    TextAnchor.MiddleLeft);
-
-            UiFactory.Place(
-                caption.rectTransform,
-                new Vector2(0f, 0.5f),
-                new Vector2(0f, 0.5f),
-                new Vector2(80f, -22f),
-                new Vector2(700f, 22f));
-
-            Text essenceCaption =
-                UiFactory.CreateText(
-                    header,
-                    "EssenceCaption",
-                    "계약 정기",
-                    UiTheme.FontSmall,
-                    UiTheme.TextMuted,
-                    TextAnchor.MiddleRight);
-
-            UiFactory.Place(
-                essenceCaption.rectTransform,
-                new Vector2(1f, 0.5f),
-                new Vector2(1f, 0.5f),
-                new Vector2(-80f, 18f),
-                new Vector2(400f, 22f));
-
-            _essenceText =
-                UiFactory.CreateText(
-                    header,
-                    "Essence",
-                    "-",
-                    UiTheme.FontTitle - 8,
-                    UiTheme.Gold,
-                    TextAnchor.MiddleRight,
-                    FontStyle.Bold);
-
-            UiFactory.Place(
-                _essenceText.rectTransform,
-                new Vector2(1f, 0.5f),
-                new Vector2(1f, 0.5f),
-                new Vector2(-80f, -16f),
-                new Vector2(400f, 46f));
+            TopButton(bar, "AchievementsButton", "업  적", -330f, () => _achievements.Open(CurrentSave));
+            TopButton(bar, "ControlsButton", "조작법", -190f, () => _controls.Open());
+            TopButton(bar, "SettingsButton", "설  정", -50f, () => _settings.Open());
         }
 
+        private static void TopButton(
+            RectTransform bar,
+            string name,
+            string label,
+            float x,
+            System.Action onClick)
+        {
+            UiButton button = UiFactory.CreateButton(bar, name, label, UiTheme.FontBody);
+            UiFactory.Place(button.Background.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(x - 40f, 0f), new Vector2(124f, 44f));
+
+            button.Button.onClick.AddListener(
+                () =>
+                {
+                    GameAudio.Play(GameSfx.UiTick);
+                    onClick();
+                });
+        }
+
+        /// <summary>직전 도전 결과다. 결과가 있을 때만 왼쪽 아래에 작게 뜬다.</summary>
         private void BuildResultCard(
             Transform parent)
         {
@@ -336,239 +343,112 @@ namespace ProjectTheta.UI
                 UiFactory.CreatePanel(
                     parent,
                     "ResultCard",
-                    UiTheme.PanelFill,
-                    UiTheme.PanelEdge);
+                    new Color(0.05f, 0.04f, 0.09f, 0.62f),
+                    new Color(UiTheme.PanelEdge.r, UiTheme.PanelEdge.g, UiTheme.PanelEdge.b, 0.6f));
 
-            card.anchorMin = new Vector2(0f, 1f);
-            card.anchorMax = new Vector2(1f, 1f);
-            card.pivot = new Vector2(0.5f, 1f);
-            card.offsetMin = new Vector2(0f, 0f);
-            card.offsetMax = new Vector2(0f, 0f);
-            card.sizeDelta = new Vector2(0f, 168f);
+            UiFactory.Place(card, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(32f, BottomBarHeight + 18f), new Vector2(420f, 112f));
 
-            // 왼쪽 세로 막대로 클리어 여부를 색으로 알린다.
-            _resultAccent =
-                UiFactory.CreateImage(
-                    card,
-                    "Accent",
-                    UiTheme.AccentSoft);
+            _resultCard = card.gameObject;
 
-            RectTransform accentRect =
-                _resultAccent.rectTransform;
+            _resultAccent = UiFactory.CreateImage(card, "Accent", UiTheme.AccentSoft);
+            UiFactory.Place(_resultAccent.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(2f, 0f), new Vector2(6f, 108f));
 
-            accentRect.anchorMin = new Vector2(0f, 0f);
-            accentRect.anchorMax = new Vector2(0f, 1f);
-            accentRect.pivot = new Vector2(0f, 0.5f);
-            accentRect.offsetMin = new Vector2(0f, 2f);
-            accentRect.offsetMax = new Vector2(0f, -2f);
-            accentRect.sizeDelta = new Vector2(6f, 0f);
+            Text caption = UiFactory.CreateText(card, "Caption", "직전 도전", UiTheme.FontSmall, UiTheme.TextMuted, TextAnchor.UpperLeft);
+            UiFactory.Place(caption.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -10f), new Vector2(380f, 22f));
 
-            Text caption =
-                UiFactory.CreateText(
-                    card,
-                    "Caption",
-                    "직전 도전",
-                    UiTheme.FontSmall,
-                    UiTheme.TextMuted,
-                    TextAnchor.UpperLeft);
+            _resultText = UiFactory.CreateText(card, "Result", string.Empty, UiTheme.FontSubheading, UiTheme.TextPrimary, TextAnchor.UpperLeft, FontStyle.Bold);
+            UiFactory.Place(_resultText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -34f), new Vector2(390f, 28f));
 
-            UiFactory.Place(
-                caption.rectTransform,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(28f, -20f),
-                new Vector2(380f, 22f));
-
-            _resultText =
-                UiFactory.CreateText(
-                    card,
-                    "Result",
-                    "출격 준비 완료",
-                    UiTheme.FontHeading,
-                    UiTheme.TextPrimary,
-                    TextAnchor.UpperLeft,
-                    FontStyle.Bold);
-
-            UiFactory.Place(
-                _resultText.rectTransform,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(28f, -50f),
-                new Vector2(420f, 34f));
-
-            _resultDetailText =
-                UiFactory.CreateText(
-                    card,
-                    "Detail",
-                    string.Empty,
-                    UiTheme.FontBody,
-                    UiTheme.TextMuted,
-                    TextAnchor.UpperLeft);
-
-            _resultDetailText.horizontalOverflow =
-                HorizontalWrapMode.Wrap;
-
-            UiFactory.Place(
-                _resultDetailText.rectTransform,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(28f, -94f),
-                new Vector2(420f, 60f));
+            _resultDetailText = UiFactory.CreateText(card, "Detail", string.Empty, UiTheme.FontSmall, UiTheme.TextMuted, TextAnchor.UpperLeft);
+            UiFactory.Place(_resultDetailText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -64f), new Vector2(390f, 44f));
         }
 
-        private void BuildStatsCard(
+        private void BuildBottomBar(
             Transform parent)
         {
-            RectTransform card =
-                UiFactory.CreatePanel(
-                    parent,
-                    "StatsCard",
-                    UiTheme.PanelFill,
-                    UiTheme.PanelEdge);
+            RectTransform bar = CreateBar(parent, "BottomBar", false, BottomBarHeight);
 
-            card.anchorMin = new Vector2(0f, 1f);
-            card.anchorMax = new Vector2(1f, 1f);
-            card.pivot = new Vector2(0.5f, 1f);
-            card.offsetMin = new Vector2(0f, 0f);
-            card.offsetMax = new Vector2(0f, 0f);
+            float x = 40f;
 
-            card.anchoredPosition =
-                new Vector2(0f, -184f);
+            foreach (HubPanel panel in HubRoomLogic.BottomPanels)
+            {
+                HubPanel captured = panel;
+                UiButton button = BottomButton(bar, $"Panel_{panel}", HubRoomLogic.GetButtonLabel(panel), x, () => TogglePanel(captured));
+                _panelButtons[panel] = button;
+                x += 150f;
+            }
 
-            card.sizeDelta = new Vector2(0f, 150f);
+            x += 30f;
 
-            Text caption =
-                UiFactory.CreateText(
-                    card,
-                    "Caption",
-                    "누적 기록",
-                    UiTheme.FontSmall,
-                    UiTheme.TextMuted,
-                    TextAnchor.UpperLeft);
+            // 34일차: 지금 칸에 바로 저장한다(장소를 마칠 때도 자동 저장된다).
+            BottomButton(bar, "SaveNow", "저  장", x, SaveNow);
+            x += 150f;
 
-            UiFactory.Place(
-                caption.rectTransform,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(24f, -20f),
-                new Vector2(380f, 22f));
+            BottomButton(
+                bar,
+                "BackToTitle",
+                "타이틀로",
+                x,
+                () => GameSession.Instance?.GoTo(SceneDestination.MainMenu));
 
-            _statsText =
-                UiFactory.CreateText(
-                    card,
-                    "Stats",
-                    string.Empty,
-                    UiTheme.FontBody,
-                    UiTheme.TextPrimary,
-                    TextAnchor.UpperLeft);
+            x += 160f;
 
-            _statsText.horizontalOverflow =
-                HorizontalWrapMode.Wrap;
+            _saveMessage = UiFactory.CreateText(bar, "SaveMessage", string.Empty, UiTheme.FontBody, UiTheme.Gold, TextAnchor.MiddleLeft);
+            UiFactory.Place(_saveMessage.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(x, 0f), new Vector2(460f, 40f));
 
-            UiFactory.Place(
-                _statsText.rectTransform,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(24f, -48f),
-                new Vector2(400f, 70f));
-
-            // 30일차: 업적 목록 버튼.
-            UiButton achievements =
-                UiFactory.CreateButton(
-                    card,
-                    "AchievementsButton",
-                    "업적 보기",
-                    UiTheme.FontSmall,
-                    true);
-
-            UiFactory.Place(
-                achievements.Background.rectTransform,
-                new Vector2(1f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(-20f, -14f),
-                new Vector2(130f, 36f));
-
-            achievements.Button.onClick.AddListener(
-                () =>
-                {
-                    GameAudio.Play(
-                        GameSfx.UiTick);
-
-                    _achievements.Open(
-                        GameSession.Instance == null
-                            ? null
-                            : GameSession.Instance.Save);
-                });
-
-            _assetText =
-                UiFactory.CreateText(
-                    card,
-                    "AssetState",
-                    string.Empty,
-                    UiTheme.FontTiny,
-                    UiTheme.TextDisabled,
-                    TextAnchor.LowerLeft);
-
-            UiFactory.Place(
-                _assetText.rectTransform,
-                new Vector2(0f, 0f),
-                new Vector2(0f, 0f),
-                new Vector2(24f, 16f),
-                new Vector2(420f, 20f));
+            UiButton sortie = UiFactory.CreateButton(bar, "Sortie", "출    격  ▶", UiTheme.FontHeading, true);
+            UiFactory.Place(sortie.Background.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-40f, 0f), new Vector2(320f, 62f));
+            sortie.Button.onClick.AddListener(Sortie);
         }
 
-        private void BuildUpgradeCard(
+        private static UiButton BottomButton(
+            RectTransform bar,
+            string name,
+            string label,
+            float x,
+            UnityEngine.Events.UnityAction onClick)
+        {
+            UiButton button = UiFactory.CreateButton(bar, name, label, UiTheme.FontBody);
+            UiFactory.Place(button.Background.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(x, 0f), new Vector2(136f, 52f));
+            button.Button.onClick.AddListener(onClick);
+
+            return button;
+        }
+
+        // 창 ------------------------------------------------------------
+
+        private HubWindow CreateWindow(
+            Transform parent,
+            HubPanel panel,
+            Vector2 size)
+        {
+            HubWindow window =
+                HubWindow.Create(
+                    parent,
+                    $"Window_{panel}",
+                    HubRoomLogic.GetPanelTitle(panel),
+                    size,
+                    () => SetPanel(HubPanel.None));
+
+            _windows[panel] = window;
+
+            return window;
+        }
+
+        private void BuildUpgradeWindow(
             Transform parent)
         {
-            RectTransform card =
-                UiFactory.CreatePanel(
-                    parent,
-                    "UpgradeCard",
-                    UiTheme.PanelFill,
-                    UiTheme.PanelEdge);
+            HubWindow window = CreateWindow(parent, HubPanel.Upgrades, new Vector2(1060f, 440f));
+            RectTransform body = window.Body;
 
-            card.anchorMin = new Vector2(0f, 1f);
-            card.anchorMax = new Vector2(1f, 1f);
-            card.pivot = new Vector2(0.5f, 1f);
-            card.offsetMin = new Vector2(0f, 0f);
-            card.offsetMax = new Vector2(0f, 0f);
-            card.sizeDelta = new Vector2(0f, 352f);
+            _upgradeEssence = UiFactory.CreateText(body, "Essence", string.Empty, UiTheme.FontBody, UiTheme.Gold, TextAnchor.MiddleRight, FontStyle.Bold);
+            UiFactory.Place(_upgradeEssence.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-80f, -18f), new Vector2(420f, 34f));
 
-            Text caption =
-                UiFactory.CreateText(
-                    card,
-                    "Caption",
-                    "영구 성장",
-                    UiTheme.FontSubheading,
-                    UiTheme.TextPrimary,
-                    TextAnchor.UpperLeft,
-                    FontStyle.Bold);
-
-            UiFactory.Place(
-                caption.rectTransform,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(28f, -18f),
-                new Vector2(300f, 26f));
-
-            Text hint =
-                UiFactory.CreateText(
-                    card,
-                    "Hint",
-                    "계열당 5레벨 · 총 600 정기",
-                    UiTheme.FontSmall,
-                    UiTheme.TextMuted,
-                    TextAnchor.UpperRight);
-
-            UiFactory.Place(
-                hint.rectTransform,
-                new Vector2(1f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(-28f, -20f),
-                new Vector2(400f, 22f));
+            Text hint = UiFactory.CreateText(body, "Hint", "계열당 5레벨 · 총 600 정기 · 구매하면 바로 저장됩니다", UiTheme.FontSmall, UiTheme.TextMuted, TextAnchor.MiddleLeft);
+            UiFactory.Place(hint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -76f), new Vector2(700f, 24f));
 
             const float rowHeight = 62f;
-            const float firstRowTop = 58f;
+            const float firstRowTop = 110f;
 
             for (int i = 0;
                  i < Tracks.Length;
@@ -576,7 +456,7 @@ namespace ProjectTheta.UI
             {
                 _rows[i] =
                     BuildUpgradeRow(
-                        card,
+                        body,
                         Tracks[i],
                         firstRowTop +
                         (rowHeight + 6f) * i,
@@ -707,212 +587,52 @@ namespace ProjectTheta.UI
             };
         }
 
-        /// <summary>
-        /// 설정 카드다. 지금은 화면 흔들림 켜기·끄기 하나뿐이다 (19일차).
-        /// 흔들림과 번쩍임은 사람에 따라 멀미를 일으킬 수 있어 끌 수 있게 했다.
-        /// 끄면 흔들림만 빠지고 나머지 연출은 그대로다.
-        /// </summary>
-        private void BuildSettingsCard(
+        private void BuildStatsWindow(
             Transform parent)
         {
-            RectTransform card =
-                UiFactory.CreatePanel(
-                    parent,
-                    "SettingsCard",
-                    UiTheme.PanelFill,
-                    UiTheme.PanelEdge);
+            HubWindow window = CreateWindow(parent, HubPanel.Stats, new Vector2(1000f, 640f));
+            RectTransform body = window.Body;
 
-            card.anchorMin = new Vector2(0f, 1f);
-            card.anchorMax = new Vector2(1f, 1f);
-            card.pivot = new Vector2(0.5f, 1f);
-            card.offsetMin = new Vector2(0f, 0f);
-            card.offsetMax = new Vector2(0f, 0f);
+            _statsText = UiFactory.CreateText(body, "Stats", string.Empty, UiTheme.FontBody, UiTheme.TextPrimary, TextAnchor.UpperLeft);
+            UiFactory.Place(_statsText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -84f), new Vector2(940f, 90f));
+            _statsText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _statsText.lineSpacing = 1.3f;
 
-            card.anchoredPosition =
-                new Vector2(0f, -518f);
+            Text caption = UiFactory.CreateText(body, "DominionCaption", "도시 지배도 · 장소마다 클리어 1 + 숙련 ★3 + 심야 ☾ 1 = 5점", UiTheme.FontSmall, UiTheme.Gold, TextAnchor.MiddleLeft, FontStyle.Bold);
+            UiFactory.Place(caption.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -186f), new Vector2(940f, 26f));
 
-            card.sizeDelta = new Vector2(0f, 84f);
+            _dominionDetail = UiFactory.CreateText(body, "DominionDetail", string.Empty, UiTheme.FontBody, UiTheme.TextPrimary, TextAnchor.UpperLeft);
+            UiFactory.Place(_dominionDetail.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -218f), new Vector2(940f, 300f));
+            _dominionDetail.lineSpacing = 1.25f;
+            _dominionDetail.supportRichText = true;
 
-            Text caption =
-                UiFactory.CreateText(
-                    card,
-                    "Caption",
-                    "설정",
-                    UiTheme.FontSubheading,
-                    UiTheme.TextPrimary,
-                    TextAnchor.MiddleLeft,
-                    FontStyle.Bold);
-
-            UiFactory.Place(
-                caption.rectTransform,
-                new Vector2(0f, 0.5f),
-                new Vector2(0f, 0.5f),
-                new Vector2(28f, 0f),
-                new Vector2(160f, 30f));
-
-            _shakeButton =
-                UiFactory.CreateButton(
-                    card,
-                    "ScreenShake",
-                    string.Empty,
-                    UiTheme.FontBody);
-
-            UiFactory.Place(
-                _shakeButton.Background.rectTransform,
-                new Vector2(0f, 0.5f),
-                new Vector2(0f, 0.5f),
-                new Vector2(190f, 0f),
-                new Vector2(260f, 44f));
-
-            _shakeButton.Button.onClick.AddListener(
-                ToggleScreenShake);
-
-            // 31일차: 음량 · 화면 · 커서는 공용 설정 창에서.
-            UiButton more =
-                UiFactory.CreateButton(
-                    card,
-                    "MoreSettings",
-                    "설정 더 보기",
-                    UiTheme.FontBody,
-                    true);
-
-            UiFactory.Place(
-                more.Background.rectTransform,
-                new Vector2(0f, 0.5f),
-                new Vector2(0f, 0.5f),
-                new Vector2(476f, 0f),
-                new Vector2(200f, 44f));
-
-            more.Button.onClick.AddListener(
+            UiButton detail = UiFactory.CreateButton(body, "DetailStats", "자세한 통계", UiTheme.FontBody, true);
+            UiFactory.Place(detail.Background.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-30f, 24f), new Vector2(200f, 50f));
+            detail.Button.onClick.AddListener(
                 () =>
                 {
                     GameAudio.Play(GameSfx.UiTick);
-                    _settings.Open();
+                    _statsPanel.Open(CurrentSave);
                 });
 
-            UiButton controls =
-                UiFactory.CreateButton(
-                    card,
-                    "Controls",
-                    "조작법",
-                    UiTheme.FontBody);
-
-            UiFactory.Place(
-                controls.Background.rectTransform,
-                new Vector2(0f, 0.5f),
-                new Vector2(0f, 0.5f),
-                new Vector2(692f, 0f),
-                new Vector2(160f, 44f));
-
-            controls.Button.onClick.AddListener(
+            UiButton achievements = UiFactory.CreateButton(body, "Achievements", "업적 보기", UiTheme.FontBody);
+            UiFactory.Place(achievements.Background.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-246f, 24f), new Vector2(170f, 50f));
+            achievements.Button.onClick.AddListener(
                 () =>
                 {
                     GameAudio.Play(GameSfx.UiTick);
-                    _controls.Open();
+                    _achievements.Open(CurrentSave);
                 });
+
+            _assetText = UiFactory.CreateText(body, "AssetState", string.Empty, UiTheme.FontTiny, UiTheme.TextDisabled, TextAnchor.LowerLeft);
+            UiFactory.Place(_assetText.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(30f, 30f), new Vector2(500f, 20f));
         }
 
-        private void ToggleScreenShake()
-        {
-            GameSession session =
-                GameSession.Instance;
-
-            if (session == null ||
-                session.Save == null)
-            {
-                return;
-            }
-
-            session.Save.ScreenShakeDisabled =
-                !session.Save.ScreenShakeDisabled;
-
-            CameraShake.Enabled =
-                !session.Save.ScreenShakeDisabled;
-
-            GameAudio.Play(
-                GameSfx.UiTick);
-
-            session.WriteSave();
-
-            Refresh();
-        }
-
-        private void RefreshSettings(
-            SaveData save)
-        {
-            if (_shakeButton.Button == null)
-            {
-                return;
-            }
-
-            bool enabled =
-                save == null ||
-                !save.ScreenShakeDisabled;
-
-            _shakeButton.SetText(
-                enabled
-                    ? "화면 흔들림  켜짐"
-                    : "화면 흔들림  꺼짐");
-
-            _shakeButton.Background.color =
-                enabled
-                    ? UiTheme.PrimaryButtonNormal
-                    : UiTheme.ButtonNormal;
-
-            _shakeButton.Label.color =
-                enabled
-                    ? UiTheme.TextPrimary
-                    : UiTheme.TextMuted;
-        }
-
-        private void BuildDifficultyCard(
+        private void BuildDifficultyWindow(
             Transform parent)
         {
-            RectTransform card =
-                UiFactory.CreatePanel(
-                    parent,
-                    "DifficultyCard",
-                    UiTheme.PanelFill,
-                    UiTheme.PanelEdge);
-
-            card.anchorMin = new Vector2(0f, 1f);
-            card.anchorMax = new Vector2(1f, 1f);
-            card.pivot = new Vector2(0.5f, 1f);
-            card.offsetMin = new Vector2(0f, 0f);
-            card.offsetMax = new Vector2(0f, 0f);
-
-            card.anchoredPosition =
-                new Vector2(0f, -368f);
-
-            card.sizeDelta = new Vector2(0f, 134f);
-
-            Text caption =
-                UiFactory.CreateText(
-                    card,
-                    "Caption",
-                    "난이도",
-                    UiTheme.FontSubheading,
-                    UiTheme.TextPrimary,
-                    TextAnchor.UpperLeft,
-                    FontStyle.Bold);
-
-            UiFactory.Place(
-                caption.rectTransform,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(28f, -16f),
-                new Vector2(300f, 26f));
-
-            RectTransform buttonRow =
-                UiFactory.CreateRect(
-                    card,
-                    "Buttons");
-
-            UiFactory.PlaceRow(
-                buttonRow,
-                48f,
-                44f,
-                24f);
+            HubWindow window = CreateWindow(parent, HubPanel.Difficulty, new Vector2(860f, 260f));
+            RectTransform body = window.Body;
 
             for (int i = 0;
                  i < Difficulties.Length;
@@ -921,281 +641,204 @@ namespace ProjectTheta.UI
                 DifficultyLevel level =
                     Difficulties[i];
 
-                UiButton button =
-                    UiFactory.CreateButton(
-                        buttonRow,
-                        $"Difficulty_{level}",
-                        DifficultyTable.Get(
-                            level).DisplayName,
-                        UiTheme.FontBody);
-
-                RectTransform rect =
-                    button.Background.rectTransform;
-
-                float step =
-                    1f / Difficulties.Length;
-
-                rect.anchorMin =
-                    new Vector2(step * i, 0f);
-
-                rect.anchorMax =
-                    new Vector2(step * (i + 1), 1f);
-
-                rect.offsetMin = new Vector2(4f, 0f);
-                rect.offsetMax = new Vector2(-4f, 0f);
-
                 DifficultyLevel captured =
                     level;
 
-                button.Button.onClick.AddListener(
-                    () =>
-                    {
-                        BalanceOverrides.SetDifficulty(
-                            captured);
+                _difficultyButtons[i] =
+                    UiOverlay.Button(
+                        body,
+                        $"Difficulty_{level}",
+                        DifficultyTable.Get(level).DisplayName,
+                        30f + i * 270f,
+                        90f,
+                        250f,
+                        60f,
+                        () =>
+                        {
+                            BalanceOverrides.SetDifficulty(
+                                captured);
 
-                        GameAudio.Play(
-                            GameSfx.UiTick);
+                            GameAudio.Play(
+                                GameSfx.UiTick);
 
-                        Refresh();
-                    });
-
-                _difficultyButtons[i] = button;
+                            Refresh();
+                        });
             }
 
-            _difficultyHintText =
-                UiFactory.CreateText(
-                    card,
-                    "Hint",
-                    string.Empty,
-                    UiTheme.FontSmall,
-                    UiTheme.TextMuted,
-                    TextAnchor.LowerLeft);
-
-            UiFactory.Place(
-                _difficultyHintText.rectTransform,
-                new Vector2(0f, 0f),
-                new Vector2(0f, 0f),
-                new Vector2(28f, 12f),
-                new Vector2(900f, 22f));
+            _difficultyHintText = UiOverlay.Label(body, string.Empty, 30f, 190f, 800f, UiTheme.FontSmall, UiTheme.TextMuted);
         }
 
-        private void BuildFooter(
+        private void BuildDiaryWindow(
             Transform parent)
         {
-            RectTransform footer =
-                UiFactory.CreateRect(
-                    parent,
-                    "Footer");
+            HubWindow window = CreateWindow(parent, HubPanel.Diary, new Vector2(1040f, 660f));
+            RectTransform body = window.Body;
 
-            footer.anchorMin = new Vector2(0f, 0f);
-            footer.anchorMax = new Vector2(1f, 0f);
-            footer.pivot = new Vector2(0.5f, 0f);
-            footer.offsetMin = Vector2.zero;
-            footer.offsetMax = Vector2.zero;
-            footer.sizeDelta = new Vector2(0f, 116f);
+            _diaryHint = UiOverlay.Label(body, string.Empty, 30f, 82f, 980f, UiTheme.FontSmall, UiTheme.TextMuted);
 
-            Image fill =
-                UiFactory.CreateImage(
-                    footer,
-                    "Fill",
-                    new Color(
-                        0.085f,
-                        0.065f,
-                        0.125f,
-                        1f));
+            const int perColumn = 10;
+            const float columnWidth = 480f;
+            const float rowHeight = 46f;
 
-            UiFactory.Stretch(
-                fill.rectTransform);
+            for (int i = 0; i < StoryCatalog.All.Length; i++)
+            {
+                StoryScene scene = StoryCatalog.All[i];
+                int column = i / perColumn;
+                int row = i % perColumn;
 
-            UiButton sortie =
-                UiFactory.CreateButton(
-                    footer,
-                    "Sortie",
-                    "출  격",
-                    UiTheme.FontHeading,
-                    true);
+                UiButton button =
+                    UiOverlay.Button(
+                        body,
+                        $"Story_{scene.Id}",
+                        scene.Title,
+                        30f + column * (columnWidth + 20f),
+                        124f + row * (rowHeight + 6f),
+                        columnWidth,
+                        rowHeight,
+                        () => ReplayStory(scene));
 
-            UiFactory.Place(
-                sortie.Background.rectTransform,
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f),
-                new Vector2(110f, 0f),
-                new Vector2(340f, 62f));
-
-            sortie.Button.onClick.AddListener(
-                () =>
+                if (button.Label != null)
                 {
-                    // 29일차: 판이 없다. 출격하면 도시 지도에서 아무 장소나 고른다.
-                    if (GameSession.Instance == null)
-                    {
-                        return;
-                    }
+                    button.Label.alignment = TextAnchor.MiddleLeft;
+                    button.Label.rectTransform.offsetMin = new Vector2(18f, 0f);
+                }
 
-                    GameSession.Instance.GoTo(
-                        SceneDestination.Map);
-                });
-
-            UiButton back =
-                UiFactory.CreateButton(
-                    footer,
-                    "BackToTitle",
-                    "타이틀로",
-                    UiTheme.FontBody);
-
-            UiFactory.Place(
-                back.Background.rectTransform,
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f),
-                new Vector2(-180f, 0f),
-                new Vector2(200f, 54f));
-
-            back.Button.onClick.AddListener(
-                () =>
-                {
-                    GameSession.Instance?.GoTo(
-                        SceneDestination.MainMenu);
-                });
-
-            // 34일차: 지금 칸에 바로 저장한다(장소를 마칠 때도 자동 저장된다).
-            UiButton save =
-                UiFactory.CreateButton(
-                    footer,
-                    "SaveNow",
-                    "저  장",
-                    UiTheme.FontBody);
-
-            UiFactory.Place(
-                save.Background.rectTransform,
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f),
-                new Vector2(-400f, 0f),
-                new Vector2(200f, 54f));
-
-            save.Button.onClick.AddListener(
-                SaveNow);
-
-            _saveMessage =
-                UiFactory.CreateText(
-                    footer,
-                    "SaveMessage",
-                    string.Empty,
-                    UiTheme.FontBody,
-                    UiTheme.Gold,
-                    TextAnchor.MiddleLeft);
-
-            UiFactory.Place(
-                _saveMessage.rectTransform,
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 0.5f),
-                new Vector2(300f, 0f),
-                new Vector2(560f, 40f));
+                _diaryButtons.Add(button);
+            }
         }
 
-        private void SaveNow()
-        {
-            GameSession session =
-                GameSession.Instance;
+        // 창 열고 닫기 --------------------------------------------------
 
-            if (session == null)
+        private void TogglePanel(
+            HubPanel panel)
+        {
+            GameAudio.Play(GameSfx.UiTick);
+
+            SetPanel(
+                HubRoomLogic.Toggle(
+                    _openPanel,
+                    panel));
+        }
+
+        private void SetPanel(
+            HubPanel panel)
+        {
+            _openPanel = panel;
+
+            foreach (KeyValuePair<HubPanel, HubWindow> pair in _windows)
+            {
+                pair.Value.SetOpen(pair.Key == panel);
+            }
+
+            foreach (KeyValuePair<HubPanel, UiButton> pair in _panelButtons)
+            {
+                pair.Value.Background.color =
+                    pair.Key == panel
+                        ? UiTheme.PrimaryButtonNormal
+                        : UiTheme.ButtonNormal;
+            }
+
+            if (panel == HubPanel.None)
+            {
+                UiEscapeStack.Remove(_windowToken);
+            }
+            else if (!UiEscapeStack.IsTop(_windowToken))
+            {
+                UiEscapeStack.Remove(_windowToken);
+                UiEscapeStack.Push(_windowToken);
+            }
+
+            Refresh();
+        }
+
+        private void HandleRoomObject(
+            HubRoomObject item)
+        {
+            if (_story != null &&
+                _story.IsPlaying)
             {
                 return;
             }
 
-            bool saved =
-                session.SaveNow();
+            if (HubRoomLogic.IsSortie(item))
+            {
+                Sortie();
 
-            GameAudio.Play(
-                saved
-                    ? GameSfx.UiStamp
-                    : GameSfx.UiTick);
+                return;
+            }
 
-            _saveMessage.color =
-                saved
-                    ? UiTheme.Gold
-                    : UiTheme.Danger;
+            HubPanel panel = HubRoomLogic.GetPanel(item);
 
-            _saveMessage.text =
-                saved
-                    ? $"{SaveSlotLogic.GetSlotLabel(session.ActiveSlot)}에 저장했습니다  ·  {session.Save.SavedAt}"
-                    : "저장하지 못했습니다";
-
-            _saveMessageRemaining = 4f;
+            if (panel != HubPanel.None)
+            {
+                TogglePanel(panel);
+            }
         }
 
-        private void LateUpdate()
+        private void ReplayStory(
+            StoryScene scene)
         {
-            if (_saveMessageRemaining <= 0f ||
-                _saveMessage == null)
+            if (!StoryLogic.IsSeen(CurrentSave, scene.Id))
             {
                 return;
             }
 
-            _saveMessageRemaining -= Time.unscaledDeltaTime;
-
-            if (_saveMessageRemaining <= 0f)
-            {
-                _saveMessage.text = string.Empty;
-            }
+            GameAudio.Play(GameSfx.UiTick);
+            StoryPlayback.Play(_story, new[] { scene }, false, null);
         }
 
         // 표시 갱신 ------------------------------------------------------
 
+        private SaveData CurrentSave =>
+            GameSession.Instance == null
+                ? null
+                : GameSession.Instance.Save;
+
         private void Refresh()
         {
-            SaveData save =
-                GameSession.Instance == null
-                    ? null
-                    : GameSession.Instance.Save;
+            SaveData save = CurrentSave;
 
-            RefreshEssence(
-                save);
-
+            RefreshTopBar(save);
             RefreshResult();
-
-            RefreshUpgrades(
-                save);
-
+            RefreshUpgrades(save);
             RefreshDifficulty();
-
-            RefreshStats(
-                save);
-
-            RefreshSettings(
-                save);
+            RefreshStats(save);
+            RefreshDiary(save);
         }
 
-        private void RefreshEssence(
+        private void RefreshTopBar(
             SaveData save)
         {
-            if (_essenceText == null)
-            {
-                return;
-            }
+            GameSession session = GameSession.Instance;
+
+            _slotText.text =
+                session != null && session.HasActiveSlot
+                    ? $"학생의 방  ·  {SaveSlotLogic.GetSlotLabel(session.ActiveSlot)}"
+                    : "학생의 방";
 
             _essenceText.text =
                 save == null
                     ? "-"
                     : save.ContractEssence.ToString("N0");
+
+            _upgradeEssence.text =
+                save == null
+                    ? string.Empty
+                    : $"보유 계약 정기  {save.ContractEssence:N0}";
+
+            float ratio = DominionLogic.GetRatio(save);
+
+            _dominionText.text = DominionLogic.GetSummary(save);
+            _dominionBar.SetValue(ratio);
+            _room.SetDominion(ratio);
         }
 
         private void RefreshResult()
         {
-            if (_resultText == null)
-            {
-                return;
-            }
+            _resultCard.SetActive(_hasLastResult);
 
             if (!_hasLastResult)
             {
-                _resultText.text = "출격 준비 완료";
-                _resultText.color = UiTheme.TextPrimary;
-
-                _resultDetailText.text =
-                    "지도에서 장소를 골라 정기를 회수하세요";
-
-                _resultAccent.color =
-                    UiTheme.AccentSoft;
-
                 return;
             }
 
@@ -1204,10 +847,15 @@ namespace ProjectTheta.UI
                     ? LocationCatalog.Get((LocationId)_lastResult.LocationId).DisplayName + "  "
                     : string.Empty;
 
+            string night =
+                _lastResult.NightMode
+                    ? "☾ "
+                    : string.Empty;
+
             _resultText.text =
                 _lastResult.Cleared
-                    ? $"{place}클리어   랭크 {_lastResult.RankLabel}"
-                    : $"{place}실패";
+                    ? $"{night}{place}클리어   랭크 {_lastResult.RankLabel}"
+                    : $"{night}{place}실패";
 
             _resultText.color =
                 _lastResult.Cleared
@@ -1220,7 +868,7 @@ namespace ProjectTheta.UI
                     : UiTheme.Danger;
 
             string detail =
-                $"{_lastResult.TotalScore:N0}점\n계약 정기 +{_lastResult.ContractEssence}";
+                $"{_lastResult.TotalScore:N0}점  ·  계약 정기 +{_lastResult.ContractEssence}";
 
             if (!_resultApplied)
             {
@@ -1354,16 +1002,12 @@ namespace ProjectTheta.UI
         private void RefreshStats(
             SaveData save)
         {
-            if (_statsText == null)
-            {
-                return;
-            }
-
             if (save == null)
             {
                 _statsText.text =
                     "저장 정보를 불러오지 못했습니다";
 
+                _dominionDetail.text = string.Empty;
                 _assetText.text = string.Empty;
 
                 return;
@@ -1375,13 +1019,26 @@ namespace ProjectTheta.UI
 
             string unlock =
                 MasteryLogic.HasEndingUnlock(save)
-                    ? $"엔딩 {stats.Endings}회 · 해금: 시작 계약 카드 {MasteryLogic.EndingStartChoices}장"
-                    : "엔딩 전 · 루프탑 클럽 보스를 함락하면 해금";
+                    ? $"엔딩 {stats.Endings}회 · 해금: 시작 계약 카드 {MasteryLogic.EndingStartChoices}장 · ☾ 심야 모드"
+                    : "엔딩 전 · 루프탑 클럽 보스를 함락하면 시작 카드 4장 · 심야 모드 해금";
 
             _statsText.text =
                 $"플레이 {PlayStatsLogic.FormatDuration(stats.TotalSeconds)} · 도전 {stats.Attempts} · 클리어 {stats.Clears} ({PlayStatsLogic.FormatPercent(PlayStatsLogic.GetClearRate(stats.Attempts, stats.Clears))})\n" +
                 $"업적 {AchievementLogic.CountUnlocked(save)}/{AchievementLogic.All.Length} · 최고 랭크 {save.BestRankLabel} · 최고 점수 {save.BestScore:N0}\n" +
                 unlock;
+
+            // 36일차: 장소별 지배도 내역
+            System.Text.StringBuilder detail = new System.Text.StringBuilder();
+
+            foreach (LocationDefinition location in LocationCatalog.All)
+            {
+                detail.Append(
+                    $"<color=#C9A2FF>{location.DisplayName}</color>   {DominionLogic.DescribeLocation(PlayStatsLogic.Get(save, (int)location.Id))}\n");
+            }
+
+            detail.Append($"\n<b>{DominionLogic.GetSummary(save)}</b>");
+
+            _dominionDetail.text = detail.ToString();
 
             _assetText.text =
                 BalanceBootstrap.StageAssetApplied
@@ -1394,7 +1051,72 @@ namespace ProjectTheta.UI
                     : UiTheme.Danger;
         }
 
+        private void RefreshDiary(
+            SaveData save)
+        {
+            int seen = 0;
+
+            for (int i = 0; i < _diaryButtons.Count; i++)
+            {
+                StoryScene scene = StoryCatalog.All[i];
+                bool unlocked = StoryLogic.IsSeen(save, scene.Id);
+
+                if (unlocked)
+                {
+                    seen++;
+                }
+
+                _diaryButtons[i].SetText(unlocked ? $"「{scene.Title}」" : "？？？");
+                _diaryButtons[i].SetInteractable(unlocked);
+            }
+
+            _diaryHint.text = $"본 이야기 {seen} / {StoryCatalog.All.Length}  ·  누르면 다시 봅니다";
+        }
+
         // 동작 ----------------------------------------------------------
+
+        private void Sortie()
+        {
+            // 29일차: 판이 없다. 출격하면 도시 지도에서 아무 장소나 고른다.
+            if (GameSession.Instance == null)
+            {
+                return;
+            }
+
+            GameSession.Instance.GoTo(
+                SceneDestination.Map);
+        }
+
+        private void SaveNow()
+        {
+            GameSession session =
+                GameSession.Instance;
+
+            if (session == null)
+            {
+                return;
+            }
+
+            bool saved =
+                session.SaveNow();
+
+            GameAudio.Play(
+                saved
+                    ? GameSfx.UiStamp
+                    : GameSfx.UiTick);
+
+            _saveMessage.color =
+                saved
+                    ? UiTheme.Gold
+                    : UiTheme.Danger;
+
+            _saveMessage.text =
+                saved
+                    ? $"{SaveSlotLogic.GetSlotLabel(session.ActiveSlot)}에 저장했습니다  ·  {session.Save.SavedAt}"
+                    : "저장하지 못했습니다";
+
+            _saveMessageRemaining = 4f;
+        }
 
         private void Purchase(
             UpgradeTrack track)

@@ -56,7 +56,8 @@ namespace ProjectTheta.Core
 
         /// <summary>장소 도전을 새로 시작한다. 이전 도전이 남아 있어도 버린다.</summary>
         public RunSession BeginLocation(
-            ProjectTheta.Stage.Locations.LocationId location)
+            ProjectTheta.Stage.Locations.LocationId location,
+            bool nightMode = false)
         {
             Run =
                 new RunSession(
@@ -70,6 +71,11 @@ namespace ProjectTheta.Core
                             (int)location),
                     StartChoiceCount =
                         MasteryLogic.GetStartChoiceCount(
+                            _saveData),
+                    // 36일차: 엔딩을 보지 않은 칸은 켜지지 않는다.
+                    NightMode =
+                        NightModeLogic.Resolve(
+                            nightMode,
                             _saveData)
                 };
 
@@ -90,7 +96,8 @@ namespace ProjectTheta.Core
             else if (Run.IsRecorded)
             {
                 BeginLocation(
-                    Run.Location);
+                    Run.Location,
+                    Run.NightMode);
             }
 
             return Run;

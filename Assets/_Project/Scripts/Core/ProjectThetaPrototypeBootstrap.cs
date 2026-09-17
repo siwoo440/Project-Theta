@@ -114,14 +114,25 @@ namespace ProjectTheta.Core
                 player.GetComponent<
                     StageSessionController>();
 
+            // 36일차: 심야 모드면 목표 · 시간 · 추격 · 경계도가 강해진다.
+            bool night =
+                session != null &&
+                session.NightMode;
+
+            NightModeState.Active = night;
+
             // 30일차: 숙련도(★)마다 목표 정기가 조금씩 오른다.
             stage.ApplyObjective(
-                location.TimeLimitSeconds,
-                Save.MasteryLogic.GetTargetEssence(
-                    location.TargetEssence,
-                    session == null
-                        ? 0
-                        : session.Stars));
+                NightModeLogic.GetTimeLimit(
+                    location.TimeLimitSeconds,
+                    night),
+                NightModeLogic.GetTarget(
+                    Save.MasteryLogic.GetTargetEssence(
+                        location.TargetEssence,
+                        session == null
+                            ? 0
+                            : session.Stars),
+                    night));
 
             FollowerManager followers =
                 player.GetComponent<
@@ -352,6 +363,17 @@ namespace ProjectTheta.Core
                         scoreTracker,
                         floorTransition);
             }
+
+            // 36일차: 처음 들어가는 장소면 입장 이야기를 먼저 보여 준다(규칙 카드는 그 뒤).
+            new GameObject("StageStoryIntro")
+                .AddComponent<StageStoryIntro>()
+                .Configure(
+                    stage,
+                    Story.StoryLogic.GetEnterScene(
+                        GameSession.Instance == null
+                            ? null
+                            : GameSession.Instance.Save,
+                        location.Id));
 
             // 35일차: 장소 규칙 카드. 이 칸에서 처음 도전하는 장소면 시작할 때 한 번 뜬다.
             //         일시정지 메뉴가 찾아 쓰므로 먼저 만든다.
