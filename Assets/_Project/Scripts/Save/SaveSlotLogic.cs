@@ -306,6 +306,53 @@ namespace ProjectTheta.Save
 
         // 처음부터 ------------------------------------------------------
 
+        // 허브 저장 (37일차) -------------------------------------------
+
+        /// <summary>
+        /// 허브 [저장] 창의 버튼 글자다.
+        /// 지금 칸 · 빈 칸은 바로 저장, 다른 기록이 있는 칸은 한 번 더 눌러야 덮어쓴다.
+        /// </summary>
+        public static string GetSaveButton(
+            SaveSlotSummary summary,
+            bool isActive,
+            bool confirming)
+        {
+            if (isActive)
+            {
+                return "여기에 저장";
+            }
+
+            if (!summary.Exists)
+            {
+                return "이 칸에 저장";
+            }
+
+            return confirming
+                ? "한 번 더 누르면 덮어씀"
+                : "덮어쓰기";
+        }
+
+        public static bool CanSave(
+            SaveSlotSummary summary,
+            bool isActive,
+            bool confirming)
+        {
+            return isActive ||
+                   !summary.Exists ||
+                   confirming;
+        }
+
+        /// <summary>저장 결과 문구다. 다른 칸에 저장했으면 그 칸으로 이어서 플레이한다고 알린다.</summary>
+        public static string GetSavedMessage(
+            int slot,
+            int previousSlot,
+            string savedAt)
+        {
+            return slot == previousSlot
+                ? $"{GetSlotLabel(slot)}에 저장했습니다  ·  {savedAt}"
+                : $"{GetSlotLabel(slot)}에 저장했습니다 · 이제 {GetSlotLabel(slot)}으로 플레이  ·  {savedAt}";
+        }
+
         /// <summary>처음부터를 고른 칸의 버튼 글자다.</summary>
         public static string GetNewGameButton(
             SaveSlotSummary summary,

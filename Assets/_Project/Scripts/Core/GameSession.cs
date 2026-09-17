@@ -274,6 +274,24 @@ namespace ProjectTheta.Core
             return WriteSave();
         }
 
+        /// <summary>
+        /// 허브 저장 창에서 고른 칸에 저장한다 (37일차).
+        /// 다른 칸을 고르면 그 칸이 지금 칸이 되어 이후 자동 저장도 그 칸으로 간다(다른 이름으로 저장).
+        /// </summary>
+        public bool SaveToSlot(
+            int slot)
+        {
+            if (!SaveSlotLogic.IsValid(slot))
+            {
+                return false;
+            }
+
+            ActiveSlot = slot;
+            _previewSlot = slot;
+
+            return WriteSave();
+        }
+
         /// <summary>허브의 저장 버튼이다. 칸을 고르지 않았으면 저장하지 않는다.</summary>
         public bool SaveNow()
         {

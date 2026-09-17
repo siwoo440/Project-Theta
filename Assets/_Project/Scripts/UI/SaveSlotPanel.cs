@@ -18,7 +18,10 @@ namespace ProjectTheta.UI
         Load,
 
         /// <summary>처음부터: 빈 칸은 바로, 기록이 있는 칸은 한 번 더 눌러 덮어쓴다.</summary>
-        NewGame
+        NewGame,
+
+        /// <summary>허브 저장(37일차): 지금 칸 · 빈 칸은 바로, 다른 기록이 있는 칸은 한 번 더 눌러 덮어쓴다.</summary>
+        Save
     }
 
     /// <summary>
@@ -54,6 +57,7 @@ namespace ProjectTheta.UI
 
         private SaveSlotSummary[] _summaries = new SaveSlotSummary[SaveSlotLogic.SlotCount];
         private SaveSlotMode _mode;
+        private int _activeSlot = -1;
         private int _confirmSlot = -1;
         private float _confirmRemaining;
 
@@ -165,7 +169,8 @@ namespace ProjectTheta.UI
 
         public void Open(
             SaveSlotMode mode,
-            SaveSlotSummary[] summaries)
+            SaveSlotSummary[] summaries,
+            int activeSlot = -1)
         {
             if (_parts.Root == null)
             {
@@ -173,27 +178,54 @@ namespace ProjectTheta.UI
             }
 
             _mode = mode;
+            _activeSlot = activeSlot;
             _summaries = summaries ?? new SaveSlotSummary[SaveSlotLogic.SlotCount];
             _confirmSlot = -1;
             _confirmRemaining = 0f;
 
             if (_heading != null)
             {
-                _heading.text =
-                    mode == SaveSlotMode.Load
-                        ? "이어하기 · 불러올 칸"
-                        : "처음부터 · 새로 시작할 칸";
+                _heading.text = GetHeading(mode);
             }
 
-            _hint.text =
-                mode == SaveSlotMode.Load
-                    ? "저장된 칸을 골라 이어서 플레이합니다. 장소를 마칠 때와 허브의 [저장] 버튼으로 저장됩니다."
-                    : "기록이 있는 칸을 고르면 진행 · 업적 · 통계가 지워집니다. 설정 · 키는 그대로 남습니다.";
+            _hint.text = GetHint(mode);
 
             _parts.Root.SetActive(true);
             UiEscapeStack.Push(this);
 
             Fill();
+        }
+
+        private static string GetHeading(
+            SaveSlotMode mode)
+        {
+            switch (mode)
+            {
+                case SaveSlotMode.Load:
+                    return "이어하기 · 불러올 칸";
+
+                case SaveSlotMode.Save:
+                    return "저장 · 저장할 칸";
+
+                default:
+                    return "처음부터 · 새로 시작할 칸";
+            }
+        }
+
+        private static string GetHint(
+            SaveSlotMode mode)
+        {
+            switch (mode)
+            {
+                case SaveSlotMode.Load:
+                    return "저장된 칸을 골라 이어서 플레이합니다. 장소를 마칠 때와 허브의 [저장] 버튼으로 저장됩니다.";
+
+                case SaveSlotMode.Save:
+                    return "다른 칸에 저장하면 그 칸으로 이어서 플레이합니다(이후 자동 저장도 그 칸). 기록이 있는 칸은 한 번 더 눌러야 덮어씁니다.";
+
+                default:
+                    return "기록이 있는 칸을 고르면 진행 · 업적 · 통계가 지워집니다. 설정 · 키는 그대로 남습니다.";
+            }
         }
 
         public void Close()
@@ -227,10 +259,14 @@ namespace ProjectTheta.UI
                 SaveSlotSummary summary = i < _summaries.Length ? _summaries[i] : new SaveSlotSummary { Slot = i };
                 bool confirming = _confirmSlot == i;
 
+                bool isActive = _mode == SaveSlotMode.Save && i == _activeSlot;
+
                 view.Title.text =
-                    i == latest
-                        ? $"{SaveSlotLogic.GetSlotLabel(i)}   <color=#E8C15A>최근</color>"
-                        : SaveSlotLogic.GetSlotLabel(i);
+                    isActive
+                        ? $"{SaveSlotLogic.GetSlotLabel(i)}   <color=#9FD3A8>지금 칸</color>"
+                        : i == latest
+                            ? $"{SaveSlotLogic.GetSlotLabel(i)}   <color=#E8C15A>최근</color>"
+                            : SaveSlotLogic.GetSlotLabel(i);
 
                 view.Detail.text = SaveSlotLogic.Describe(summary, total);
                 view.Detail.color = summary.Exists ? UiTheme.TextPrimary : UiTheme.TextDisabled;
@@ -239,6 +275,11 @@ namespace ProjectTheta.UI
                 {
                     view.Action.SetText(summary.Exists ? "불러오기" : "비어 있음");
                     view.Action.SetInteractable(summary.Exists);
+                }
+                else if (_mode == SaveSlotMode.Save)
+                {
+                    view.Action.SetText(SaveSlotLogic.GetSaveButton(summary, isActive, confirming));
+                    view.Action.SetInteractable(true);
                 }
                 else
                 {
@@ -270,8 +311,13 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            if (_mode == SaveSlotMode.NewGame &&
-                !SaveSlotLogic.CanStartNewGame(summary, _confirmSlot == slot))
+            bool needsConfirm =
+                (_mode == SaveSlotMode.NewGame &&
+                 !SaveSlotLogic.CanStartNewGame(summary, _confirmSlot == slot)) ||
+                (_mode == SaveSlotMode.Save &&
+                 !SaveSlotLogic.CanSave(summary, slot == _activeSlot, _confirmSlot == slot));
+
+            if (needsConfirm)
             {
                 // 실수로 지우지 않게 한 번 더 눌러야 덮어쓴다.
                 _confirmSlot = slot;
@@ -282,7 +328,11 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            GameAudio.Play(GameSfx.UiStamp);
+            if (_mode != SaveSlotMode.Save)
+            {
+                GameAudio.Play(GameSfx.UiStamp);
+            }
+
             Close();
 
             SlotChosen?.Invoke(_mode, slot);

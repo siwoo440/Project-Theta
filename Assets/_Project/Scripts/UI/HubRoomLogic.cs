@@ -157,6 +157,26 @@ namespace ProjectTheta.UI
             }
         }
 
+        // 타이틀로 경고 (37일차) --------------------------------------
+
+        /// <summary>타이틀로 버튼을 한 번 더 눌러야 하는 시간(초)이다.</summary>
+        public const float LeaveConfirmSeconds = 3f;
+
+        /// <summary>경고 중(남은 시간이 있음)에 다시 누르면 나간다.</summary>
+        public static bool ShouldLeave(
+            float confirmRemaining)
+        {
+            return confirmRemaining > 0f;
+        }
+
+        public static string GetLeaveWarning(
+            string savedAt)
+        {
+            return string.IsNullOrEmpty(savedAt)
+                ? "타이틀로 나갈까요? 아직 저장한 적이 없습니다 · 한 번 더 누르면 나갑니다"
+                : $"타이틀로 나갈까요? 마지막 저장 {savedAt} · 한 번 더 누르면 나갑니다";
+        }
+
         /// <summary>
         /// 창밖 불빛 중 보라색으로 물드는 개수다. 도시 지배도만큼 물든다.
         /// </summary>

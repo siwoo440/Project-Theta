@@ -91,6 +91,11 @@ namespace ProjectTheta.UI
         private Text _saveMessage;
         private float _saveMessageRemaining;
 
+        // 37일차: 저장 칸 창 · 타이틀로 경고
+        private SaveSlotPanel _saveSlots;
+        private UiButton _titleButton;
+        private float _titleConfirm;
+
         private bool _resultApplied;
 
         private StageResultSummary _lastResult =
@@ -150,6 +155,16 @@ namespace ProjectTheta.UI
 
         private void Update()
         {
+            if (_titleConfirm > 0f)
+            {
+                _titleConfirm -= Time.unscaledDeltaTime;
+
+                if (_titleConfirm <= 0f)
+                {
+                    ResetTitleConfirm();
+                }
+            }
+
             if (_saveMessageRemaining > 0f &&
                 _saveMessage != null)
             {
@@ -174,6 +189,7 @@ namespace ProjectTheta.UI
                 keyboard.escapeKey.wasPressedThisFrame &&
                 UiEscapeStack.TryConsume(_windowToken, Time.frameCount))
             {
+                GameAudio.Play(GameSfx.WindowClose);
                 SetPanel(HubPanel.None);
             }
 #endif
@@ -258,6 +274,10 @@ namespace ProjectTheta.UI
                 ControlsPanel.Create(
                     canvas.transform,
                     60);
+
+            // 37일차: 허브 저장 칸 창
+            _saveSlots = SaveSlotPanel.Create(canvas.transform, 70);
+            _saveSlots.SlotChosen += HandleSaveSlotChosen;
 
             _story = DialogueOverlay.Create(canvas.transform, StoryPlayback.SortOrder);
         }
@@ -380,21 +400,25 @@ namespace ProjectTheta.UI
 
             x += 30f;
 
-            // 34일차: 지금 칸에 바로 저장한다(장소를 마칠 때도 자동 저장된다).
-            BottomButton(bar, "SaveNow", "저  장", x, SaveNow);
+            // 37일차: 저장할 칸을 고르는 창을 연다(장소를 마칠 때도 자동 저장된다).
+            BottomButton(bar, "SaveNow", "저  장", x, OpenSaveSlots);
             x += 150f;
 
-            BottomButton(
-                bar,
-                "BackToTitle",
-                "타이틀로",
-                x,
-                () => GameSession.Instance?.GoTo(SceneDestination.MainMenu));
+            // 37일차: 한 번 경고한 뒤 다시 누르면 타이틀로 간다.
+            _titleButton =
+                BottomButton(
+                    bar,
+                    "BackToTitle",
+                    "타이틀로",
+                    x,
+                    BackToTitle);
 
             x += 160f;
 
-            _saveMessage = UiFactory.CreateText(bar, "SaveMessage", string.Empty, UiTheme.FontBody, UiTheme.Gold, TextAnchor.MiddleLeft);
-            UiFactory.Place(_saveMessage.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(x, 0f), new Vector2(460f, 40f));
+            // 37일차: 경고 문구가 길어 두 줄까지 쓴다.
+            _saveMessage = UiFactory.CreateText(bar, "SaveMessage", string.Empty, UiTheme.FontSmall, UiTheme.Gold, TextAnchor.MiddleLeft);
+            UiFactory.Place(_saveMessage.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(x, 0f), new Vector2(560f, 80f));
+            _saveMessage.horizontalOverflow = HorizontalWrapMode.Wrap;
 
             UiButton sortie = UiFactory.CreateButton(bar, "Sortie", "출    격  ▶", UiTheme.FontHeading, true);
             UiFactory.Place(sortie.Background.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-40f, 0f), new Vector2(320f, 62f));
@@ -428,7 +452,11 @@ namespace ProjectTheta.UI
                     $"Window_{panel}",
                     HubRoomLogic.GetPanelTitle(panel),
                     size,
-                    () => SetPanel(HubPanel.None));
+                    () =>
+                    {
+                        GameAudio.Play(GameSfx.WindowClose);
+                        SetPanel(HubPanel.None);
+                    });
 
             _windows[panel] = window;
 
@@ -712,7 +740,11 @@ namespace ProjectTheta.UI
         private void TogglePanel(
             HubPanel panel)
         {
-            GameAudio.Play(GameSfx.UiTick);
+            // 37일차: 창 열기 · 닫기 소리
+            GameAudio.Play(
+                _openPanel == panel
+                    ? GameSfx.WindowClose
+                    : GameSfx.WindowOpen);
 
             SetPanel(
                 HubRoomLogic.Toggle(
@@ -1087,8 +1119,39 @@ namespace ProjectTheta.UI
                 SceneDestination.Map);
         }
 
-        private void SaveNow()
+        private void OpenSaveSlots()
         {
+            GameSession session =
+                GameSession.Instance;
+
+            if (session == null ||
+                (_story != null && _story.IsPlaying))
+            {
+                return;
+            }
+
+            if (_openPanel != HubPanel.None)
+            {
+                SetPanel(HubPanel.None);
+            }
+
+            GameAudio.Play(GameSfx.WindowOpen);
+
+            _saveSlots.Open(
+                SaveSlotMode.Save,
+                session.GetSlotSummaries(),
+                session.ActiveSlot);
+        }
+
+        private void HandleSaveSlotChosen(
+            SaveSlotMode mode,
+            int slot)
+        {
+            if (mode != SaveSlotMode.Save)
+            {
+                return;
+            }
+
             GameSession session =
                 GameSession.Instance;
 
@@ -1097,12 +1160,14 @@ namespace ProjectTheta.UI
                 return;
             }
 
+            int previous = session.ActiveSlot;
+
             bool saved =
-                session.SaveNow();
+                session.SaveToSlot(slot);
 
             GameAudio.Play(
                 saved
-                    ? GameSfx.UiStamp
+                    ? GameSfx.Save
                     : GameSfx.UiTick);
 
             _saveMessage.color =
@@ -1112,10 +1177,55 @@ namespace ProjectTheta.UI
 
             _saveMessage.text =
                 saved
-                    ? $"{SaveSlotLogic.GetSlotLabel(session.ActiveSlot)}에 저장했습니다  ·  {session.Save.SavedAt}"
+                    ? SaveSlotLogic.GetSavedMessage(slot, previous, session.Save.SavedAt)
                     : "저장하지 못했습니다";
 
             _saveMessageRemaining = 4f;
+
+            Refresh();
+        }
+
+        /// <summary>
+        /// 첫 번째 누름: 버튼이 "한 번 더 누르면 나감"으로 바뀌고 경고 문구가 뜬다.
+        /// 3초 안에 다시 누르면 타이틀로 간다.
+        /// </summary>
+        private void BackToTitle()
+        {
+            GameSession session =
+                GameSession.Instance;
+
+            if (session == null)
+            {
+                return;
+            }
+
+            if (!HubRoomLogic.ShouldLeave(_titleConfirm))
+            {
+                _titleConfirm = HubRoomLogic.LeaveConfirmSeconds;
+                _titleButton.SetText("한 번 더 누르면 나감");
+                _titleButton.Background.color = new Color(0.46f, 0.14f, 0.20f, 1f);
+
+                _saveMessage.color = UiTheme.Danger;
+                _saveMessage.text = HubRoomLogic.GetLeaveWarning(session.Save == null ? string.Empty : session.Save.SavedAt);
+                _saveMessageRemaining = HubRoomLogic.LeaveConfirmSeconds;
+
+                GameAudio.Play(GameSfx.Warning, 0.7f);
+
+                return;
+            }
+
+            session.GoTo(SceneDestination.MainMenu);
+        }
+
+        private void ResetTitleConfirm()
+        {
+            _titleConfirm = 0f;
+
+            if (_titleButton.Button != null)
+            {
+                _titleButton.SetText("타이틀로");
+                _titleButton.Background.color = UiTheme.ButtonNormal;
+            }
         }
 
         private void Purchase(

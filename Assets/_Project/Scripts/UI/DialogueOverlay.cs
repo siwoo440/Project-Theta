@@ -61,6 +61,7 @@ namespace ProjectTheta.UI
         private bool _pauseGame;
         private bool _pauseHeld;
         private bool _reserved;
+        private int _lastVisible;
         private Action<StoryScene> _onSceneShown;
         private Action _onFinished;
 
@@ -246,6 +247,7 @@ namespace ProjectTheta.UI
         {
             _lineIndex = index;
             _elapsed = 0f;
+            _lastVisible = 0;
 
             StoryLine line = _queue[_sceneIndex].Lines[index];
             bool narration = string.IsNullOrEmpty(line.Speaker);
@@ -269,6 +271,14 @@ namespace ProjectTheta.UI
             StoryLine line = CurrentLine;
             int visible = StoryLogic.GetVisibleCharacters(_elapsed, line.Text.Length);
             string shown = line.Text.Substring(0, visible);
+
+            // 37일차: 두 글자마다 작은 소리. 말하는 사람마다 높이가 다르다.
+            if (MusicLogic.ShouldBlip(_lastVisible, visible, line.Text))
+            {
+                GameAudio.PlayPitched(GameSfx.DialogueBlip, 0.35f, MusicLogic.GetBlipPitch(line.Speaker));
+            }
+
+            _lastVisible = visible;
 
             _line.text =
                 string.IsNullOrEmpty(line.Speaker)

@@ -73,6 +73,13 @@ namespace ProjectTheta.UI
             if (_root.activeSelf != ready)
             {
                 _root.SetActive(ready);
+
+                // 37일차: 탈출 가능해지는 순간
+                if (ready)
+                {
+                    Presentation.GameAudio.Play(
+                        Presentation.GameSfx.ExitOpen);
+                }
             }
 
             if (!ready)

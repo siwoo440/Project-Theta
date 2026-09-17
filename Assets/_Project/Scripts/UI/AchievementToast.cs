@@ -133,7 +133,7 @@ namespace ProjectTheta.UI
             _showing = true;
             _group.alpha = 0f;
 
-            GameAudio.Play(GameSfx.LevelUp);
+            GameAudio.Play(GameSfx.Achievement);
         }
 
         private void Update()
