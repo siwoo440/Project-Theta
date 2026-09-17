@@ -196,7 +196,8 @@ namespace ProjectTheta.UI
                 new ControlRow("화면", "강화 카드 고르기", "클릭  /  숫자 1~4  (고정)"),
                 new ControlRow("화면", "결과 · 엔딩 연출 건너뛰기", "클릭  (고정)"),
                 new ControlRow("화면", "지도: 장소 선택 · 출발 · 통계", "숫자 1~8 · Enter · Tab  (고정)"),
-                new ControlRow("화면", "일시정지 · 창 닫기", "Esc  (고정)")
+                new ControlRow("화면", "일시정지 · 창 닫기", "Esc  (고정)"),
+                new ControlRow("화면", "성능 표시 켜기 · 끄기", "F3  (고정)")
             };
         }
     }

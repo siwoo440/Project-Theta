@@ -160,5 +160,40 @@ namespace ProjectTheta.Save
             save.ResolutionIndex = ClampResolutionIndex(save.ResolutionIndex);
             save.CursorSize = (int)ClampCursor(save.CursorSize);
         }
+
+        // 저장 폴더 (38일차) ------------------------------------------
+
+        /// <summary>파일 탐색기로 여는 주소다. 역슬래시 · 공백을 URL에 맞게 바꾼다.</summary>
+        public static string GetFolderUrl(
+            string folder)
+        {
+            if (string.IsNullOrEmpty(folder))
+            {
+                return string.Empty;
+            }
+
+            string path = folder.Replace('\\', '/').Replace(" ", "%20");
+
+            return path.StartsWith("/")
+                ? "file://" + path
+                : "file:///" + path;
+        }
+
+        /// <summary>설정 창에 보일 짧은 경로다. 길면 앞을 줄인다.</summary>
+        public static string GetFolderLabel(
+            string folder,
+            int maxLength = 60)
+        {
+            if (string.IsNullOrEmpty(folder))
+            {
+                return "-";
+            }
+
+            string path = folder.Replace('\\', '/');
+
+            return path.Length <= maxLength
+                ? path
+                : "…" + path.Substring(path.Length - (maxLength - 1));
+        }
     }
 }
