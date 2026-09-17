@@ -33,6 +33,10 @@ namespace ProjectTheta.UI.DebugTools
         private Text _cheatText;
         private Text _logPathText;
 
+        // 33일차: 밸런스 보고서
+        private Text _reportText;
+        private string _reportMessage = string.Empty;
+
         public DebugRecordTab(
             DebugPanelContext context)
         {
@@ -110,7 +114,19 @@ namespace ProjectTheta.UI.DebugTools
                 36f,
                 OpenLogFolder);
 
+            DebugUi.Button(
+                root,
+                "보고서 만들기",
+                210f,
+                y,
+                200f,
+                36f,
+                MakeReport);
+
             y += 42f;
+
+            _reportText = DebugUi.Label(root, string.Empty, 0f, y, DebugUi.ContentWidth, UiTheme.Gold, UiTheme.FontSmall);
+            y += DebugUi.RowHeight;
 
             _logPathText = DebugUi.Label(root, string.Empty, 0f, y, DebugUi.ContentWidth, UiTheme.TextDisabled, UiTheme.FontTiny);
             _logPathText.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -119,6 +135,11 @@ namespace ProjectTheta.UI.DebugTools
 
         public void Refresh()
         {
+            if (_reportText != null)
+            {
+                _reportText.text = _reportMessage;
+            }
+
             RunStatsRecorder recorder = _context.Recorder;
 
             if (recorder == null)
@@ -214,6 +235,73 @@ namespace ProjectTheta.UI.DebugTools
                 string.IsNullOrEmpty(recorder.LastLogPath)
                     ? "장소가 끝나면 기록 파일이 저장됩니다"
                     : "저장됨: " + recorder.LastLogPath;
+        }
+
+        /// <summary>
+        /// 기록 폴더의 json을 모두 읽어 장소별 표(report.md)를 만든다 (33일차).
+        /// 목표 정기 · 제한 시간을 조정할 근거로 쓴다.
+        /// </summary>
+        private void MakeReport()
+        {
+            string folder =
+                RunStatsRecorder.LogFolder;
+
+            try
+            {
+                Directory.CreateDirectory(folder);
+
+                System.Collections.Generic.List<RunLogEntry> entries =
+                    new System.Collections.Generic.List<RunLogEntry>();
+
+                foreach (string path in Directory.GetFiles(folder, "*.json"))
+                {
+                    try
+                    {
+                        RunLogEntry entry =
+                            JsonUtility.FromJson<RunLogEntry>(
+                                File.ReadAllText(path));
+
+                        if (entry != null)
+                        {
+                            entries.Add(entry);
+                        }
+                    }
+                    catch (System.Exception)
+                    {
+                        // 깨진 파일 하나 때문에 보고서를 못 만들면 안 된다.
+                    }
+                }
+
+                System.Collections.Generic.List<BalanceReportRow> rows =
+                    BalanceReportLogic.Build(
+                        entries,
+                        out int cheated,
+                        out int unknown);
+
+                string reportPath =
+                    Path.Combine(folder, "report.md");
+
+                File.WriteAllText(
+                    reportPath,
+                    BalanceReportLogic.ToMarkdown(
+                        rows,
+                        cheated,
+                        unknown,
+                        System.DateTime.Now.ToString("yyyy-MM-dd HH:mm")));
+
+                _reportMessage =
+                    $"{BalanceReportLogic.ToSummary(rows)}  →  report.md";
+
+                UnityEngine.Debug.Log(
+                    $"[Balance] 보고서를 만들었습니다: {reportPath}");
+            }
+            catch (System.Exception exception)
+            {
+                _reportMessage = "보고서를 만들지 못했습니다";
+
+                UnityEngine.Debug.LogWarning(
+                    $"보고서를 만들지 못했습니다: {exception.Message}");
+            }
         }
 
         private static void OpenLogFolder()

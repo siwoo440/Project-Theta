@@ -5,7 +5,7 @@
 
 - 준비: `Boot.unity`를 열고 재생
 - 소요: 한 바퀴 약 12분 (두 번째 판 포함)
-- 기준: 32일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
+- 기준: 33일차 (`FloorPlanLogic.DefaultFloorCount = 4`, 금태양 2F · 인기남 3F)
 
 > **처음 도는 경우**: 세이브를 지우고 시작하면 튜토리얼 항목까지 확인할 수 있다.
 > 세이브 위치는 `Application.persistentDataPath/projecttheta_save.json`이다.
@@ -405,6 +405,25 @@
 | 260 | 업적 창의 새 업적(개근상 · 무결점 · 번개 출근 · 모범 연수생 · 루프탑의 주인 · 올 S · 대박 · 계약 부자 · 불굴 · 성장통 등) | 한 줄에 이름 · 설명 · +보상 · 진행 막대 · 값/목표가 겹치지 않음. 휠로 끝까지 내려가면 "밤샘 근무"가 마지막, 다시 열면 맨 위부터. 90초 안에 클리어하면 "번개 출근", 연수원 S면 "모범 연수생", 빼앗김 없이 클리어하면 무결점 진행도가 오름 | `AchievementLogic` (32일차 23개 추가), `AchievementPanel` |
 | 259 | 메인 메뉴 `업 적` | 허브와 같은 업적 창(달성 N/46, 한 줄 목록 · 스크롤, 진행 막대). Esc · 닫기로 닫힘. 메인 메뉴에 조작법 버튼이 없음 | `MainMenuScreen`, `AchievementPanel` |
 | 258 | 일시정지 → 설정 → 키 설정에서 칸을 누르고 마우스 클릭 | 게임이 멈춘 채라 최면 · 탈출 입력이 게임에 들어가지 않음 | `GameplayPause.IsPaused` |
+
+## 6-15. 목표 달성 뒤 탈출 · 목표 정기 조정 · 밸런스 보고서 (33일차 추가)
+
+**가장 중요한 줄은 262번과 264번이다.** 목표를 채워도 바로 끝나지 않는지, 1F 회수 지점에서 탈출하면 클리어되는지다.
+
+| # | 할 것 | 보여야 하는 것 | 어긋나면 의심할 곳 |
+| --- | --- | --- | --- |
+| 261 | 지도에서 장소 정보 | 목표 정기가 연수원 310 · 해변가 330 · 지하철 330 · 헬스장 350 · 야시장 370 · 쇼핑몰 370 · 오피스 400 · 클럽 440 (★이 있으면 그만큼 더) | `LocationCatalog` |
+| 262 | 연수원에서 목표 정기까지 모으기 | 결과 화면이 뜨지 **않고** 게임이 계속됨. 위쪽에 금색 띠 "목표 달성! … 남아서 더 모으면 보상 ↑ (초과 +N · 남은 N초)", 1F 회수 지점에 금빛 기둥 · "EXIT [F]" | `StageExitLogic.Resolve`, `ExitBanner`, `ExitGate` |
+| 263 | 탈출 가능 상태에서 2F 이상에 있기 | 띠 문구가 "1F로 내려가 회수 지점에서 탈출". 2F 회수 지점에서는 F를 눌러도 탈출하지 않음(동행자 회수는 계속 됨) | `StageExitLogic.CanExit` |
+| 264 | 1F 회수 지점 안에서 F | 결과 화면, 제목 "… — CLEAR · 탈출 성공 · 초과 정기 +N". 마지막으로 데려온 동행자도 정기에 들어감 | `StageSessionController.RequestExit` |
+| 265 | 목표를 채운 뒤 탈출하지 않고 시간 끝까지 | 남은 15초부터 띠가 붉게 깜빡임. 시간이 끝나면 **클리어**, 제목 "· 시간 종료 (목표 달성)" | `StageExitLogic`, `ExitBanner` |
+| 266 | 목표를 채운 뒤 적에게 쓰러짐 | 실패(FAILED - HP) | `StageExitLogic.Resolve` |
+| 267 | 지하철 · 루프탑 클럽 | 탈출 띠 · EXIT 기둥이 없음. 열차 생존 · 보스 함락으로 예전처럼 바로 끝남 | `StageExitLogic.UsesExit` |
+| 268 | 키 설정에서 층 이동 · 상호작용을 G로 바꾼 뒤 탈출 | 기둥 글자 "EXIT [G]", 띠 "[G] 탈출", G로 탈출됨 | `GameInput.ShortLabel` |
+| 269 | F1 치트 `장소 즉시 클리어` | 목표 채움 + 바로 탈출(결과 화면 "탈출 성공") | `DebugCheatTab.ClearZone` |
+| 270 | 탈출 가능 상태에서 Esc → 설정 → 조작법 | 조작법 창에 "탈출 (목표 달성 뒤) · 1F 회수 지점에서 F" 줄 | `ControlsCatalog` |
+| 271 | 장소 몇 곳을 끝낸 뒤 F1 → 기록 탭 → `보고서 만들기` | 금색 한 줄 "장소 N곳 · 기록 N개 · 평균 m:ss → report.md". 기록 폴더의 `report.md`에 장소별 기록 수 · 클리어율 · 탈출률 · 평균/최소~최대 시간 · 목표 뒤 머문 시간 · 평균 정기/목표 · 최면 · 레벨 · 폭주 · 빼앗김 표. 치트 기록은 빠짐 | `BalanceReportLogic`, `DebugRecordTab.MakeReport` |
+| 272 | 새 기록 json | `Exit`(Escaped / TimeUp / None), `TargetEssence`, `SecondsAfterGoal` 항목이 있음 | `RunStatsRecorder` |
 
 ## 7. 에디터 재생 종료 → 다시 재생
 

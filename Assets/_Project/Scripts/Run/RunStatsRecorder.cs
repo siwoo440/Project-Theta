@@ -19,6 +19,12 @@ namespace ProjectTheta.Run
         public int Zone;
 
         public string Result;
+
+        /// <summary>33일차: 끝난 방식(Escaped · TimeUp · None)과 목표 · 목표 뒤 머문 시간이다.</summary>
+        public string Exit;
+        public int TargetEssence;
+        public float SecondsAfterGoal;
+
         public string Difficulty;
         public bool TuningModified;
         public float PlayerHypnosisSpeedScale;
@@ -174,6 +180,9 @@ namespace ProjectTheta.Run
                             ? 0
                             : RunRouteLogic.GetTier(Stage.Locations.LocationContext.Current.Id),
                         Result = _stage.State.ToString(),
+                        Exit = _stage.ExitKind.ToString(),
+                        TargetEssence = _stage.TargetEssence,
+                        SecondsAfterGoal = _stage.SecondsAfterGoal,
                         Difficulty = BalanceOverrides.Difficulty == null
                             ? "-"
                             : BalanceOverrides.Difficulty.Level.ToString(),
