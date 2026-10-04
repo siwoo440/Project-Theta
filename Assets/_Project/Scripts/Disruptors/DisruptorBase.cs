@@ -318,8 +318,10 @@ namespace ProjectTheta.Disruptors
                     targetY);
 
             float speed =
-                Profile.MoveSpeed *
-                1.5f;
+                Profile.RushSpeed > 0f
+                    ? Profile.RushSpeed
+                    : Profile.MoveSpeed *
+                      1.5f;
 
             Vector2 next =
                 Vector2.MoveTowards(

@@ -17,7 +17,7 @@ namespace ProjectTheta.Disruptors
         Gate = 6
     }
 
-    /// <summary>방해 세력 종류다. 22일차 기업 연수원 2종, 23일차 해변가 · 야시장 7종.</summary>
+    /// <summary>방해 세력 종류다. 저장 호환을 위해 고등학교 2종의 내부 열거형 이름은 유지한다.</summary>
     public enum DisruptorKind
     {
         TrainingAssistant = 0,
@@ -115,6 +115,39 @@ namespace ProjectTheta.Disruptors
 
         public float MoveSpeed = 2.4f;
 
+        /// <summary>시야 안 수상한 행동을 발각으로 확정하는 시간이다.</summary>
+        public float DetectionSeconds = DetectionLogic.SpotSeconds;
+
+        /// <summary>발각 뒤 목표에게 돌진할 때의 속도다. 0이면 공통 추적 속도를 쓴다.</summary>
+        public float RushSpeed;
+
+        /// <summary>플레이어에게 직접 효과를 주는 거리다.</summary>
+        public float CaptureRange;
+
+        /// <summary>포획 연출로 플레이어 행동을 막는 시간이다.</summary>
+        public float BlackoutSeconds;
+
+        /// <summary>접촉 효과가 빼는 제한 시간이다.</summary>
+        public float TimePenaltySeconds;
+
+        /// <summary>효과 직후 같은 대상에게 다시 반응하지 않는 시간이다.</summary>
+        public float ReacquireGraceSeconds;
+
+        /// <summary>밀쳐내는 수평 거리다.</summary>
+        public float PushDistance;
+
+        /// <summary>플레이어 이동을 막는 시간이다.</summary>
+        public float StunSeconds;
+
+        /// <summary>플레이어 최면 입력을 막는 시간이다.</summary>
+        public float HypnosisBlockSeconds;
+
+        /// <summary>본인을 최면할 때 적용하는 진행 배율이다.</summary>
+        public float SelfHypnosisMultiplier = 1f;
+
+        /// <summary>본인을 확보했을 때 얻는 정기다.</summary>
+        public int EssenceReward;
+
         /// <summary>순찰하지 않고 한 자리에 서서 좌우를 번갈아 본다.</summary>
         public bool Stationary;
 
@@ -177,34 +210,47 @@ namespace ProjectTheta.Disruptors
             {
                 Kind = DisruptorKind.TrainingAssistant,
                 Role = DisruptorRole.Watcher,
-                DisplayName = "교육 조교",
+                DisplayName = "교사",
                 IsSpecial = false,
                 Ability = SpecialAbilityKind.None,
                 SpriteRoot = "Characters/Geumtaeyang",
                 Tint = new Color(0.70f, 0.78f, 0.95f),
-                SightHalfAngle = 30f,
-                SightRange = 6f,
-                MoveSpeed = 2.4f,
+                SightHalfAngle = 32.5f,
+                SightRange = 7f,
+                MoveSpeed = 2.2f,
+                RushSpeed = 4.4f,
                 Stationary = false,
-                ChaseSeconds = 3f
+                ChaseSeconds = 6f,
+                DetectionSeconds = 0.35f,
+                CaptureRange = 0.8f,
+                BlackoutSeconds = 1f,
+                TimePenaltySeconds = 4f,
+                ReacquireGraceSeconds = 2f
             },
             new DisruptorProfile
             {
                 Kind = DisruptorKind.HrEvaluator,
                 Role = DisruptorRole.Watcher,
-                DisplayName = "인사팀 평가관",
+                DisplayName = "생활지도부장",
                 IsSpecial = true,
                 Ability = SpecialAbilityKind.AttendanceCheck,
                 SpriteRoot = "Characters/NPC_Female",
                 Tint = new Color(0.72f, 0.72f, 0.80f),
                 SightHalfAngle = 45f,
                 SightRange = 8f,
-                MoveSpeed = 0f,
-                Stationary = true,
+                MoveSpeed = 2.4f,
+                Stationary = false,
                 LookAroundSeconds = 5f,
                 ChaseSeconds = 0f,
-                TelegraphSeconds = 1.2f,
-                CooldownSeconds = 12f
+                TelegraphSeconds = 1f,
+                CooldownSeconds = 10f,
+                DetectionSeconds = 0.5f,
+                RushSpeed = 4.2f,
+                PushDistance = 2.5f,
+                StunSeconds = 0.6f,
+                HypnosisBlockSeconds = 3f,
+                SelfHypnosisMultiplier = 0.65f,
+                EssenceReward = 20
             },
 
             // 해변가 ------------------------------------------------------
@@ -686,7 +732,7 @@ namespace ProjectTheta.Disruptors
 
         /// <summary>
         /// 장소별 배치다 (부록 C.5).
-        ///   연수원  교육 조교 층마다 1명, 인사팀 평가관 3F · 4F에 1명씩. 1F는 튜토리얼 층이라 조교만 둔다.
+        ///   고등학교  교사 층마다 1명, 생활지도부장 3F · 4F에 1명씩. 1F는 튜토리얼 층이라 교사만 둔다.
         ///   해변가  라이프가드 · 헌팅남 · 라이프가드 반장(망루) · 드론 촬영자
         ///   야시장  호객꾼 · 소매치기 · 촬영팀 · 취객
         ///

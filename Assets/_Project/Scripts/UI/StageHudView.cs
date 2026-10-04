@@ -378,7 +378,7 @@ namespace ProjectTheta.UI
                     TextAnchor.MiddleRight,
                     FontStyle.Bold);
 
-            // 장소 이름이 붙어 "교육동 1F"처럼 길어지므로 넓힌다.
+            // 장소 이름이 붙어 "본관 1F"처럼 길어지므로 넓힌다.
             UiFactory.Place(
                 _floorLabel.rectTransform,
                 new Vector2(1f, 1f),
@@ -1692,7 +1692,7 @@ namespace ProjectTheta.UI
             {
                 _tutorialLoaded = true;
 
-                // 21일차: 튜토리얼은 시작 구역(기업 연수원)에서만 안내한다.
+                // 21일차: 튜토리얼은 시작 구역(고등학교)에서만 안내한다.
                 if (!LocationContext.Current.ShowsTutorial)
                 {
                     _tutorialStep =

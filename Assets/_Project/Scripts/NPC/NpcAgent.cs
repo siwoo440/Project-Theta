@@ -13,7 +13,7 @@ namespace ProjectTheta.NPC
     {
         [SerializeField] private float _moveSpeed = 1.65f;
 
-        /// <summary>22일차: 기업 연수원 쉬는 시간에는 복도 NPC가 빨라진다.</summary>
+        /// <summary>22일차: 고등학교 쉬는 시간에는 복도 NPC가 빨라진다.</summary>
         private float CurrentMoveSpeed =>
             _moveSpeed *
             Stage.Locations.BreakTimeBell.NpcSpeedMultiplier;

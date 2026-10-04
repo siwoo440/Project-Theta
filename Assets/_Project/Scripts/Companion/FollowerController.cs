@@ -191,7 +191,7 @@ namespace ProjectTheta.Companion
             float targetDistance =
                 delta.magnitude;
 
-            // 22일차: 인사팀 평가관의 근태 체크 표식이 붙어 있으면 유지도가 빨리 줄고, 가까이 있어도 조금씩 준다.
+            // 이전 근태 체크 표식과의 장면 호환을 위해 남겨 둔 유지도 처리다.
             bool marked =
                 _attendanceMark != null &&
                 _attendanceMark.IsMarked;

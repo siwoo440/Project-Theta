@@ -67,7 +67,7 @@ namespace ProjectTheta.Tests.EditMode
         [Test]
         public void Floor_Label_Uses_The_Location_Prefix()
         {
-            Assert.AreEqual("교육동 2F", LocationCatalog.Get(LocationId.TrainingCenter).GetFloorLabel(1));
+            Assert.AreEqual("본관 2F", LocationCatalog.Get(LocationId.TrainingCenter).GetFloorLabel(1));
             Assert.AreEqual("3F", new LocationDefinition().GetFloorLabel(2));
         }
     }

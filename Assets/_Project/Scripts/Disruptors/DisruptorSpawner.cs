@@ -482,6 +482,18 @@ namespace ProjectTheta.Disruptors
         {
             switch (profile.Kind)
             {
+                case DisruptorKind.TrainingAssistant:
+                    go.AddComponent<SchoolTeacherRole>().Configure(
+                        _player,
+                        _stage);
+                    break;
+
+                case DisruptorKind.HrEvaluator:
+                    go.AddComponent<SchoolDisciplineHeadTarget>().Configure(
+                        _stage,
+                        profile);
+                    break;
+
                 case DisruptorKind.BeachHunter:
                     go.AddComponent<ContesterRole>().Configure(
                         _followers,
@@ -577,7 +589,7 @@ namespace ProjectTheta.Disruptors
             {
                 case SpecialAbilityKind.AttendanceCheck:
                     go.AddComponent<AttendanceCheckAbility>().Configure(
-                        _followers);
+                        _player);
                     break;
 
                 case SpecialAbilityKind.WhistleAlarm:

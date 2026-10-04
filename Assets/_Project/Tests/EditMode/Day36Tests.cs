@@ -310,7 +310,7 @@ namespace ProjectTheta.Tests.EditMode
         public void Speaker_Colors_Differ()
         {
             Assert.AreNotEqual(StoryLogic.GetSpeakerColor(StoryCatalog.Me), StoryLogic.GetSpeakerColor(StoryCatalog.Rival));
-            Assert.AreNotEqual(StoryLogic.GetSpeakerColor(string.Empty), StoryLogic.GetSpeakerColor("교육 조교"));
+            Assert.AreNotEqual(StoryLogic.GetSpeakerColor(string.Empty), StoryLogic.GetSpeakerColor("교사"));
         }
 
         [Test]

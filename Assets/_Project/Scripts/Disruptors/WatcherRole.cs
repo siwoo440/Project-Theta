@@ -156,15 +156,32 @@ namespace ProjectTheta.Disruptors
                 _movement != null &&
                 _movement.IsDashing;
 
+            bool running =
+                _movement != null &&
+                _movement.IsSprintBoosted;
+
             bool dashStarted =
                 dashing &&
                 !_wasDashing;
 
             _wasDashing = dashing;
 
+            bool schoolTeacher =
+                _body.Profile != null &&
+                _body.Profile.Kind ==
+                DisruptorKind.TrainingAssistant;
+
+            bool suspiciousAction =
+                schoolTeacher
+                    ? SchoolEnemyLogic.IsTeacherSuspicious(
+                        running,
+                        dashing,
+                        casting)
+                    : casting || dashing;
+
             bool suspicious =
                 PlayerInSight &&
-                (casting || dashing);
+                suspiciousAction;
 
             bool wasSpotting =
                 IsSpotting;
@@ -176,7 +193,10 @@ namespace ProjectTheta.Disruptors
                     _followers == null
                         ? 0
                         : _followers.Count,
-                    deltaTime);
+                    deltaTime,
+                    _body.Profile == null
+                        ? DetectionLogic.SpotSeconds
+                        : _body.Profile.DetectionSeconds);
 
             if (_progress >= 1f &&
                 suspicious)

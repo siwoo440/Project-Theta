@@ -50,7 +50,7 @@ namespace ProjectTheta.Stage
         /// <summary>특수 능력이 발동했다. (효과 위치, 능력 이름)</summary>
         public static event Action<Vector2, string> AbilityFired;
 
-        /// <summary>기업 연수원 쉬는 시간 종이 울렸다.</summary>
+        /// <summary>고등학교 쉬는 시간 종이 울렸다.</summary>
         public static event Action BreakTimeStarted;
 
         // --- 23일차: 해변가 · 야시장 ---

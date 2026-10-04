@@ -77,13 +77,13 @@ namespace ProjectTheta.Stage.Locations
                     },
                     new[]
                     {
-                        E("교육 조교", "모든 층을 순찰하며 앞쪽 부채꼴을 본다", "등 뒤에서 최면 · 파동으로 멍하게"),
-                        E("인사팀 평가관 (3F·4F)", "근태 체크: 동행자 1명에 10초 표식, 그대로 회수하면 정기 −20%", "표식이 끝난 뒤 회수 · 시야 밖으로 빼기")
+                        E("교사", "달리기 · 대시 · 최면을 발견하면 추적하고 붙잡아 시간을 줄인다", "걸어서 통과 · 등 뒤에서 최면 · 파동으로 멍하게"),
+                        E("생활지도부장 (3F·4F)", "최면을 발견하면 돌진해 시전을 끊고 밀쳐낸다", "시야 밖에서 최면 · 파동 뒤 접근")
                     },
                     new[]
                     {
                         "자습실은 걸어서 지나가세요",
-                        "평가관이 반대쪽을 볼 때 최면하세요"
+                        "생활지도부장이 반대쪽을 볼 때 최면하세요"
                     }),
 
                 [LocationId.Beach] = new LocationGuide(
@@ -277,5 +277,13 @@ namespace ProjectTheta.Stage.Locations
                    location.HasRivals &&
                    location.Id != LocationId.RooftopClub;
         }
+
+        /// <summary>장소에 인기남 경쟁자가 실제로 나오는지다.</summary>
+        public static bool PopularGuyAppears( // 인기남 등장 판정
+            LocationDefinition location) // 장소 자료
+        { // 판정 시작
+            return RivalsAppear(location) && // 경쟁자 허용 확인
+                   location.Id != LocationId.TrainingCenter; // 학교 제외 확인
+        } // 판정 끝
     }
 }

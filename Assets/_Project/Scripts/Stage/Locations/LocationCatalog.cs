@@ -58,7 +58,7 @@ namespace ProjectTheta.Stage.Locations
 
         public int FloorCount = 1;
 
-        /// <summary>층별 NPC 수에 곱한다. 1이면 연수원과 같은 밀도다.</summary>
+        /// <summary>층별 NPC 수에 곱한다. 1이면 고등학교와 같은 밀도다.</summary>
         public float NpcDensity = 1f;
 
         public float TimeLimitSeconds = 180f;
@@ -76,7 +76,7 @@ namespace ProjectTheta.Stage.Locations
         /// <summary>지도 위 위치다. (0,0)이 왼쪽 아래, (1,1)이 오른쪽 위다.</summary>
         public Vector2 MapPosition;
 
-        /// <summary>층 표지판 앞에 붙는 이름이다. 예: "교육동" → "교육동 1F".</summary>
+        /// <summary>층 표지판 앞에 붙는 이름이다. 예: "본관" → "본관 1F".</summary>
         public string FloorPrefix = string.Empty;
 
         public string GetFloorLabel(
@@ -96,7 +96,7 @@ namespace ProjectTheta.Stage.Locations
     /// <summary>
     /// 장소 8곳의 기본 표다 (21일차).
     ///
-    /// 연수원을 뺀 7곳은 아직 색과 이름만 다른 임시 장소다.
+    /// 고등학교를 뺀 7곳은 장소별 색과 환경 규칙을 사용한다.
     /// 환경 규칙과 방해 세력은 23일차부터 장소별로 채운다.
     /// 나중에 자산으로 덮어쓸 수 있게 다른 표들과 같은 Override 구조를 둔다.
     /// </summary>
@@ -112,11 +112,11 @@ namespace ProjectTheta.Stage.Locations
             new LocationDefinition
             {
                 Id = LocationId.TrainingCenter,
-                DisplayName = "기업 연수원",
+                DisplayName = "고등학교",
                 TimeOfDay = LocationTimeOfDay.Day,
                 Objective = LocationObjective.EssenceQuota,
-                Summary = "신입 사원 합숙 교육 시설. 쉬는 시간마다 복도가 붐빈다",
-                DisruptorPreview = "교육 조교 · 인사팀 평가관 · 금태양 · 인기남",
+                Summary = "성인 교육생이 머무는 야간 고등학교. 쉬는 시간마다 복도가 붐빈다",
+                DisruptorPreview = "교사 · 생활지도부장 · 금태양",
                 FloorCount = 4,
                 NpcDensity = 1f,
                 TimeLimitSeconds = 180f,
@@ -125,7 +125,7 @@ namespace ProjectTheta.Stage.Locations
                 ShowsTutorial = true,
                 Tint = Color.white,
                 MapPosition = new Vector2(0.10f, 0.36f),
-                FloorPrefix = "교육동"
+                FloorPrefix = "본관"
             },
             new LocationDefinition
             {

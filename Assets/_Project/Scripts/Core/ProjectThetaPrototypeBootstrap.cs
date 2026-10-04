@@ -69,7 +69,7 @@ namespace ProjectTheta.Core
             GameplayPause.SetDebugSpeed(
                 1f);
 
-            // 21일차: 지도에서 고른 장소를 짓는다. 스테이지 씬을 바로 재생하면 연수원으로 시작한다.
+            // 21일차: 지도에서 고른 장소를 짓는다. 스테이지 씬을 바로 재생하면 고등학교로 시작한다.
             RunSession session =
                 GameSession.Instance == null
                     ? null
@@ -202,14 +202,17 @@ namespace ProjectTheta.Core
                     player,
                     floorCount);
 
-                CreatePopularGuy(
-                    stage,
-                    followers,
-                    player,
-                    floorCount);
+                if (LocationGuideCatalog.PopularGuyAppears(location))
+                {
+                    CreatePopularGuy(
+                        stage,
+                        followers,
+                        player,
+                        floorCount);
+                }
             }
 
-            // 22일차: 장소의 방해 세력과 구역 경계도, 연수원 환경 규칙.
+            // 22일차: 장소의 방해 세력과 구역 경계도, 고등학교 환경 규칙.
             DisruptorSpawner.Create(
                 location,
                 floorCount,
@@ -409,7 +412,7 @@ namespace ProjectTheta.Core
         }
 
         /// <summary>
-        /// 기업 연수원 환경 규칙을 붙인다 (22일차).
+        /// 고등학교 환경 규칙을 붙인다 (22일차).
         ///   쉬는 시간 종  40초마다 8초 동안 복도 NPC가 빨라진다
         ///   자습실        층마다 한 칸, 안에서 대시하면 경계도가 오른다
         /// 1F는 튜토리얼 층이라 자습실을 두지 않는다.

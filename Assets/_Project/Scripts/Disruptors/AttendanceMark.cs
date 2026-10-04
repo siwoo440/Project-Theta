@@ -6,7 +6,7 @@ using ProjectTheta.UI.Framework;
 namespace ProjectTheta.Disruptors
 {
     /// <summary>
-    /// 근태 체크 표식이다 (22일차). 인사팀 평가관의 능력이 동행자에게 붙인다.
+    /// 이전 근태 체크 장면과의 호환을 위해 남겨 둔 표식이다 (22일차).
     ///
     /// 표식이 붙은 동안
     ///   · 유지도가 초당 <see cref="DrainPerSecond"/>씩 줄고, 멀어져서 줄어드는 속도도 두 배다

@@ -39,7 +39,7 @@ namespace ProjectTheta.Run
         /// <summary>
         /// 장소의 난이도 단계다 (0~4). 예전 "구역 번호" 자리에 쓴다.
         /// 단계가 높을수록 같은 층이라도 고급 NPC가 더 섞인다.
-        ///   연수원 0 · 낮 1 · 저녁 2 · 밤 3 · 루프탑 클럽 4
+        ///   고등학교 0 · 낮 1 · 저녁 2 · 밤 3 · 루프탑 클럽 4
         /// </summary>
         public static int GetTier(
             LocationId location)

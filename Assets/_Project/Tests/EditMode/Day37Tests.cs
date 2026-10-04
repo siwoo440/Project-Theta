@@ -109,7 +109,7 @@ namespace ProjectTheta.Tests.EditMode
             Assert.IsTrue(MusicLogic.ShouldBlip(0, 10, "가나다라마바사아자차"));
 
             Assert.AreNotEqual(MusicLogic.GetBlipPitch(StoryCatalog.Me), MusicLogic.GetBlipPitch(StoryCatalog.Rival));
-            Assert.AreEqual(MusicLogic.GetBlipPitch("교육 조교"), MusicLogic.GetBlipPitch("교육 조교"));
+            Assert.AreEqual(MusicLogic.GetBlipPitch("교사"), MusicLogic.GetBlipPitch("교사"));
 
             foreach (StoryScene scene in StoryCatalog.All)
             {

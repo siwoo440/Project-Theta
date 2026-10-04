@@ -149,6 +149,30 @@ namespace ProjectTheta.Hypnosis
                 return;
             }
 
+            float disciplineFocusMultiplier = // 지도부장 최면 배율
+                _focus == null // 집중력 상태 확인
+                    ? 1f // 기본 배율
+                    : _focus.HypnosisSpeedMultiplier; // 집중력 가속 배율
+
+            if (Disruptors.SchoolDisciplineHeadTarget.TryFocusNearest( // 지도부장 최면 우선 처리
+                    transform.position, // 시전자 위치
+                    _scanRange, // 최면 사거리
+                    Time.deltaTime, // 프레임 시간
+                    disciplineFocusMultiplier)) // 집중력 배율
+            { // 처리 시작
+                ChangeTarget(null); // 일반 대상 해제
+                _chainIndex = 0; // 체인 초기화
+
+                if (_focus != null) // 집중력 확인
+                { // 소모 시작
+                    _focus.DrainContinuous( // 집중력 지속 소모
+                        _focus.HypnosisDrainPerSecond, // 초당 소모량
+                        Time.deltaTime); // 프레임 시간
+                } // 소모 끝
+
+                return; // 일반 최면 중단
+            } // 처리 끝
+
             // 체인으로 이어붙인 대상이 아직 살아 있으면 그 대상을 계속 공략한다.
             HypnosisTarget candidate =
                 _chainIndex > 0 &&

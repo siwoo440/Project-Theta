@@ -264,6 +264,23 @@ namespace ProjectTheta.Stage
             EvaluateState();
         }
 
+        /// <summary>교사 포획처럼 남은 시간에서 즉시 벌점을 뺀다 (40일차).</summary>
+        public void ApplyTimePenalty( // 시간 벌점 적용
+            float seconds) // 차감 시간
+        { // 적용 시작
+            if (!IsRunning) // 진행 상태 확인
+            { // 중단 시작
+                return; // 비진행 무시
+            } // 중단 끝
+
+            RemainingTime = // 남은 시간 갱신
+                Disruptors.SchoolEnemyLogic.ApplyTimePenalty( // 안전 계산 호출
+                    RemainingTime, // 현재 남은 시간
+                    seconds); // 벌점 전달
+
+            EvaluateState(); // 종료 상태 재평가
+        } // 적용 끝
+
         public void GrantRampageCaptureReward()
         {
             if (!IsRunning)

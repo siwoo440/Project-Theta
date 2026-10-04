@@ -84,7 +84,7 @@ namespace ProjectTheta.Core
 
         /// <summary>
         /// 에디터에서 스테이지 씬을 바로 재생한 경우처럼 도전 없이 스테이지에 들어왔을 때,
-        /// 기업 연수원 도전을 만들어 준다. 이미 기록을 마친 도전이면 같은 장소로 새로 만든다.
+        /// 고등학교 도전을 만들어 준다. 이미 기록을 마친 도전이면 같은 장소로 새로 만든다.
         /// </summary>
         public RunSession EnsureRunForStage()
         {

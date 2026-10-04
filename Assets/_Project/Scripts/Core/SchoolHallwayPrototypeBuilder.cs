@@ -81,7 +81,7 @@ namespace ProjectTheta.Core
 
         /// <summary>
         /// 장소 색을 입혀 건물 전체를 짓는다 (21일차).
-        /// 연수원이 아닌 장소는 아직 같은 복도 구조에 색만 다른 임시 장소다. 장소별 지형은 23일차부터 만든다.
+        /// 고등학교가 아닌 장소는 같은 복도 뼈대에 장소별 색과 꾸미기를 적용한다.
         /// </summary>
         public static void Build(
             int floorCount,

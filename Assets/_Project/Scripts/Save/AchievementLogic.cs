@@ -109,7 +109,7 @@ namespace ProjectTheta.Save
             new AchievementDefinition("mastery_1", "단골 장소", "장소 하나를 ★3으로", AchievementStat.MasteredLocations, 1, 80),
             new AchievementDefinition("mastery_4", "단골 거리", "장소 4곳을 ★3으로", AchievementStat.MasteredLocations, 4, 200),
             new AchievementDefinition("mastery_8", "도시의 주인", "장소 8곳 모두 ★3으로", AchievementStat.MasteredLocations, 8, 400),
-            new AchievementDefinition("s_training", "모범 연수생", "기업 연수원 S등급 클리어", AchievementStat.LocationSRank, 1, 100, TrainingCenter),
+            new AchievementDefinition("s_training", "모범 교육생", "고등학교 S등급 클리어", AchievementStat.LocationSRank, 1, 100, TrainingCenter),
             new AchievementDefinition("s_club", "루프탑의 주인", "루프탑 클럽 S등급 클리어", AchievementStat.LocationSRank, 1, 250, RooftopClub),
             new AchievementDefinition("s_all", "올 S", "장소 8곳 모두 최고 등급 S", AchievementStat.SRankLocations, 8, 500),
 

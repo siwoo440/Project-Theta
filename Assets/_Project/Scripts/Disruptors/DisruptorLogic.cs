@@ -235,7 +235,8 @@ namespace ProjectTheta.Disruptors
             float progress,
             bool suspiciousInSight,
             int followerCount,
-            float deltaTime)
+            float deltaTime,
+            float spotSeconds = SpotSeconds)
         {
             if (deltaTime <= 0f)
             {
@@ -244,7 +245,9 @@ namespace ProjectTheta.Disruptors
 
             float step =
                 deltaTime /
-                SpotSeconds;
+                Math.Max(
+                    0.01f,
+                    spotSeconds);
 
             return suspiciousInSight
                 ? Clamp01(progress + step * GetSpotRate(followerCount))
@@ -259,6 +262,32 @@ namespace ProjectTheta.Disruptors
                 : Math.Max(0f, Math.Min(1f, value));
         }
     }
+
+    /// <summary>고등학교 전용 적 행동의 순수 계산이다 (40일차).</summary>
+    public static class SchoolEnemyLogic
+    {
+        /// <summary>교사가 문제 행동으로 보는 입력인지다.</summary>
+        public static bool IsTeacherSuspicious( // 교사 의심 판정
+            bool isRunning, // 달리기 상태
+            bool isDashing, // 대시 상태
+            bool isHypnotizing) // 최면 상태
+        { // 판정 시작
+            return isRunning || // 달리기 감지
+                   isDashing || // 대시 감지
+                   isHypnotizing; // 최면 감지
+        } // 판정 끝
+
+        /// <summary>시간 벌점을 적용하고 0초 아래로 내려가지 않게 한다.</summary>
+        public static float ApplyTimePenalty( // 시간 벌점 계산
+            float remainingTime, // 현재 남은 시간
+            float penaltySeconds) // 벌점 시간
+        { // 계산 시작
+            return Math.Max( // 하한 적용
+                0f, // 최소 시간
+                remainingTime - // 현재 시간
+                Math.Max(0f, penaltySeconds)); // 유효 벌점
+        } // 계산 끝
+    } // 계산 공간 끝
 
     /// <summary>특수 능력의 진행 단계다.</summary>
     public enum AbilityPhase
@@ -376,7 +405,7 @@ namespace ProjectTheta.Disruptors
     }
 
     /// <summary>
-    /// 기업 연수원의 쉬는 시간 종이다 (22일차, 부록 B.3 [0]).
+    /// 고등학교의 쉬는 시간 종이다 (22일차, 부록 B.3 [0]).
     /// 주기마다 짧은 쉬는 시간이 오고, 그동안 복도 NPC가 빨라진다.
     /// </summary>
     public static class BreakTimeLogic

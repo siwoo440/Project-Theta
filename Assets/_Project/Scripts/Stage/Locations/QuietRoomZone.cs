@@ -7,7 +7,7 @@ using ProjectTheta.Presentation;
 namespace ProjectTheta.Stage.Locations
 {
     /// <summary>
-    /// 기업 연수원의 자습실 구역이다 (22일차, 부록 B.3 [0]).
+    /// 고등학교의 자습실 구역이다 (22일차, 부록 B.3 [0]).
     ///
     /// 층마다 복도 한 칸을 자습실로 둔다. 안에서 대시하면 조용한 곳에서 뛴 소리로 구역 경계도가 오른다.
     /// 감시자가 보고 있지 않아도 오른다. 대신 걸어서 지나가면 아무 일도 없다.

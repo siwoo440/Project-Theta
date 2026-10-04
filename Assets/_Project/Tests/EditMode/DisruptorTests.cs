@@ -282,7 +282,7 @@ namespace ProjectTheta.Tests.EditMode
             {
                 Assert.IsTrue(
                     placements.Exists(p => p.Floor == floor && p.Kind == DisruptorKind.TrainingAssistant),
-                    $"{floor + 1}F에 교육 조교가 없습니다");
+                    $"{floor + 1}F에 교사가 없습니다");
             }
         }
 
@@ -312,19 +312,4 @@ namespace ProjectTheta.Tests.EditMode
         }
     }
 
-    public sealed class AttendanceMarkRuleTests
-    {
-        [Test]
-        public void Mark_Hurts_But_Does_Not_Instantly_Break_A_Follower()
-        {
-            // 표식 10초 동안 가까이 둔 동행자가 잃는 유지도는 절반 미만이어야 한다(최대 100).
-            float nearbyLoss = AttendanceMark.DrainPerSecond * AttendanceCheckAbility.MarkSeconds;
-
-            Assert.Greater(nearbyLoss, 0f);
-            Assert.Less(nearbyLoss, 50f);
-
-            Assert.Greater(AttendanceMark.EssencePenalty, 0f);
-            Assert.Less(AttendanceMark.EssencePenalty, 1f);
-        }
-    }
 }

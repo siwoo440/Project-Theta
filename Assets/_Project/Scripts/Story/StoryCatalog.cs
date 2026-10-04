@@ -93,11 +93,11 @@ namespace ProjectTheta.Story
 
         public static readonly StoryScene[] All =
         {
-            // 기업 연수원 -------------------------------------------------
-            new StoryScene("enter_training", "첫 출근", StoryTrigger.LocationEnter, LocationId.TrainingCenter, 0,
-                N("신입 사원 합숙 교육 첫날. 복도에는 피곤한 얼굴들이 가득하다."),
+            // 고등학교 ---------------------------------------------------
+            new StoryScene("enter_training", "야간 수업", StoryTrigger.LocationEnter, LocationId.TrainingCenter, 0,
+                N("성인 교육생의 야간 수업이 끝나 간다. 복도에는 피곤한 얼굴들이 가득하다."),
                 L(Me, "지친 사람일수록 마음이 쉽게 열리지. 여기서부터 시작하자."),
-                L("교육 조교", "거기! 교육 중에 복도에서 뭐 하는 거죠?")),
+                L("교사", "거기! 수업 중에 복도에서 뭐 하는 거죠?")),
 
             new StoryScene("clear_training", "첫 계약", StoryTrigger.LocationClear, LocationId.TrainingCenter, 0,
                 L(Me, "첫 정기가 몸에 스며든다… 이 정도면 버틸 수 있어."),
@@ -177,7 +177,7 @@ namespace ProjectTheta.Story
             // 라이벌 도발 --------------------------------------------------
             new StoryScene("rival_taunt_3", "지켜보는 눈", StoryTrigger.LocationsCleared, LocationId.TrainingCenter, 3,
                 N("휴대폰에 낯선 메시지가 도착했다."),
-                L(Rival, "제법이네. 연수원, 바닷가… 귀여운 동네 산책은 즐거웠어?"),
+                L(Rival, "제법이네. 학교, 바닷가… 귀여운 동네 산책은 즐거웠어?"),
                 L(Me, "…누구지? 이 기척, 같은 서큐버스야.")),
 
             new StoryScene("rival_taunt_6", "초대장", StoryTrigger.LocationsCleared, LocationId.TrainingCenter, 6,
