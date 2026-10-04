@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 #endif
 using ProjectTheta.Core;
+using ProjectTheta.Boss; // 엔딩 분기 참조
 using ProjectTheta.Presentation;
 using ProjectTheta.Run;
 using ProjectTheta.Save;
@@ -60,6 +61,8 @@ namespace ProjectTheta.UI
         private float _elapsed;
         private int _playedRowTicks;
         private bool _playedStamp;
+        private bool _resultSubmitted; // 결과 제출 여부
+        private StageResultSummary _pendingResult; // 제출 대기 결과
 
         private Canvas _canvas;
         private Text _titleText;
@@ -96,16 +99,21 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            // 29일차: 보스 엔딩이 도는 동안에는 결과 화면을 미룬다.
-            if (Boss.EndingSequence.IsPlaying)
-            {
-                return;
-            }
-
             if (!_snapshotTaken)
             {
                 TakeSnapshot();
             }
+
+            // 45일차: 엔딩 선택과 연출이 끝날 때까지 결과 화면을 미룬다.
+            if (Boss.EndingSequence.IsPlaying) // 엔딩 재생 확인
+            { // 대기 시작
+                return; // 결과 화면 갱신 중단
+            } // 대기 끝
+
+            if (_canvas != null && !_canvas.gameObject.activeSelf) // 숨긴 결과 화면 확인
+            { // 복원 시작
+                _canvas.gameObject.SetActive(true); // 결과 화면 활성화
+            } // 복원 끝
 
             if (!_skipped)
             {
@@ -208,7 +216,7 @@ namespace ProjectTheta.UI
                     _breakdown.Total,
                     _tracker.IsSConditionMet);
 
-            SubmitResultToSession();
+            PrepareResultForSession(); // 결과 생성과 엔딩 분기 시작
 
             // 37일차: 탈출 성공 · 실패 소리(포기는 조용히)
             if (_stage.State == StageState.Cleared)
@@ -222,10 +230,15 @@ namespace ProjectTheta.UI
 
             Build();
             FillTexts();
+
+            if (Boss.EndingSequence.IsPlaying && _canvas != null) // 엔딩 재생과 결과 화면 확인
+            { // 숨김 시작
+                _canvas.gameObject.SetActive(false); // 엔딩 동안 결과 화면 숨김
+            } // 숨김 끝
         }
 
         /// <summary>이번 판의 결과를 허브로 넘긴다. 세이브 반영은 허브가 한다.</summary>
-        private void SubmitResultToSession()
+        private void PrepareResultForSession() // 이번 판 결과 생성
         {
             if (GameSession.Instance == null)
             {
@@ -284,29 +297,20 @@ namespace ProjectTheta.UI
                         _contractEssence)
                     : 0;
 
-            // 29일차: 같은 도전을 두 번 세지 않는다. 판이 없으므로 구역 기록 대신 통계 숫자를 넘긴다.
-            RunSession session =
-                GameSession.Instance.Run;
-
-            if (session != null &&
-                !session.MarkRecorded())
-            {
-                return;
-            }
-
             RunStats stats =
                 FindFirstObjectByType<RunStatsRecorder>()?.Stats;
 
             Boss.BossBattle battle =
                 Boss.BossBattle.Current;
 
-            GameSession.Instance.SubmitStageResult(
+            _pendingResult = // 제출 대기 결과 저장
                 new StageResultSummary
                 {
                     HasLocation = true,
                     LocationId = (int)LocationContext.Current.Id,
                     PlaySeconds = stats == null ? _stage.ElapsedTime : stats.TotalSeconds,
                     BossDefeated = battle != null && battle.IsDefeated,
+                    Abandoned = _stage.IsAbandoned, // 포기 여부 저장
                     Cheated = DebugCheats.UsedThisRun || (stats != null && stats.Cheated),
                     HypnosisCount = stats == null ? 0 : stats.HypnosisCount,
                     MaxFollowers = stats == null ? 0 : stats.MaxFollowers,
@@ -334,8 +338,54 @@ namespace ProjectTheta.UI
                         _contractEssence,
                     TargetEssence =
                         _stage.TargetEssence
-                });
+                }; // 결과 생성 끝
+
+            BeginEndingOrSubmit(); // 엔딩 분기 또는 즉시 제출
         }
+
+        private void BeginEndingOrSubmit() // 엔딩 연출 시작 또는 결과 제출
+        { // 처리 시작
+            bool isFinalBattle = LocationContext.Current.Id == LocationId.RooftopClub; // 최종 장소 확인
+            EndingDecision decision = EndingBranchLogic.Resolve( // 엔딩 분기 판정
+                isFinalBattle, // 최종전 여부
+                _pendingResult.BossDefeated, // 보스 승리 여부
+                _pendingResult.Abandoned, // 포기 여부
+                GameSession.Instance.Save.RiellaAffinity); // 리엘라 호감도
+
+            if (decision == EndingDecision.None) // 엔딩 없음 확인
+            { // 즉시 제출 시작
+                SubmitPendingResult(EndingId.None); // 일반 결과 제출
+                return; // 처리 종료
+            } // 즉시 제출 끝
+
+            EndingSequence sequence = FindFirstObjectByType<EndingSequence>(); // 엔딩 연출기 조회
+
+            if (sequence != null && sequence.Play(decision, SubmitPendingResult)) // 엔딩 재생 시작
+            { // 대기 시작
+                return; // 완료 콜백까지 대기
+            } // 대기 끝
+
+            SubmitPendingResult(EndingBranchLogic.GetDefaultEnding(decision)); // 연출기 누락 대체 제출
+        } // 처리 끝
+
+        private void SubmitPendingResult(EndingId endingId) // 대기 결과 제출
+        { // 제출 시작
+            if (_resultSubmitted || GameSession.Instance == null) // 중복과 세션 확인
+            { // 중단 시작
+                return; // 제출 중단
+            } // 중단 끝
+
+            RunSession session = GameSession.Instance.Run; // 현재 도전 조회
+
+            if (session != null && !session.MarkRecorded()) // 중복 도전 결과 확인
+            { // 중단 시작
+                return; // 중복 제출 차단
+            } // 중단 끝
+
+            _resultSubmitted = true; // 제출 상태 설정
+            _pendingResult.EndingId = (int)endingId; // 선택 엔딩 저장
+            GameSession.Instance.SubmitStageResult(_pendingResult); // 세션 결과 제출
+        } // 제출 끝
 
         private void PlayPendingSounds()
         {

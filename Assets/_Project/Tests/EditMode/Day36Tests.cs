@@ -222,7 +222,7 @@ namespace ProjectTheta.Tests.EditMode
                 Assert.AreEqual(expected, StoryLogic.CountForLocation(location.Id), location.Id.ToString()); // 장소별 장면 수 확인
             }
 
-            Assert.AreEqual(40, StoryCatalog.All.Length); // 44일차 메인 장면 포함 확인
+            Assert.AreEqual(45, StoryCatalog.All.Length); // 45일차 관계 장면 포함 확인
             Assert.AreSame(StoryCatalog.All[0], StoryCatalog.Get(StoryCatalog.All[0].Id));
             Assert.IsNull(StoryCatalog.Get("nope"));
             Assert.IsNull(StoryCatalog.Get(null));

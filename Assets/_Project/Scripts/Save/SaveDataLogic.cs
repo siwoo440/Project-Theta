@@ -2,6 +2,9 @@
 
 namespace ProjectTheta.Save
 {
+    using System.Collections.Generic; // 목록과 집합 참조
+    using ProjectTheta.Story; // 이야기 ID 참조
+
     /// <summary>
     /// 세이브 데이터에 대한 판정과 갱신 규칙이다.
     ///
@@ -147,6 +150,13 @@ namespace ProjectTheta.Save
             // 30일차: 알 수 없는 업적 ID를 지운다.
             Story.StoryLogic.Normalize(
                 data);
+
+            // 45일차: 이야기 이관 뒤 관계 보상과 엔딩 기록을 복원한다.
+            RiellaAffinityLogic.Normalize( // 호감도 자료 보정
+                data); // 저장 자료 전달
+
+            EndingProgressLogic.Normalize( // 엔딩 기록 보정
+                data); // 저장 자료 전달
 
             AchievementLogic.Normalize(
                 data);
@@ -325,4 +335,112 @@ namespace ProjectTheta.Save
             return target;
         }
     }
+
+    public static class RiellaAffinityLogic // 리엘라 호감도 규칙
+    { // 클래스 시작
+        public const int Minimum = 0; // 호감도 최솟값
+        public const int Maximum = 100; // 호감도 최댓값
+        public const int StoryEventReward = 10; // 관계 이벤트 보상
+        public const int UniqueStageReward = 1; // 고유 지역 보상
+
+        private static readonly HashSet<string> RelationshipStoryIds = new HashSet<string>(StringComparer.Ordinal) // 관계 이벤트 ID 집합
+        { // 집합 시작
+            StoryCatalog.RiellaMorningAfterId, // H01 장면
+            StoryCatalog.RiellaPromiseId, // H02 장면
+            StoryCatalog.RiellaCheckTogetherId, // H03 장면
+            StoryCatalog.RiellaSharedBurdenId, // H04 장면
+            StoryCatalog.RiellaSharedResponsibilityId, // H05 장면
+            StoryCatalog.RiellaStayTogetherId // H06 장면
+        }; // 집합 끝
+
+        private static readonly HashSet<string> CurrentUniqueStageStoryIds = new HashSet<string>(StringComparer.Ordinal) // 현재 고유 지역 장면 집합
+        { // 집합 시작
+            "clear_training", // 학교 첫 완료
+            "clear_beach", // 해변 첫 완료
+            "clear_subway", // 지하철 첫 완료
+            "clear_fitness", // 헬스장 첫 완료
+            "clear_market", // 야시장 첫 완료
+            "clear_mall", // 쇼핑몰 첫 완료
+            "clear_office" // 오피스 첫 완료
+        }; // 집합 끝
+
+        public static void Normalize(SaveData save) // 호감도 저장 보정
+        { // 보정 시작
+            if (save == null) // 저장 확인
+            { // 중단 시작
+                return; // 보정 중단
+            } // 중단 끝
+
+            save.RiellaAffinity = Clamp(save.RiellaAffinity); // 호감도 범위 보정
+            save.RiellaAffinityRewards = NormalizeIds(save.RiellaAffinityRewards); // 보상 출처 보정
+            string[] completed = save.CompletedStories ?? new string[0]; // 완료 장면 목록
+
+            foreach (string storyId in completed) // 완료 장면 순회
+            { // 순회 시작
+                ApplyStoryCompletion(save, storyId); // 누락 보상 복원
+            } // 순회 끝
+        } // 보정 끝
+
+        public static bool ApplyStoryCompletion(SaveData save, string storyId) // 이야기 완료 보상 적용
+        { // 적용 시작
+            if (RelationshipStoryIds.Contains(storyId)) // 관계 이벤트 확인
+            { // 관계 보상 시작
+                return Grant(save, storyId, StoryEventReward); // 관계 보상 지급
+            } // 관계 보상 끝
+
+            if (CurrentUniqueStageStoryIds.Contains(storyId)) // 고유 지역 확인
+            { // 지역 보상 시작
+                return Grant(save, storyId, UniqueStageReward); // 지역 보상 지급
+            } // 지역 보상 끝
+
+            return false; // 보상 없음 반환
+        } // 적용 끝
+
+        public static bool Grant(SaveData save, string rewardId, int amount) // 고유 보상 지급
+        { // 지급 시작
+            if (save == null || string.IsNullOrEmpty(rewardId) || amount <= 0) // 입력 확인
+            { // 거부 시작
+                return false; // 지급 실패
+            } // 거부 끝
+
+            string[] rewards = save.RiellaAffinityRewards ?? new string[0]; // 기존 보상 목록
+
+            if (Array.IndexOf(rewards, rewardId) >= 0) // 중복 보상 확인
+            { // 거부 시작
+                return false; // 중복 지급 차단
+            } // 거부 끝
+
+            string[] grown = new string[rewards.Length + 1]; // 확장 보상 목록
+            Array.Copy(rewards, grown, rewards.Length); // 기존 보상 복사
+            grown[grown.Length - 1] = rewardId; // 신규 보상 출처 추가
+            save.RiellaAffinityRewards = grown; // 확장 목록 저장
+            save.RiellaAffinity = Clamp(save.RiellaAffinity + amount); // 호감도 증가
+
+            return true; // 지급 성공
+        } // 지급 끝
+
+        public static int Clamp(int value) // 호감도 범위 제한
+        { // 제한 시작
+            return Math.Max(Minimum, Math.Min(Maximum, value)); // 제한값 반환
+        } // 제한 끝
+
+        private static string[] NormalizeIds(string[] values) // 보상 ID 배열 보정
+        { // 보정 시작
+            List<string> result = new List<string>(); // 결과 목록
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal); // 중복 확인 집합
+
+            if (values != null) // 기존 배열 확인
+            { // 순회 준비
+                foreach (string value in values) // 값 순회
+                { // 순회 시작
+                    if (!string.IsNullOrEmpty(value) && seen.Add(value)) // 유효성과 중복 확인
+                    { // 추가 시작
+                        result.Add(value); // 결과 추가
+                    } // 추가 끝
+                } // 순회 끝
+            } // 순회 준비 끝
+
+            return result.ToArray(); // 보정 배열 반환
+        } // 보정 끝
+    } // 클래스 끝
 }

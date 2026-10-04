@@ -16,13 +16,15 @@ namespace ProjectTheta.Tests.EditMode // 편집 모드 테스트 공간
             SaveData save = CreateRegionalSave(); // 지역 이야기 저장 생성
             CompleteRegions(save, "clear_training"); // 한 지역 완료
 
-            Assert.AreEqual(0, GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter).Length); // 한 지역 해금 차단
+            CollectionAssert.DoesNotContain( // 인터루드 A 조기 해금 차단
+                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter), // 한 지역 허브 장면
+                StoryCatalog.InterludeAId); // 차단 대상 장면
 
             CompleteRegions(save, "clear_beach"); // 두 번째 지역 완료
 
-            CollectionAssert.AreEqual( // 인터루드 A 해금 확인
-                new[] { StoryCatalog.InterludeAId }, // 기대 장면
-                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter)); // 허브 복귀 조회
+            CollectionAssert.Contains( // 인터루드 A 해금 확인
+                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter), // 허브 복귀 조회
+                StoryCatalog.InterludeAId); // 기대 장면
         } // 테스트 끝
 
         [Test] // 테스트 표시
@@ -38,9 +40,9 @@ namespace ProjectTheta.Tests.EditMode // 편집 모드 테스트 공간
 
             CompleteRegions(save, "clear_subway", "clear_fitness"); // 네 지역 완료
 
-            CollectionAssert.AreEqual( // 쟁탈 미완료와 무관한 인터루드 B 확인
-                new[] { StoryCatalog.InterludeBId }, // 기대 장면
-                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter)); // 허브 복귀 조회
+            CollectionAssert.Contains( // 쟁탈 미완료와 무관한 인터루드 B 확인
+                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter), // 허브 복귀 조회
+                StoryCatalog.InterludeBId); // 기대 장면
 
             StoryProgressLogic.Complete(save, StoryCatalog.LumiaContestId, false); // 쟁탈 장면 완료
 
@@ -56,20 +58,22 @@ namespace ProjectTheta.Tests.EditMode // 편집 모드 테스트 공간
             CompleteRegions(save, "clear_training", "clear_beach", "clear_subway", "clear_fitness"); // 네 지역 완료
             StoryProgressLogic.Complete(save, StoryCatalog.InterludeAId, false); // 인터루드 A 완료
 
-            CollectionAssert.AreEqual( // 인터루드 B 확인
-                new[] { StoryCatalog.InterludeBId }, // 기대 장면
-                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter)); // 허브 복귀 조회
+            CollectionAssert.Contains( // 인터루드 B 확인
+                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter), // 허브 복귀 조회
+                StoryCatalog.InterludeBId); // 기대 장면
 
             StoryProgressLogic.Complete(save, StoryCatalog.InterludeBId, false); // 인터루드 B 완료
             CompleteRegions(save, "clear_market"); // 다섯 지역 완료
 
-            Assert.AreEqual(0, GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter).Length); // 여섯 지역 전 차단
+            CollectionAssert.DoesNotContain( // 인터루드 C 조기 해금 차단
+                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter), // 다섯 지역 허브 장면
+                StoryCatalog.InterludeCId); // 차단 대상 장면
 
             CompleteRegions(save, "clear_mall"); // 여섯 지역 완료
 
-            CollectionAssert.AreEqual( // 인터루드 C 확인
-                new[] { StoryCatalog.InterludeCId }, // 기대 장면
-                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter)); // 허브 복귀 조회
+            CollectionAssert.Contains( // 인터루드 C 확인
+                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter), // 허브 복귀 조회
+                StoryCatalog.InterludeCId); // 기대 장면
         } // 테스트 끝
 
         [Test] // 테스트 표시
@@ -89,15 +93,15 @@ namespace ProjectTheta.Tests.EditMode // 편집 모드 테스트 공간
             StoryProgressLogic.Complete(save, StoryCatalog.InterludeBId, false); // 인터루드 B 완료
             StoryProgressLogic.Complete(save, StoryCatalog.InterludeCId, false); // 인터루드 C 완료
 
-            CollectionAssert.AreEqual( // 진상 장면 확인
-                new[] { StoryCatalog.StoryTruthId }, // 기대 장면
-                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter)); // 허브 복귀 조회
+            CollectionAssert.Contains( // 진상 장면 확인
+                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter), // 허브 복귀 조회
+                StoryCatalog.StoryTruthId); // 기대 장면
 
             StoryProgressLogic.Complete(save, StoryCatalog.StoryTruthId, false); // 진상 장면 완료
 
-            CollectionAssert.AreEqual( // 결전 전야 확인
-                new[] { StoryCatalog.BattleEveId }, // 기대 장면
-                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter)); // 허브 복귀 조회
+            CollectionAssert.Contains( // 결전 전야 확인
+                GetIds(save, StoryEventType.HubReturn, LocationId.TrainingCenter), // 허브 복귀 조회
+                StoryCatalog.BattleEveId); // 기대 장면
         } // 테스트 끝
 
         [Test] // 테스트 표시

@@ -90,10 +90,9 @@ namespace ProjectTheta.Save
                 stats.Clears++;
             }
 
-            if (result.BossDefeated)
-            {
-                stats.Endings++;
-            }
+            EndingProgressLogic.Record( // 엔딩 누적 기록
+                target, // 대상 저장
+                (Boss.EndingId)result.EndingId); // 선택 엔딩 변환
 
             stats.Hypnosis += Math.Max(0, result.HypnosisCount);
             stats.MaxFollowers = Math.Max(stats.MaxFollowers, result.MaxFollowers);
@@ -317,6 +316,82 @@ namespace ProjectTheta.Save
             return null;
         }
     }
+
+    public static class EndingProgressLogic // 엔딩 기록 규칙
+    { // 클래스 시작
+        public static void Normalize(SaveData save) // 엔딩 저장 보정
+        { // 보정 시작
+            if (save == null) // 저장 확인
+            { // 중단 시작
+                return; // 보정 중단
+            } // 중단 끝
+
+            List<string> cleaned = new List<string>(); // 보정 목록
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal); // 중복 확인 집합
+            string[] values = save.SeenEndings ?? new string[0]; // 기존 엔딩 목록
+
+            foreach (string value in values) // 엔딩 ID 순회
+            { // 순회 시작
+                if (IsKnownId(value) && seen.Add(value)) // 유효성과 중복 확인
+                { // 추가 시작
+                    cleaned.Add(value); // 보정 목록 추가
+                } // 추가 끝
+            } // 순회 끝
+
+            save.SeenEndings = cleaned.ToArray(); // 보정 목록 저장
+        } // 보정 끝
+
+        public static bool Record(SaveData save, Boss.EndingId endingId) // 엔딩 기록 추가
+        { // 기록 시작
+            string value = GetStorageId(endingId); // 저장 ID 조회
+
+            if (save == null || string.IsNullOrEmpty(value)) // 입력 확인
+            { // 거부 시작
+                return false; // 기록 실패
+            } // 거부 끝
+
+            PlayStatsLogic.Normalize(save); // 통계 자료 보정
+            Normalize(save); // 엔딩 목록 보정
+            save.Stats.Endings++; // 엔딩 누적 횟수 증가
+
+            if (Array.IndexOf(save.SeenEndings, value) >= 0) // 기존 엔딩 확인
+            { // 중복 시작
+                return true; // 누적 기록 성공
+            } // 중복 끝
+
+            string[] grown = new string[save.SeenEndings.Length + 1]; // 확장 엔딩 목록
+            Array.Copy(save.SeenEndings, grown, save.SeenEndings.Length); // 기존 엔딩 복사
+            grown[grown.Length - 1] = value; // 신규 엔딩 추가
+            save.SeenEndings = grown; // 확장 목록 저장
+
+            return true; // 기록 성공
+        } // 기록 끝
+
+        public static string GetStorageId(Boss.EndingId endingId) // 엔딩 저장 ID 조회
+        { // 조회 시작
+            switch (endingId) // 엔딩 확인
+            { // 분기 시작
+                case Boss.EndingId.A: // 엔딩 A
+                    return "ending_a"; // 엔딩 A ID 반환
+
+                case Boss.EndingId.B: // 엔딩 B
+                    return "ending_b"; // 엔딩 B ID 반환
+
+                case Boss.EndingId.C: // 엔딩 C
+                    return "ending_c"; // 엔딩 C ID 반환
+
+                default: // 엔딩 없음
+                    return string.Empty; // 빈 ID 반환
+            } // 분기 끝
+        } // 조회 끝
+
+        private static bool IsKnownId(string value) // 알려진 엔딩 ID 확인
+        { // 확인 시작
+            return string.Equals(value, "ending_a", StringComparison.Ordinal) || // 엔딩 A 확인
+                   string.Equals(value, "ending_b", StringComparison.Ordinal) || // 엔딩 B 확인
+                   string.Equals(value, "ending_c", StringComparison.Ordinal); // 엔딩 C 확인
+        } // 확인 끝
+    } // 클래스 끝
 
     public struct StatsRow
     {

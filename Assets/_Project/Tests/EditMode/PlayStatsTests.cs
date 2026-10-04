@@ -120,11 +120,12 @@ namespace ProjectTheta.Tests.EditMode
         }
 
         [Test]
-        public void Boss_Defeat_Counts_As_Ending()
+        public void Selected_Ending_Counts_As_Ending()
         {
             SaveData data = SaveDataLogic.CreateDefault();
             StageResultSummary result = Result(LocationId.RooftopClub, true, 200f, 250);
             result.BossDefeated = true;
+            result.EndingId = (int)ProjectTheta.Boss.EndingId.A;
 
             data = SaveDataLogic.ApplyStageResult(data, result);
 

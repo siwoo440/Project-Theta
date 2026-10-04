@@ -29,6 +29,11 @@ namespace ProjectTheta.Story
         public const string CompetitionAftermathId = "story_03_competition_aftermath"; // 경쟁 임무 정리 ID
         public const string RiellaJealousyId = "story_04_riella_jealousy"; // 리엘라 질투 ID
         public const string RiellaMorningAfterId = "story_04_morning_after"; // 다음 날 아침 ID
+        public const string RiellaPromiseId = "riella_h02_promise"; // 리엘라 H02 ID
+        public const string RiellaCheckTogetherId = "riella_h03_check_together"; // 리엘라 H03 ID
+        public const string RiellaSharedBurdenId = "riella_h04_shared_burden"; // 리엘라 H04 ID
+        public const string RiellaSharedResponsibilityId = "riella_h05_shared_responsibility"; // 리엘라 H05 ID
+        public const string RiellaStayTogetherId = "riella_h06_stay_together"; // 리엘라 H06 ID
         public const string InterludeAId = "main_interlude_a_lumia_returns"; // 르미아 재등장 ID
         public const string LumiaContestId = "main_interlude_a_lumia_contest"; // 르미아 쟁탈 ID
         public const string LumiaReclaimId = "main_interlude_a_lumia_reclaim"; // 르미아 재탈환 ID
@@ -230,6 +235,86 @@ namespace ProjectTheta.Story
                 L(Riella, "임무가 많아. 도시에서 네가 직접 확인할 것도 늘었고."), // 회피와 다음 목표
                 L(Protagonist, "그럼 원하는 지역부터 돌아보지. 계약의 배경도 내가 직접 찾겠어."), // 자유 탐색 선언
                 N("스토리 4가 끝나고 도시의 지역 에피소드가 자유 탐색 구조로 열린다.")), // 지역 개방
+
+            Day44Scene( // 리엘라 H02 생성
+                RiellaPromiseId, // 장면 ID
+                "리엘라 H02 · 첫 번째 약속", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                false, // 지정 사건만 일치
+                new[] // 해금 조건 목록
+                { // 목록 시작
+                    StoryCondition.StoryCompleted(RiellaMorningAfterId), // H01 완료
+                    StoryCondition.RegionalStoriesCompleted(1) // 첫 지역 완료
+                }, // 목록 끝
+                N("첫 지역 임무를 마친 뒤 리엘라가 귀환 기록을 먼저 펼쳐 든다."), // 장면 도입
+                L(Riella, "앞으로도 돌아오면 결과부터 함께 확인하자. 혼자 판단하고 숨기지 말고."), // 공동 확인 제안
+                L(Protagonist, "계약 보고가 아니라 서로에게 하는 약속으로 받아들일게."), // 약속 수락
+                L(Riella, "좋아. 그럼 다음 임무에서도 반드시 같이 돌아오는 거야.")), // 관계 약속
+
+            Day44Scene( // 리엘라 H03 생성
+                RiellaCheckTogetherId, // 장면 ID
+                "리엘라 H03 · 함께 확인할 것", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                false, // 지정 사건만 일치
+                new[] // 해금 조건 목록
+                { // 목록 시작
+                    StoryCondition.StoryCompleted(RiellaPromiseId), // H02 완료
+                    StoryCondition.StoryCompleted(InterludeAId) // 인터루드 A 완료
+                }, // 목록 끝
+                N("르미아가 남긴 의문을 정리하던 리엘라가 숨겨 둔 기록 한 장을 꺼낸다."), // 장면 도입
+                L(Riella, "확실하지 않아서 말하지 않았어. 하지만 이제는 네가 판단할 자료도 함께 볼게."), // 정보 공유
+                L(Protagonist, "정답보다 같은 자료를 보고 결정하는 게 중요해."), // 신뢰 확인
+                L(Riella, "그 말을 지킬게. 이번에는 정말 함께 확인하자.")), // 공동 조사 약속
+
+            Day44Scene( // 리엘라 H04 생성
+                RiellaSharedBurdenId, // 장면 ID
+                "리엘라 H04 · 나눈 짐", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                false, // 지정 사건만 일치
+                new[] // 해금 조건 목록
+                { // 목록 시작
+                    StoryCondition.StoryCompleted(RiellaCheckTogetherId), // H03 완료
+                    StoryCondition.StoryCompleted(InterludeBId) // 인터루드 B 완료
+                }, // 목록 끝
+                N("과거 계약망의 기록을 읽은 뒤에도 리엘라는 한동안 페이지를 넘기지 못한다."), // 장면 도입
+                L(Protagonist, "그때의 선택까지 혼자 책임질 필요는 없어. 지금의 결정은 같이 하자."), // 부담 분담
+                L(Riella, "계약자에게 이런 말을 듣게 될 줄은 몰랐네."), // 감정 반응
+                L(Riella, "그래도 이번에는 기대 볼게. 네가 먼저 놓지만 않는다면.")), // 신뢰 심화
+
+            Day44Scene( // 리엘라 H05 생성
+                RiellaSharedResponsibilityId, // 장면 ID
+                "리엘라 H05 · 함께 질 책임", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                false, // 지정 사건만 일치
+                new[] // 해금 조건 목록
+                { // 목록 시작
+                    StoryCondition.StoryCompleted(RiellaSharedBurdenId), // H04 완료
+                    StoryCondition.StoryCompleted(InterludeCId) // 인터루드 C 완료
+                }, // 목록 끝
+                N("도시 전체의 이상을 확인한 두 사람은 결전 이후의 책임까지 목록에 적는다."), // 장면 도입
+                L(Riella, "르미아를 막는 것만으로 끝나지 않아. 흐트러진 계약도 우리가 정리해야 해."), // 이후 책임
+                L(Protagonist, "계약의 힘을 쓴 만큼 결과도 같이 감당하지."), // 책임 수락
+                L(Riella, "이제 네 선택을 믿어. 나도 내 몫을 피하지 않을게.")), // 상호 신뢰
+
+            Day44Scene( // 리엘라 H06 생성
+                RiellaStayTogetherId, // 장면 ID
+                "리엘라 H06 · 결전 뒤에도", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                false, // 지정 사건만 일치
+                new[] // 해금 조건 목록
+                { // 목록 시작
+                    StoryCondition.StoryCompleted(RiellaSharedResponsibilityId), // H05 완료
+                    StoryCondition.StoryCompleted(StoryTruthId) // 스토리 13 완료
+                }, // 목록 끝
+                N("결전 준비를 끝낸 밤, 리엘라가 계약서가 아닌 빈 종이를 내민다."), // 장면 도입
+                L(Riella, "루프탑이 끝난 뒤에도 네 곁에 남는 건 계약 조건이 아니었으면 해."), // 관계 고백
+                L(Protagonist, "그 답은 결전이 끝나도 바뀌지 않아. 함께 돌아오자."), // 동행 선택
+                L(Riella, "응. 이번에는 계약이 아니라 내 선택으로 함께 갈게.")), // 최종 관계 확인
 
             // 메인 인터루드 · 결전 --------------------------------------
             Day44Scene( // 인터루드 A 생성

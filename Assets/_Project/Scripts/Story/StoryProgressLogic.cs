@@ -77,8 +77,14 @@ namespace ProjectTheta.Story // 이야기 공간
                 return true; // 저장 변경 없음
             } // 다시 보기 끝
 
+            bool firstCompletion = !IsCompleted(save, storyId); // 최초 완료 여부
             AddId(ref save.SeenStories, storyId); // 본 장면 추가
             AddId(ref save.CompletedStories, storyId); // 완료 장면 추가
+
+            if (firstCompletion) // 최초 완료 확인
+            { // 보상 시작
+                RiellaAffinityLogic.ApplyStoryCompletion(save, storyId); // 호감도 보상 적용
+            } // 보상 끝
 
             if (string.Equals(save.ActiveStoryId, storyId, StringComparison.Ordinal)) // 현재 장면 확인
             { // 진행 해제 시작
