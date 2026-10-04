@@ -59,6 +59,9 @@ namespace ProjectTheta.Story // 이야기 공간
                         condition.ChoiceId, // 요구 선택
                         StringComparison.Ordinal); // 정확 비교
 
+                case StoryConditionType.RegionalStoriesCompleted: // 일반 지역 이야기 수 조건
+                    return StoryArcLogic.GetCompletedRegionalStories(save) >= condition.Threshold; // 완료 지역 수 확인
+
                 default: // 알 수 없는 조건
                     return false; // 조건 실패 반환
             } // 분기 끝

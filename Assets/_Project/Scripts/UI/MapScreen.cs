@@ -47,6 +47,7 @@ namespace ProjectTheta.UI
 
         private enum NodeState
         {
+            Locked, // 잠긴 장소
             Open,
             Cleared,
             Selected
@@ -265,7 +266,8 @@ namespace ProjectTheta.UI
         private void Select(
             LocationId id)
         {
-            if (!_candidates.Contains(id))
+            if (!_candidates.Contains(id) || // 후보 장소 확인
+                !StoryArcLogic.IsLocationUnlocked(CurrentSave, id)) // 이야기 해금 확인
             {
                 return;
             }
@@ -284,7 +286,8 @@ namespace ProjectTheta.UI
                 GameSession.Instance;
 
             if (_selected == null ||
-                game == null)
+                game == null ||
+                !StoryArcLogic.IsLocationUnlocked(game.Save, _selected.Value)) // 이야기 해금 확인
             {
                 return;
             }
@@ -1022,10 +1025,11 @@ namespace ProjectTheta.UI
                 NodeView view = pair.Value;
                 LocationStats record = PlayStatsLogic.Get(save, (int)pair.Key);
                 NodeState state = GetState(pair.Key, record);
+                bool unlocked = StoryArcLogic.IsLocationUnlocked(save, pair.Key); // 장소 해금 확인
 
-                view.Button.Button.interactable = true;
+                view.Button.Button.interactable = unlocked; // 잠긴 장소 입력 차단
                 view.Glow.gameObject.SetActive(state == NodeState.Selected);
-                view.Recommend.gameObject.SetActive(_recommended != null && _recommended.Value == pair.Key);
+                view.Recommend.gameObject.SetActive(unlocked && _recommended != null && _recommended.Value == pair.Key); // 해금 추천만 표시
 
                 Color timeColor =
                     LocationCatalog.GetTimeColor(
@@ -1037,6 +1041,14 @@ namespace ProjectTheta.UI
 
                 switch (state)
                 {
+                    case NodeState.Locked: // 잠긴 장소
+                        view.Edge.color = UiTheme.TextDisabled; // 잠금 테두리
+                        view.Name.color = UiTheme.TextDisabled; // 잠금 이름
+                        view.Detail.color = UiTheme.TextDisabled; // 잠금 설명
+                        view.Badge.text = StoryArcLogic.GetLocationLockMessage(save, pair.Key); // 잠금 조건 표시
+                        view.Badge.color = UiTheme.Danger; // 잠금 강조
+                        break; // 잠금 처리 끝
+
                     case NodeState.Selected:
                         view.Edge.color = UiTheme.Gold;
                         view.Name.color = UiTheme.Gold;
@@ -1079,6 +1091,11 @@ namespace ProjectTheta.UI
             LocationId id,
             LocationStats record)
         {
+            if (!StoryArcLogic.IsLocationUnlocked(CurrentSave, id)) // 이야기 해금 확인
+            { // 잠금 반환 시작
+                return NodeState.Locked; // 잠긴 상태 반환
+            } // 잠금 반환 끝
+
             if (_selected != null &&
                 _selected.Value == id)
             {
@@ -1094,9 +1111,12 @@ namespace ProjectTheta.UI
         {
             bool hasSelection =
                 _selected != null;
+            bool canDepart = // 출격 가능 여부
+                hasSelection && // 장소 선택 확인
+                StoryArcLogic.IsLocationUnlocked(CurrentSave, _selected.Value); // 이야기 해금 확인
 
             _departButton.SetInteractable(
-                hasSelection);
+                canDepart); // 잠긴 장소 출격 차단
 
             // 35일차: 고른 장소가 없으면 패널이 빠져나간다. 글자는 빠지는 동안 그대로 둔다.
             if (!hasSelection)

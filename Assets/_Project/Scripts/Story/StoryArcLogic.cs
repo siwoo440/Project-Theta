@@ -4,6 +4,17 @@ namespace ProjectTheta.Story // 이야기 공간
 { // 공간 시작
     public static class StoryArcLogic // 이야기 구간 해금 규칙
     { // 클래스 시작
+        private static readonly string[] RegionalClearIds = // 일반 지역 완료 장면 ID
+        { // 목록 시작
+            "clear_training", // 고등학교 완료
+            "clear_beach", // 해변가 완료
+            "clear_subway", // 지하철 완료
+            "clear_fitness", // 스포츠센터 완료
+            "clear_market", // 야시장 완료
+            "clear_mall", // 쇼핑몰 완료
+            "clear_office" // 오피스 완료
+        }; // 목록 끝
+
         public static bool AreRegionalEpisodesUnlocked(SaveData save) // 지역 이야기 해금 확인
         { // 확인 시작
             return StoryProgressLogic.IsCompleted( // 완료 여부 반환
@@ -18,6 +29,38 @@ namespace ProjectTheta.Story // 이야기 공간
             return !IsRegionalPlaceholder(sceneId) || // 초반 장면과 후일담 허용
                    AreRegionalEpisodesUnlocked(save); // 지역 이야기 해금 확인
         } // 확인 끝
+
+        public static int GetCompletedRegionalStories(SaveData save) // 완료 일반 지역 수 조회
+        { // 조회 시작
+            int completed = 0; // 완료 수 초기화
+
+            foreach (string sceneId in RegionalClearIds) // 지역 완료 장면 순회
+            { // 순회 시작
+                if (StoryProgressLogic.IsCompleted(save, sceneId)) // 지역 완료 확인
+                { // 완료 반영 시작
+                    completed++; // 완료 수 증가
+                } // 완료 반영 끝
+            } // 순회 끝
+
+            return completed; // 완료 수 반환
+        } // 조회 끝
+
+        public static bool IsLocationUnlocked( // 장소 해금 확인
+            SaveData save, // 현재 저장
+            Stage.Locations.LocationId location) // 확인 장소
+        { // 확인 시작
+            return location != Stage.Locations.LocationId.RooftopClub || // 일반 지역 허용
+                   StoryProgressLogic.IsCompleted(save, StoryCatalog.BattleEveId); // 결전 전야 완료 확인
+        } // 확인 끝
+
+        public static string GetLocationLockMessage( // 장소 잠금 문구 조회
+            SaveData save, // 현재 저장
+            Stage.Locations.LocationId location) // 확인 장소
+        { // 조회 시작
+            return IsLocationUnlocked(save, location) // 해금 여부 확인
+                ? string.Empty // 잠금 문구 없음
+                : "일반 지역 7곳과 결전 전야 완료 필요"; // 루프탑 잠금 문구
+        } // 조회 끝
 
         private static bool IsRegionalPlaceholder(string sceneId) // 기존 지역 장면 확인
         { // 확인 시작

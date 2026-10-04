@@ -29,6 +29,15 @@ namespace ProjectTheta.Story
         public const string CompetitionAftermathId = "story_03_competition_aftermath"; // 경쟁 임무 정리 ID
         public const string RiellaJealousyId = "story_04_riella_jealousy"; // 리엘라 질투 ID
         public const string RiellaMorningAfterId = "story_04_morning_after"; // 다음 날 아침 ID
+        public const string InterludeAId = "main_interlude_a_lumia_returns"; // 르미아 재등장 ID
+        public const string LumiaContestId = "main_interlude_a_lumia_contest"; // 르미아 쟁탈 ID
+        public const string LumiaReclaimId = "main_interlude_a_lumia_reclaim"; // 르미아 재탈환 ID
+        public const string InterludeBId = "main_interlude_b_hidden_past"; // 숨겨진 과거 ID
+        public const string InterludeCId = "main_interlude_c_city_anomaly"; // 도시 이상 ID
+        public const string StoryTruthId = "story_13_two_truths"; // 두 개의 진실 ID
+        public const string BattleEveId = "story_13_4_battle_eve"; // 결전 전야 ID
+        public const string BossOpeningId = "story_14_rooftop_night"; // 루프탑 결전 개막 ID
+        public const string BossVictoryId = "story_14_lumia_last_dialogue"; // 르미아 마지막 대화 ID
 
         private static StoryLine L(string speaker, string text)
         {
@@ -62,6 +71,28 @@ namespace ProjectTheta.Story
                 eventType == StoryEventType.LocationClear, // 장소 클리어 공용 처리
                 conditions, // 해금 조건
                 choices ?? new StoryChoice[0], // 선택지 보정
+                lines); // 대사 목록
+        } // 생성 끝
+
+        private static StoryScene Day44Scene( // 44일차 장면 생성
+            string id, // 장면 ID
+            string title, // 장면 제목
+            StoryEventType eventType, // 발생 사건
+            LocationId location, // 관련 장소
+            bool matchAnyLocation, // 모든 장소 일치 여부
+            StoryCondition[] conditions, // 해금 조건
+            params StoryLine[] lines) // 대사 목록
+        { // 생성 시작
+            return new StoryScene( // 장면 반환
+                id, // 장면 ID
+                title, // 장면 제목
+                eventType, // 발생 사건
+                location, // 관련 장소
+                true, // 자동 재생 허용
+                true, // 일기장 재생 허용
+                matchAnyLocation, // 모든 장소 일치 여부
+                conditions, // 해금 조건
+                new StoryChoice[0], // 선택지 없음
                 lines); // 대사 목록
         } // 생성 끝
 
@@ -199,6 +230,130 @@ namespace ProjectTheta.Story
                 L(Riella, "임무가 많아. 도시에서 네가 직접 확인할 것도 늘었고."), // 회피와 다음 목표
                 L(Protagonist, "그럼 원하는 지역부터 돌아보지. 계약의 배경도 내가 직접 찾겠어."), // 자유 탐색 선언
                 N("스토리 4가 끝나고 도시의 지역 에피소드가 자유 탐색 구조로 열린다.")), // 지역 개방
+
+            // 메인 인터루드 · 결전 --------------------------------------
+            Day44Scene( // 인터루드 A 생성
+                InterludeAId, // 장면 ID
+                "메인 인터루드 A · 르미아의 재등장", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                false, // 지정 사건만 일치
+                new[] // 해금 조건 목록
+                { // 목록 시작
+                    StoryCondition.StoryCompleted(RiellaMorningAfterId), // 스토리 4 완료
+                    StoryCondition.RegionalStoriesCompleted(2) // 일반 지역 두 곳 완료
+                }, // 목록 끝
+                N("두 지역의 임무를 마친 귀환 동선에 붉은 금빛 마력이 길을 막는다."), // 르미아 재등장
+                L(Lumia, "리엘라가 왜 그렇게 많은 정기를 필요로 하는지 알고 있어?"), // 계약 의문 제시
+                L(Protagonist, "답을 알고 있다면 네가 말해."), // 주인공 반문
+                L(Lumia, "남이 준 답보다 직접 빼앗아 확인한 답이 오래 남는 법이야."), // 경쟁 예고
+                L(Riella, "저 말에 휘둘리지 마. 아직 확인되지 않은 이야기야.")), // 리엘라 경계
+
+            Day44Scene( // 르미아 쟁탈 장면 생성
+                LumiaContestId, // 장면 ID
+                "르미아 개입 · 붉은 금빛 손길", // 장면 제목
+                StoryEventType.FollowerStolen, // 동행자 탈취 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                true, // 모든 장소 일치
+                new[] { StoryCondition.StoryCompleted(InterludeAId) }, // 인터루드 A 선행
+                N("경쟁자의 압박 사이로 붉은 금빛 마력이 끼어들어 동행자의 연결을 흔든다."), // 개입 서술
+                L(Lumia, "회수하기 전까지는 누구의 성과도 아니잖아."), // 르미아 도발
+                L(Riella, "흔적을 놓치지 마. 되찾으면 저 마력의 방향도 읽을 수 있어.")), // 재탈환 지시
+
+            Day44Scene( // 르미아 재탈환 장면 생성
+                LumiaReclaimId, // 장면 ID
+                "르미아 개입 · 되찾은 연결", // 장면 제목
+                StoryEventType.FollowerReclaimed, // 재탈환 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                true, // 모든 장소 일치
+                new[] { StoryCondition.StoryCompleted(LumiaContestId) }, // 쟁탈 장면 선행
+                N("되찾은 연결에서 붉은 금빛 마력의 잔향이 도시 위쪽으로 이어진다."), // 흔적 확인
+                L(Protagonist, "르미아는 사람을 빼앗으려던 게 아니라 반응을 시험한 거야."), // 개입 목적 추론
+                L(Riella, "그리고 우리가 어디까지 알아냈는지도 확인했겠지.")), // 리엘라 판단
+
+            Day44Scene( // 인터루드 B 생성
+                InterludeBId, // 장면 ID
+                "메인 인터루드 B · 숨겨진 과거", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                false, // 지정 사건만 일치
+                new[] // 해금 조건 목록
+                { // 목록 시작
+                    StoryCondition.StoryCompleted(InterludeAId), // 인터루드 A 완료
+                    StoryCondition.RegionalStoriesCompleted(4) // 일반 지역 네 곳 완료
+                }, // 목록 끝
+                N("네 지역에서 모은 흔적을 펼쳐 놓자 리엘라가 더는 시선을 피하지 않는다."), // 추궁 도입
+                L(Protagonist, "이 마력들이 같은 계약 체계에서 나온 거라면 네가 모를 리 없어."), // 증거 제시
+                L(Riella, "나와 르미아는 과거 같은 계약 체계 안에서 움직였어."), // 과거 인정
+                L(Riella, "하지만 사고의 원인과 그때의 선택은 아직 단정할 수 없어."), // 미확정 진실
+                N("숨겨진 과거의 일부가 드러나고 루프탑으로 이어지는 경로가 확인된다.")), // 루프탑 단서
+
+            Day44Scene( // 인터루드 C 생성
+                InterludeCId, // 장면 ID
+                "메인 인터루드 C · 도시 전체의 이상", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                false, // 지정 사건만 일치
+                new[] // 해금 조건 목록
+                { // 목록 시작
+                    StoryCondition.StoryCompleted(InterludeBId), // 인터루드 B 완료
+                    StoryCondition.RegionalStoriesCompleted(6) // 일반 지역 여섯 곳 완료
+                }, // 목록 끝
+                N("서로 떨어진 지역의 붉은 금빛 마력이 동시에 반응해 한 방향으로 흐른다."), // 도시 이상
+                L(Protagonist, "개별 경쟁이 아니야. 도시 전체의 정기 흐름을 한곳으로 모으고 있어."), // 세력 확장 확인
+                L(Riella, "남은 지역까지 확인한 뒤 모든 증거를 시간 순서로 맞춰 보자.")), // 최종 조사 지시
+
+            Day44Scene( // 두 개의 진실 생성
+                StoryTruthId, // 장면 ID
+                "스토리 13 · 두 개의 진실", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                false, // 지정 사건만 일치
+                new[] // 해금 조건 목록
+                { // 목록 시작
+                    StoryCondition.StoryCompleted(InterludeCId), // 인터루드 C 완료
+                    StoryCondition.RegionalStoriesCompleted(7) // 일반 지역 일곱 곳 완료
+                }, // 목록 끝
+                N("일곱 지역의 기록과 마력 잔향을 사건 발생 순서로 다시 배열한다."), // 증거 정리
+                L(Riella, "과거 계약망은 사고 뒤 무너졌고 기록과 권한은 도시 곳곳으로 흩어졌어."), // 계약망 진실
+                L(Protagonist, "르미아는 흩어진 연결을 다시 묶고 있고, 내 정기는 그 망과 비정상적으로 공명한다."), // 현재 진실
+                L(Riella, "이번에는 숨기지 않을게. 끝까지 함께 확인하자.")), // 공동 결심
+
+            Day44Scene( // 결전 전야 생성
+                BattleEveId, // 장면 ID
+                "스토리 13.4 · 결전 전야", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                false, // 지정 사건만 일치
+                new[] { StoryCondition.StoryCompleted(StoryTruthId) }, // 두 개의 진실 선행
+                N("도시의 모든 붉은 금빛 흐름이 루프탑 클럽으로 모인다."), // 결전 위치 확정
+                L(Protagonist, "르미아가 연결을 완성하기 전에 루프탑에서 끝낸다."), // 출격 결정
+                L(Riella, "혼자 떠안지 마. 이번 계약은 우리 둘의 선택이니까."), // 관계 확인
+                N("루프탑 클럽의 최종 결전이 지도에서 열린다.")), // 루프탑 해금
+
+            Day44Scene( // 루프탑 결전 개막 생성
+                BossOpeningId, // 장면 ID
+                "스토리 14 · 루프탑의 밤", // 장면 제목
+                StoryEventType.LocationEnter, // 루프탑 진입 사건
+                LocationId.RooftopClub, // 루프탑 전용
+                false, // 지정 장소 일치
+                new[] { StoryCondition.StoryCompleted(BattleEveId) }, // 결전 전야 선행
+                N("루프탑의 군중과 정기가 붉은 금빛 계약망을 따라 르미아에게 모인다."), // 보스전 개막
+                L(Lumia, "도시의 밤을 두고 마지막으로 경쟁해 볼까?"), // 르미아 도전
+                L(Riella, "군중을 되찾고 보호막을 무너뜨린 뒤 본체의 연결을 끊어."), // 전투 단계 안내
+                L(Protagonist, "이번에는 사람도, 계약도 네 방식대로 묶게 두지 않아.")), // 주인공 선언
+
+            Day44Scene( // 르미아 마지막 대화 생성
+                BossVictoryId, // 장면 ID
+                "스토리 14.2.5 · 르미아의 마지막 대화", // 장면 제목
+                StoryEventType.BossVictory, // 보스 승리 사건
+                LocationId.RooftopClub, // 루프탑 전용
+                false, // 지정 장소 일치
+                new[] { StoryCondition.StoryCompleted(BossOpeningId) }, // 보스 개막 선행
+                N("붉은 금빛 계약망이 끊어지고 루프탑의 정기 흐름이 제자리로 돌아간다."), // 승리 결과
+                L(Lumia, "졌네. 적어도 네 선택이 리엘라의 명령만은 아니라는 건 알겠어."), // 패배 인정
+                L(Protagonist, "도시의 계약 흐름에서 물러나. 다음 선택은 그 뒤에 들어 줄게."), // 퇴각 요구
+                L(Lumia, "약속할게. 오늘 밤은 너희가 이겼어.")), // 르미아 퇴각
 
             // 고등학교 ---------------------------------------------------
             new StoryScene("enter_training", "야간 수업", StoryTrigger.LocationEnter, LocationId.TrainingCenter, 0,

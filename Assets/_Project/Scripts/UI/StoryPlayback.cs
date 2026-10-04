@@ -70,12 +70,47 @@ namespace ProjectTheta.UI
             StoryEventType eventType, // 발생 사건
             Action onFinished) // 완료 알림
         { // 재생 시작
+            return PlaySequence( // 연속 장면 재생
+                continuation => PlayEventSceneBatch( // 한 묶음 재생
+                    overlay, // 대사창
+                    eventType, // 발생 사건
+                    continuation), // 다음 묶음 알림
+                onFinished); // 최종 완료 알림
+        } // 재생 끝
+
+        public static bool PlaySequence( // 해금 장면 연속 재생
+            Func<Action, bool> playNext, // 다음 묶음 재생
+            Action onFinished) // 최종 완료 알림
+        { // 연속 재생 시작
+            if (playNext == null) // 재생 동작 확인
+            { // 재생 불가 시작
+                onFinished?.Invoke(); // 최종 완료 알림
+
+                return false; // 재생 실패 반환
+            } // 재생 불가 끝
+
+            bool started = playNext( // 다음 묶음 재생
+                () => PlaySequence( // 완료 뒤 목록 재조회
+                    playNext, // 다음 묶음 재생
+                    onFinished)); // 최종 완료 알림
+
+            if (!started) // 남은 장면 확인
+            { // 연속 재생 완료 시작
+                onFinished?.Invoke(); // 최종 완료 알림
+            } // 연속 재생 완료 끝
+
+            return started; // 최초 재생 여부 반환
+        } // 연속 재생 끝
+
+        private static bool PlayEventSceneBatch( // 현재 화면 장면 한 묶음 재생
+            DialogueOverlay overlay, // 대사창
+            StoryEventType eventType, // 발생 사건
+            Action onFinished) // 묶음 완료 알림
+        { // 묶음 재생 시작
             GameSession session = GameSession.Instance; // 게임 세션 조회
 
             if (session == null || session.Save == null || overlay == null) // 재생 환경 확인
             { // 재생 불가 시작
-                onFinished?.Invoke(); // 완료 알림 호출
-
                 return false; // 재생 실패 반환
             } // 재생 불가 끝
 
@@ -90,8 +125,6 @@ namespace ProjectTheta.UI
 
             if (eventScenes.Count == 0) // 재생 장면 확인
             { // 빈 장면 시작
-                onFinished?.Invoke(); // 완료 알림 호출
-
                 return false; // 재생 없음 반환
             } // 빈 장면 끝
 
@@ -99,10 +132,10 @@ namespace ProjectTheta.UI
                 overlay, // 대사창
                 eventScenes, // 현재 화면 장면 목록
                 false, // 화면 흐름 유지
-                onFinished); // 완료 알림
+                onFinished); // 묶음 완료 알림
 
             return true; // 재생 시작 반환
-        } // 재생 끝
+        } // 묶음 재생 끝
 
         /// <summary>장면들을 틀고, 시작할 때마다 본 것으로 남기고, 끝나면 저장한다.</summary>
         public static void Play(

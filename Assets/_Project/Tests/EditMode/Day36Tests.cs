@@ -216,10 +216,13 @@ namespace ProjectTheta.Tests.EditMode
 
             foreach (LocationDefinition location in LocationCatalog.All)
             {
-                Assert.AreEqual(2, StoryLogic.CountForLocation(location.Id), location.Id.ToString());
+                int expected = location.Id == LocationId.RooftopClub // 루프탑 추가 장면 확인
+                    ? 3 // 보스 개막 포함
+                    : 2; // 기존 지역 입장·클리어
+                Assert.AreEqual(expected, StoryLogic.CountForLocation(location.Id), location.Id.ToString()); // 장소별 장면 수 확인
             }
 
-            Assert.AreEqual(31, StoryCatalog.All.Length); // 43일차 초반 장면 포함 확인
+            Assert.AreEqual(40, StoryCatalog.All.Length); // 44일차 메인 장면 포함 확인
             Assert.AreSame(StoryCatalog.All[0], StoryCatalog.Get(StoryCatalog.All[0].Id));
             Assert.IsNull(StoryCatalog.Get("nope"));
             Assert.IsNull(StoryCatalog.Get(null));

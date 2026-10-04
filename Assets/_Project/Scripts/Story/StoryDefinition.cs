@@ -37,7 +37,8 @@ namespace ProjectTheta.Story // 이야기 공간
         Endings = 3, // 엔딩 횟수
         Dominion = 4, // 도시 지배도
         StoryCompleted = 5, // 선행 이야기 완료
-        ChoiceEquals = 6 // 선행 선택 일치
+        ChoiceEquals = 6, // 선행 선택 일치
+        RegionalStoriesCompleted = 7 // 일반 지역 이야기 완료 수
     } // 열거 끝
 
     public readonly struct StoryContext // 이야기 사건 자료
@@ -109,6 +110,11 @@ namespace ProjectTheta.Story // 이야기 공간
         public static StoryCondition ChoiceEquals(string storyId, string choiceId) // 선택 일치 조건 생성
         { // 생성 시작
             return new StoryCondition(StoryConditionType.ChoiceEquals, LocationId.TrainingCenter, 0, storyId, choiceId); // 선택 조건 반환
+        } // 생성 끝
+
+        public static StoryCondition RegionalStoriesCompleted(int threshold) // 지역 이야기 수 조건 생성
+        { // 생성 시작
+            return new StoryCondition(StoryConditionType.RegionalStoriesCompleted, LocationId.TrainingCenter, threshold, string.Empty, string.Empty); // 지역 이야기 수 조건 반환
         } // 생성 끝
     } // 자료 끝
 
