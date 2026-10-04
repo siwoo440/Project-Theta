@@ -219,20 +219,21 @@ namespace ProjectTheta.Tests.EditMode
                 Assert.AreEqual(2, StoryLogic.CountForLocation(location.Id), location.Id.ToString());
             }
 
-            Assert.AreEqual(20, StoryCatalog.All.Length);
+            Assert.AreEqual(31, StoryCatalog.All.Length); // 43일차 초반 장면 포함 확인
             Assert.AreSame(StoryCatalog.All[0], StoryCatalog.Get(StoryCatalog.All[0].Id));
             Assert.IsNull(StoryCatalog.Get("nope"));
             Assert.IsNull(StoryCatalog.Get(null));
         }
 
         [Test]
-        public void Enter_Scene_Once()
+        public void FirstMission_Enter_Scene_Once() // 첫 계약 임무 진입 1회 검증
         {
             SaveData save = SaveDataLogic.CreateDefault();
+            StoryProgressLogic.Complete(save, StoryCatalog.PrologueContractId, false); // 계약 프롤로그 완료
 
             StoryScene scene = StoryLogic.GetEnterScene(save, LocationId.RooftopClub);
 
-            Assert.AreEqual("enter_club", scene.Id);
+            Assert.AreEqual(StoryCatalog.FirstMissionBriefingId, scene.Id); // 임의 장소 첫 임무 확인
             Assert.IsTrue(StoryLogic.MarkSeen(save, scene.Id));
             Assert.IsFalse(StoryLogic.MarkSeen(save, scene.Id));
             Assert.IsNull(StoryLogic.GetEnterScene(save, LocationId.RooftopClub));
@@ -244,6 +245,25 @@ namespace ProjectTheta.Tests.EditMode
         public void Pending_Follows_Progress()
         {
             SaveData save = SaveDataLogic.CreateDefault();
+            string[] introIds = new[] // 초반 이야기 ID 목록
+            { // 목록 시작
+                StoryCatalog.PrologueContractId, // 계약 프롤로그
+                StoryCatalog.FirstMissionBriefingId, // 첫 임무 안내
+                StoryCatalog.FirstHypnosisId, // 첫 최면
+                StoryCatalog.FirstRecoveryId, // 첫 회수
+                StoryCatalog.LumiaEncounterId, // 르미아 조우
+                StoryCatalog.CompetitionBriefingId, // 경쟁 임무 안내
+                StoryCatalog.FollowerStolenId, // 동행자 탈취
+                StoryCatalog.FollowerReclaimedId, // 동행자 재탈환
+                StoryCatalog.CompetitionAftermathId, // 경쟁 임무 정리
+                StoryCatalog.RiellaJealousyId, // 리엘라 질투
+                StoryCatalog.RiellaMorningAfterId // 다음 날 아침
+            }; // 목록 끝
+
+            foreach (string storyId in introIds) // 초반 이야기 순회
+            { // 순회 시작
+                StoryProgressLogic.Complete(save, storyId, false); // 초반 이야기 완료
+            } // 순회 끝
 
             Assert.AreEqual(0, StoryLogic.GetPending(save).Count);
 

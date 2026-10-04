@@ -138,6 +138,11 @@ namespace ProjectTheta.Story // 이야기 공간
 
         private static bool CanQueue(SaveData save, StoryScene scene, StoryContext context) // 대기 가능 확인
         { // 확인 시작
+            if (!StoryArcLogic.CanPlayScene(save, scene.Id)) // 이야기 구간 해금 확인
+            { // 잠금 확인 시작
+                return false; // 잠긴 장면 제외
+            } // 잠금 확인 끝
+
             if (!scene.AutoPlay || StoryProgressLogic.IsCompleted(save, scene.Id)) // 자동 재생과 완료 확인
             { // 거부 시작
                 return false; // 대기 불가 반환
@@ -149,6 +154,7 @@ namespace ProjectTheta.Story // 이야기 공간
             } // 거부 끝
 
             if ((scene.EventType == StoryEventType.LocationEnter || scene.EventType == StoryEventType.LocationClear) && // 장소 사건 확인
+                !scene.MatchAnyLocation && // 공용 장소 여부 확인
                 scene.Location != context.Location) // 장소 일치 확인
             { // 거부 시작
                 return false; // 대기 불가 반환

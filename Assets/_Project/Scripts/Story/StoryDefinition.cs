@@ -21,7 +21,12 @@ namespace ProjectTheta.Story // 이야기 공간
         MapEnter = 4, // 지도 진입
         SafeArea = 5, // 지도 또는 허브
         BossVictory = 6, // 보스 승리
-        BossDefeat = 7 // 보스 패배
+        BossDefeat = 7, // 보스 패배
+        FirstStageEnter = 8, // 첫 계약 임무 진입
+        HypnosisSucceeded = 9, // 최면 성공
+        RecoveryConfirmed = 10, // 회수 확정
+        FollowerStolen = 11, // 동행자 탈취
+        FollowerReclaimed = 12 // 동행자 재탈환
     } // 열거 끝
 
     public enum StoryConditionType // 이야기 해금 조건 종류
@@ -145,6 +150,7 @@ namespace ProjectTheta.Story // 이야기 공간
         public readonly int Threshold; // 기존 기준값
         public readonly bool AutoPlay; // 자동 재생 여부
         public readonly bool CanReplay; // 다시 보기 여부
+        public readonly bool MatchAnyLocation; // 모든 장소 일치 여부
         public readonly StoryCondition[] Conditions; // 해금 조건
         public readonly StoryChoice[] Choices; // 선택지 목록
         public readonly StoryLine[] Lines; // 대사 목록
@@ -181,6 +187,31 @@ namespace ProjectTheta.Story // 이야기 공간
             StoryCondition[] conditions, // 해금 조건
             StoryChoice[] choices, // 선택지 목록
             StoryLine[] lines) // 대사 목록
+            : this( // 확장 생성자로 연결
+                id, // 장면 ID
+                title, // 장면 제목
+                eventType, // 발생 사건
+                location, // 관련 장소
+                autoPlay, // 자동 재생 여부
+                canReplay, // 다시 보기 여부
+                false, // 지정 장소만 일치
+                conditions, // 해금 조건
+                choices, // 선택지 목록
+                lines) // 대사 목록
+        { // 생성 시작
+        } // 생성 끝
+
+        public StoryScene( // 공용 장소 장면 생성
+            string id, // 장면 ID
+            string title, // 장면 제목
+            StoryEventType eventType, // 발생 사건
+            LocationId location, // 관련 장소
+            bool autoPlay, // 자동 재생 여부
+            bool canReplay, // 다시 보기 여부
+            bool matchAnyLocation, // 모든 장소 일치 여부
+            StoryCondition[] conditions, // 해금 조건
+            StoryChoice[] choices, // 선택지 목록
+            StoryLine[] lines) // 대사 목록
         { // 생성 시작
             Id = id ?? string.Empty; // ID 저장
             Title = title ?? string.Empty; // 제목 저장
@@ -190,16 +221,18 @@ namespace ProjectTheta.Story // 이야기 공간
             Threshold = 0; // 기존 기준값 초기화
             AutoPlay = autoPlay; // 자동 재생 저장
             CanReplay = canReplay; // 다시 보기 저장
+            MatchAnyLocation = matchAnyLocation; // 모든 장소 일치 저장
             Conditions = conditions ?? new StoryCondition[0]; // 조건 저장
             Choices = choices ?? new StoryChoice[0]; // 선택지 저장
             Lines = lines ?? new StoryLine[0]; // 대사 저장
         } // 생성 끝
 
         public bool HasLocation => // 장소 연관 여부
-            EventType == StoryEventType.LocationEnter || // 장소 진입 확인
-            EventType == StoryEventType.LocationClear || // 장소 클리어 확인
-            Trigger == StoryTrigger.LocationEnter || // 기존 입장 확인
-            Trigger == StoryTrigger.LocationClear; // 기존 클리어 확인
+            !MatchAnyLocation && // 공용 장소 제외
+            (EventType == StoryEventType.LocationEnter || // 장소 진입 확인
+             EventType == StoryEventType.LocationClear || // 장소 클리어 확인
+             Trigger == StoryTrigger.LocationEnter || // 기존 입장 확인
+             Trigger == StoryTrigger.LocationClear); // 기존 클리어 확인
 
         private static StoryEventType GetLegacyEvent(StoryTrigger trigger) // 기존 사건 변환
         { // 변환 시작

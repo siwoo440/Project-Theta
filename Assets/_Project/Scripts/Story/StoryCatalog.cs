@@ -15,6 +15,20 @@ namespace ProjectTheta.Story
     {
         public const string Me = "나";
         public const string Rival = "라이벌";
+        public const string Protagonist = "주인공"; // 주인공 화자
+        public const string Riella = "리엘라"; // 계약 서큐버스 화자
+        public const string Lumia = "르미아"; // 라이벌 서큐버스 화자
+        public const string PrologueContractId = "prologue_contract"; // 계약 프롤로그 ID
+        public const string FirstMissionBriefingId = "story_01_first_mission"; // 첫 임무 안내 ID
+        public const string FirstHypnosisId = "story_01_first_hypnosis"; // 첫 최면 ID
+        public const string FirstRecoveryId = "story_01_first_recovery"; // 첫 회수 ID
+        public const string LumiaEncounterId = "story_02_lumia_encounter"; // 르미아 조우 ID
+        public const string CompetitionBriefingId = "story_03_competition_briefing"; // 경쟁 임무 안내 ID
+        public const string FollowerStolenId = "story_03_follower_stolen"; // 동행자 탈취 ID
+        public const string FollowerReclaimedId = "story_03_follower_reclaimed"; // 동행자 재탈환 ID
+        public const string CompetitionAftermathId = "story_03_competition_aftermath"; // 경쟁 임무 정리 ID
+        public const string RiellaJealousyId = "story_04_riella_jealousy"; // 리엘라 질투 ID
+        public const string RiellaMorningAfterId = "story_04_morning_after"; // 다음 날 아침 ID
 
         private static StoryLine L(string speaker, string text)
         {
@@ -26,8 +40,166 @@ namespace ProjectTheta.Story
             return new StoryLine(string.Empty, text);
         }
 
+        private static StoryScene Day43Scene( // 43일차 장면 생성
+            string id, // 장면 ID
+            string title, // 장면 제목
+            StoryEventType eventType, // 발생 사건
+            string prerequisite, // 선행 장면 ID
+            StoryChoice[] choices, // 선택지 목록
+            params StoryLine[] lines) // 대사 목록
+        { // 생성 시작
+            StoryCondition[] conditions = string.IsNullOrEmpty(prerequisite) // 선행 장면 확인
+                ? new StoryCondition[0] // 선행 조건 없음
+                : new[] { StoryCondition.StoryCompleted(prerequisite) }; // 선행 완료 조건
+
+            return new StoryScene( // 장면 반환
+                id, // 장면 ID
+                title, // 장면 제목
+                eventType, // 발생 사건
+                LocationId.TrainingCenter, // 공용 기준 장소
+                true, // 자동 재생 허용
+                true, // 일기장 재생 허용
+                eventType == StoryEventType.LocationClear, // 장소 클리어 공용 처리
+                conditions, // 해금 조건
+                choices ?? new StoryChoice[0], // 선택지 보정
+                lines); // 대사 목록
+        } // 생성 끝
+
         public static readonly StoryScene[] All =
         {
+            // 프롤로그 · 스토리 1~4 --------------------------------------
+            Day43Scene( // 계약 프롤로그 생성
+                PrologueContractId, // 장면 ID
+                "프롤로그 · 계약", // 장면 제목
+                StoryEventType.SafeArea, // 첫 안전 구역 사건
+                string.Empty, // 선행 장면 없음
+                new[] { new StoryChoice("accept_contract", "계약한다") }, // 자발적 계약 선택
+                N("깊은 밤, 닫혀 있던 방 안에 낯선 여자가 나타난다."), // 도입 서술
+                L(Protagonist, "누구야. 어떻게 들어왔지?"), // 주인공 경계
+                L(Riella, "리엘라. 네 정기를 조금 가져가려 했는데, 생각이 바뀌었어."), // 리엘라 소개
+                L(Riella, "네 안에는 평범한 인간과 다른 정기가 잠들어 있어. 한 번 빼앗고 끝내기엔 아까울 만큼."), // 특별한 정기 설명
+                L(Protagonist, "그래서 계약을 하자는 거야? 내가 얻는 건 뭔데?"), // 계약 조건 질문
+                L(Riella, "사람의 의식을 흔들어 네 곁에 두는 힘. 최면이라고 부르면 이해하기 쉽겠네."), // 능력 보상 설명
+                N("나는 위험을 알면서도 직접 확인한 힘에 대한 호기심을 버리지 못한다."), // 선택 동기
+                L(Protagonist, "필요한 조건을 숨기지 않는다면, 내 선택으로 결정할게."), // 선택 조건 확인
+                L(Riella, "그럼 선택해. 나와 계약할지, 여기서 끝낼지.")), // 계약 선택 요청
+
+            Day43Scene( // 첫 임무 안내 생성
+                FirstMissionBriefingId, // 장면 ID
+                "스토리 1 · 첫 번째 계약 임무", // 장면 제목
+                StoryEventType.FirstStageEnter, // 첫 장소 진입 사건
+                PrologueContractId, // 계약 프롤로그 선행
+                null, // 선택지 없음
+                N("선택한 장소의 외곽에서 리엘라가 주변에 옅은 마법을 펼친다."), // 장소 도착
+                L(Protagonist, "평범하게 지내는 사람들 앞에서 정말 이 힘을 써도 되는 건가."), // 첫 행동 망설임
+                L(Riella, "사람을 조종하는 마법은 아니야. 이상한 일을 중요하게 받아들이지 못하도록 판단과 관심을 낮추는 보조 마법이지."), // 인지저하 설명
+                L(Riella, "넓은 장소를 덮는 동안만 유지돼. 화면의 제한 시간이 끝나기 전에 목표를 마치고 빠져나와."), // 제한 시간 연결
+                L(Riella, "감시자의 시선을 오래 끌면 경계도가 올라가. 마법이 모든 의심을 지워 주지는 않아."), // 경계도 연결
+                L(Riella, "먼저 혼자 있는 성인 한 명을 골라. 시선을 맞추고 최면을 끝까지 유지해.")), // 첫 최면 지시
+
+            Day43Scene( // 첫 최면 장면 생성
+                FirstHypnosisId, // 장면 ID
+                "스토리 1 · 첫 최면", // 장면 제목
+                StoryEventType.HypnosisSucceeded, // 최면 성공 사건
+                FirstMissionBriefingId, // 임무 안내 선행
+                null, // 선택지 없음
+                N("최면이 완성되자 대상의 시선이 주인공에게 고정된다."), // 성공 서술
+                L(Protagonist, "정말 통했어."), // 성공 반응
+                L(Riella, "성공은 시작일 뿐이야. 이제 동행 상태로 데리고 움직여."), // 동행 연결
+                L(Riella, "최면이 풀리거나 다른 경쟁자에게 빼앗기기 전에 회수 지점까지 안전하게 데려가야 해.")), // 회수 목표 안내
+
+            Day43Scene( // 첫 회수 장면 생성
+                FirstRecoveryId, // 장면 ID
+                "스토리 1 · 첫 회수", // 장면 제목
+                StoryEventType.RecoveryConfirmed, // 회수 확정 사건
+                FirstHypnosisId, // 첫 최면 선행
+                null, // 선택지 없음
+                N("회수 지점을 통과하자 동행자에게 이어져 있던 마력이 정기로 바뀐다."), // 회수 확정 서술
+                L(Riella, "이제야 네 성과로 확정됐어. 최면, 동행, 회수까지가 한 흐름이야."), // 핵심 순환 정리
+                L(Protagonist, "얻는 것보다 끝까지 지키는 일이 더 길군."), // 주인공 학습
+                L(Riella, "맞아. 남은 시간과 경계도를 보면서 목표를 채우고 빠져나가.")), // 임무 마무리 안내
+
+            Day43Scene( // 르미아 조우 장면 생성
+                LumiaEncounterId, // 장면 ID
+                "스토리 2 · 경쟁의 시작", // 장면 제목
+                StoryEventType.LocationClear, // 첫 임무 클리어 사건
+                FirstRecoveryId, // 첫 회수 선행
+                null, // 선택지 없음
+                N("첫 임무를 마치고 돌아가려는 골목에서 붉은 금빛 마력이 길을 막는다."), // 조우 서술
+                L(Lumia, "네가 인간하고 계약을 맺는 날도 오는구나, 리엘라."), // 르미아 등장
+                L(Riella, "르미아. 이 계약과 정기는 네 몫이 아니야."), // 리엘라 경계
+                L(Lumia, "처음 데리고 다니는 인간 계약자라니, 흥미롭네. 다음에는 어느 쪽이 먼저 가져가는지 보자."), // 경쟁 선언
+                L(Protagonist, "첫 임무부터 다른 서큐버스의 경쟁에 끼어든 셈인가."), // 상황 인식
+                N("첫 계약 임무는 성공했지만, 도시의 정기와 사람을 둘러싼 경쟁이 시작된다.")), // 스토리 2 종료
+
+            Day43Scene( // 경쟁 임무 안내 생성
+                CompetitionBriefingId, // 장면 ID
+                "스토리 3 · 이상한 경쟁자들", // 장면 제목
+                StoryEventType.SafeArea, // 다음 안전 구역 사건
+                LumiaEncounterId, // 르미아 조우 선행
+                null, // 선택지 없음
+                L(Protagonist, "르미아와는 언제부터 알던 사이야?"), // 과거 질문
+                L(Riella, "오래전부터 경쟁했어. 지금은 다음 임무가 먼저야."), // 답변 회피
+                L(Riella, "이번에는 사람을 확보한 뒤에도 뒤를 확인해. 이 도시에는 네 동행자를 노리는 성인 경쟁자도 있어."), // 쟁탈 예고
+                N("주인공은 계약을 계속하면서 리엘라가 숨기는 과거도 직접 확인하기로 한다.")), // 임무 목적
+
+            Day43Scene( // 동행자 탈취 장면 생성
+                FollowerStolenId, // 장면 ID
+                "스토리 3 · 빼앗으려는 사람", // 장면 제목
+                StoryEventType.FollowerStolen, // 동행자 탈취 사건
+                CompetitionBriefingId, // 경쟁 임무 안내 선행
+                null, // 선택지 없음
+                N("뒤따르던 성인 경쟁자가 동행자에게 접근하자 최면의 연결이 크게 흔들린다."), // 탈취 상황
+                L(Riella, "회수하기 전까지 소유 상태는 확정된 게 아니야."), // 소유권 설명
+                L(Riella, "사이에 들어가 압박을 끊어. 빼앗겼다면 다시 최면해서 되찾을 수 있어."), // 대응 방법
+                L(Protagonist, "새 대상을 찾기 전에 이미 확보한 사람부터 지켜야겠군.")), // 학습 반응
+
+            Day43Scene( // 동행자 재탈환 장면 생성
+                FollowerReclaimedId, // 장면 ID
+                "스토리 3 · 되찾는 방법", // 장면 제목
+                StoryEventType.FollowerReclaimed, // 재탈환 사건
+                FollowerStolenId, // 동행자 탈취 선행
+                null, // 선택지 없음
+                N("흔들리던 연결이 다시 주인공 쪽으로 돌아오며 동행 상태가 안정된다."), // 재탈환 성공
+                L(Riella, "그래. 회수되지 않았다면 아직 끝난 게 아니야."), // 재탈환 확인
+                L(Protagonist, "최면의 성공보다 유지와 회수가 더 긴 싸움이군."), // 경쟁 규칙 이해
+                L(Riella, "이제 앞만 보지 말고 동행자의 소유 상태도 계속 확인해.")), // 관리 안내
+
+            Day43Scene( // 경쟁 임무 정리 생성
+                CompetitionAftermathId, // 장면 ID
+                "스토리 3 · 익숙한 흔적", // 장면 제목
+                StoryEventType.LocationClear, // 경쟁 임무 클리어 사건
+                FollowerReclaimedId, // 재탈환 선행
+                null, // 선택지 없음
+                N("임무가 끝난 자리에서 르미아와 닮은 옅은 마력의 흔적이 발견된다."), // 흔적 발견
+                L(Protagonist, "저 사람들은 조종당한 게 아니지만, 누군가 경쟁심을 건드린 흔적은 남아 있어."), // 주인공 추론
+                L(Riella, "확정할 수 없는 흔적이야. 르미아의 부하라고 단정하지 마."), // 리엘라 선 긋기
+                L(Protagonist, "그 마법을 바로 알아본 걸 보면 단순한 최근 경쟁자는 아니겠지.")), // 과거 의문
+
+            Day43Scene( // 리엘라 질투 장면 생성
+                RiellaJealousyId, // 장면 ID
+                "스토리 4 · 질투하는 서큐버스", // 장면 제목
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                CompetitionAftermathId, // 경쟁 임무 정리 선행
+                null, // 선택지 없음
+                N("방으로 돌아온 뒤에도 리엘라는 르미아가 주인공에게 보인 관심을 계속 신경 쓴다."), // 관계 장면 도입
+                L(Protagonist, "르미아가 나한테 관심을 보인 게 그렇게 거슬려?"), // 질투 지적
+                L(Riella, "질투 아니거든. 내 계약자를 다른 서큐버스에게 빼앗기고 싶지 않을 뿐이야."), // 감정 노출
+                L(Protagonist, "그 말이 질투와 얼마나 다른지는 모르겠네."), // 관계 반응
+                N("두 사람은 아직 관계를 정의하지 않지만 서로를 계약 이상의 개인으로 의식하기 시작한다.")), // 관계 변화
+
+            Day43Scene( // 다음 날 아침 장면 생성
+                RiellaMorningAfterId, // 장면 ID
+                "스토리 4 · 다음 날 아침", // 장면 제목
+                StoryEventType.SafeArea, // 다음 지도 또는 허브 사건
+                RiellaJealousyId, // 질투 장면 선행
+                null, // 선택지 없음
+                N("다음 날 아침, 리엘라는 전날의 일을 말하지 않은 채 지나치게 평소처럼 행동한다."), // 후일담 도입
+                L(Protagonist, "어제 일은 그냥 넘어갈 생각이야?"), // 관계 확인
+                L(Riella, "임무가 많아. 도시에서 네가 직접 확인할 것도 늘었고."), // 회피와 다음 목표
+                L(Protagonist, "그럼 원하는 지역부터 돌아보지. 계약의 배경도 내가 직접 찾겠어."), // 자유 탐색 선언
+                N("스토리 4가 끝나고 도시의 지역 에피소드가 자유 탐색 구조로 열린다.")), // 지역 개방
+
             // 고등학교 ---------------------------------------------------
             new StoryScene("enter_training", "야간 수업", StoryTrigger.LocationEnter, LocationId.TrainingCenter, 0,
                 N("성인 교육생의 야간 수업이 끝나 간다. 복도에는 피곤한 얼굴들이 가득하다."),

@@ -56,6 +56,19 @@ namespace ProjectTheta.Story
             SaveData save,
             LocationId location)
         {
+            List<StoryScene> firstMission = // 첫 계약 임무 대기열
+                StoryQueueLogic.GetAvailable( // 첫 진입 장면 조회
+                    save, // 저장 자료
+                    StoryCatalog.All, // 전체 장면
+                    new StoryContext( // 첫 진입 사건 생성
+                        StoryEventType.FirstStageEnter, // 첫 계약 임무 사건
+                        location)); // 실제 선택 장소
+
+            if (firstMission.Count > 0) // 첫 계약 임무 확인
+            { // 우선 반환 시작
+                return firstMission[0]; // 첫 계약 임무 반환
+            } // 우선 반환 끝
+
             List<StoryScene> pending = // 입장 대기열
                 StoryQueueLogic.GetAvailable( // 사건별 장면 조회
                     save, // 저장 자료

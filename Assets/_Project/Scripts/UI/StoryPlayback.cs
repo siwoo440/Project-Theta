@@ -30,23 +30,54 @@ namespace ProjectTheta.UI
             DialogueOverlay overlay, // 대사창
             StoryEventType eventType, // 발생 사건
             Action onFinished) // 완료 알림
-        {
-            GameSession session = GameSession.Instance;
+        { // 재생 요청 시작
+            GameSession session = GameSession.Instance; // 게임 세션 조회
 
-            if (session == null ||
-                session.Save == null ||
-                overlay == null)
-            {
-                onFinished?.Invoke();
+            if (session == null || // 게임 세션 확인
+                session.Save == null || // 저장 자료 확인
+                overlay == null) // 대사창 확인
+            { // 재생 불가 시작
+                onFinished?.Invoke(); // 완료 알림 호출
 
-                return false;
-            }
+                return false; // 재생 실패 반환
+            } // 재생 불가 끝
 
-            List<StoryScene> pending = new List<StoryScene>(); // 전체 대기 목록
+            List<StoryScene> resultScenes = new List<StoryScene>(); // 결과 장면 목록
 
             AddResultScenes( // 직전 결과 장면 우선 추가
                 session, // 게임 세션
-                pending); // 대기 목록
+                resultScenes); // 결과 장면 목록
+
+            if (resultScenes.Count > 0) // 결과 장면 존재 확인
+            { // 결과 우선 재생 시작
+                Play( // 결과 장면 재생
+                    overlay, // 대사창
+                    resultScenes, // 결과 장면 목록
+                    false, // 화면 흐름 유지
+                    () => PlayEventScenes(overlay, eventType, onFinished)); // 완료 후 현재 화면 재조회
+
+                return true; // 재생 시작 반환
+            } // 결과 우선 재생 끝
+
+            return PlayEventScenes( // 현재 화면 장면 재생
+                overlay, // 대사창
+                eventType, // 발생 사건
+                onFinished); // 완료 알림
+        } // 재생 요청 끝
+
+        private static bool PlayEventScenes( // 현재 화면 장면 재생
+            DialogueOverlay overlay, // 대사창
+            StoryEventType eventType, // 발생 사건
+            Action onFinished) // 완료 알림
+        { // 재생 시작
+            GameSession session = GameSession.Instance; // 게임 세션 조회
+
+            if (session == null || session.Save == null || overlay == null) // 재생 환경 확인
+            { // 재생 불가 시작
+                onFinished?.Invoke(); // 완료 알림 호출
+
+                return false; // 재생 실패 반환
+            } // 재생 불가 끝
 
             List<StoryScene> eventScenes = StoryQueueLogic.GetAvailable( // 현재 화면 장면 조회
                 session.Save, // 현재 저장
@@ -57,25 +88,21 @@ namespace ProjectTheta.UI
                         ? (Stage.Locations.LocationId)session.LastResult.LocationId // 직전 장소 변환
                         : Stage.Locations.LocationId.TrainingCenter)); // 기본 장소
 
-            foreach (StoryScene scene in eventScenes) // 화면 장면 순회
-            { // 순회 시작
-                if (!pending.Contains(scene)) // 중복 확인
-                { // 추가 시작
-                    pending.Add(scene); // 화면 장면 추가
-                } // 추가 끝
-            } // 순회 끝
+            if (eventScenes.Count == 0) // 재생 장면 확인
+            { // 빈 장면 시작
+                onFinished?.Invoke(); // 완료 알림 호출
 
-            if (pending.Count == 0)
-            {
-                onFinished?.Invoke();
+                return false; // 재생 없음 반환
+            } // 빈 장면 끝
 
-                return false;
-            }
+            Play( // 현재 화면 장면 재생
+                overlay, // 대사창
+                eventScenes, // 현재 화면 장면 목록
+                false, // 화면 흐름 유지
+                onFinished); // 완료 알림
 
-            Play(overlay, pending, false, onFinished);
-
-            return true;
-        }
+            return true; // 재생 시작 반환
+        } // 재생 끝
 
         /// <summary>장면들을 틀고, 시작할 때마다 본 것으로 남기고, 끝나면 저장한다.</summary>
         public static void Play(

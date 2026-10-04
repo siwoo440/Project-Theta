@@ -384,8 +384,14 @@ namespace ProjectTheta.Core
                     Story.StoryLogic.GetEnterScene(
                         GameSession.Instance == null
                             ? null
-                            : GameSession.Instance.Save,
+                             : GameSession.Instance.Save,
                         location.Id));
+
+            new GameObject("StageStoryEventDirector") // 스테이지 사건 이야기 오브젝트 생성
+                .AddComponent<StageStoryEventDirector>() // 사건 감독 추가
+                .Configure( // 사건 감독 설정
+                    stage, // 스테이지 진행 연결
+                    location.Id); // 현재 장소 연결
 
             // 35일차: 장소 규칙 카드. 이 칸에서 처음 도전하는 장소면 시작할 때 한 번 뜬다.
             //         일시정지 메뉴가 찾아 쓰므로 먼저 만든다.
