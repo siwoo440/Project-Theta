@@ -37,6 +37,7 @@ namespace ProjectTheta.UI
         private Text _bubbleText;
         private Func<bool> _blocked;
         private Func<SaveData> _save;
+        private Action<LobbyDialogueDefinition> _spoken; // 대사 확인 알림
 
         private HubSuccubusSpot _spot;
         private float _height;
@@ -45,18 +46,25 @@ namespace ProjectTheta.UI
         private float _lineElapsed;
         private int _lastVisible;
         private float _bubbleRemaining;
+        private Action _onFinished; // 대사 완료 알림
 
         /// <summary>지금 서 있는 자리 이름이다(확인용).</summary>
         public string SpotName =>
             _spot.Name;
 
+        public bool IsSpeaking => // 대사 재생 여부
+            _bubble != null && // 말풍선 존재 확인
+            _bubble.gameObject.activeSelf; // 말풍선 활성 확인
+
         public void Build(
             Transform parent,
             Func<SaveData> save,
-            Func<bool> blocked)
+            Func<bool> blocked,
+            Action<LobbyDialogueDefinition> spoken) // 대사 확인 알림
         {
             _save = save;
             _blocked = blocked;
+            _spoken = spoken; // 확인 알림 저장
 
             int index = HubSuccubusLogic.PickSpot(_random, _lastSpot);
             _lastSpot = index;
@@ -201,11 +209,45 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            _line =
-                HubSuccubusLogic.PickLine(
-                    HubSuccubusLogic.GetLines(_save?.Invoke()),
-                    _random,
-                    _line);
+            if (!LobbyDialogueLogic.CanReplaceSpeech(IsSpeaking, _onFinished != null)) // 중요 완료 대사 확인
+            { // 교체 차단 시작
+                return; // 상호작용 종료
+            } // 교체 차단 끝
+
+            LobbyDialogueDefinition dialogue = LobbyDialogueLogic.Select( // 일반 상호작용 대사 선택
+                LobbyDialogueTrigger.Idle, // 방치형 일반 대사
+                _save?.Invoke(), // 현재 저장 자료
+                StageResultSummary.Empty, // 직전 결과 없음
+                _random, // 난수 도구
+                (float)_random.NextDouble()); // 희귀 확률 값
+
+            if (dialogue == null) // 선택 실패 확인
+            { // 실패 시작
+                return; // 상호작용 종료
+            } // 실패 끝
+
+            _spoken?.Invoke(dialogue); // 대사 확인 알림 호출
+            Speak(dialogue, null); // 선택 대사 재생
+        }
+
+        public void Speak( // 지정 로비 대사 재생
+            LobbyDialogueDefinition dialogue, // 재생 대사
+            Action onFinished) // 완료 알림
+        { // 재생 시작
+            if (dialogue == null || _bubble == null || _bubbleText == null) // 재생 환경 확인
+            { // 환경 없음 시작
+                onFinished?.Invoke(); // 완료 알림 호출
+
+                return; // 재생 종료
+            } // 환경 없음 끝
+
+            if (!LobbyDialogueLogic.CanReplaceSpeech(IsSpeaking, _onFinished != null)) // 중요 완료 대사 확인
+            { // 교체 차단 시작
+                return; // 기존 대사 유지
+            } // 교체 차단 끝
+
+            _line = dialogue.Text; // 대사 본문 저장
+            _onFinished = onFinished; // 완료 알림 저장
 
             // 다 나온 글 기준으로 말풍선 높이를 먼저 맞춘다.
             _bubbleText.text = _line;
@@ -223,7 +265,7 @@ namespace ProjectTheta.UI
             _bubble.gameObject.SetActive(true);
 
             GameAudio.Play(GameSfx.Bubble, 0.8f);
-        }
+        } // 재생 끝
 
         private void Update()
         {
@@ -260,6 +302,9 @@ namespace ProjectTheta.UI
             if (_bubbleRemaining <= 0f)
             {
                 _bubble.gameObject.SetActive(false);
+                Action finished = _onFinished; // 완료 알림 보관
+                _onFinished = null; // 완료 알림 초기화
+                finished?.Invoke(); // 완료 알림 호출
             }
         }
 

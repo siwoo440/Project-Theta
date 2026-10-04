@@ -139,6 +139,10 @@ namespace ProjectTheta.Save
         public string[] RiellaAffinityRewards = new string[0]; // 지급 완료 보상 ID
         public string[] SeenEndings = new string[0]; // 확인한 엔딩 ID
 
+        // --- 46일차: 로비 대사 기록 ---
+        public string LastLobbyDialogueId = string.Empty; // 직전 로비 대사 ID
+        public string[] SeenLobbyDialogues = new string[0]; // 확인한 로비 대사 ID
+
         // --- 29일차 ---
         /// <summary>지금까지의 누적 통계다. 지도의 [통계] 창이 보여 준다.</summary>
         public PlayStats Stats = new PlayStats();
@@ -207,6 +211,10 @@ namespace ProjectTheta.Save
                     SeenEndings = SeenEndings == null // 엔딩 목록 확인
                         ? new string[0] // 빈 엔딩 목록
                         : (string[])SeenEndings.Clone(), // 엔딩 목록 복제
+                    LastLobbyDialogueId = LastLobbyDialogueId ?? string.Empty, // 직전 로비 대사 복제
+                    SeenLobbyDialogues = SeenLobbyDialogues == null // 로비 대사 목록 확인
+                        ? new string[0] // 빈 로비 대사 목록
+                        : (string[])SeenLobbyDialogues.Clone(), // 로비 대사 목록 복제
                     UpgradeLevels = new int[UpgradeLevels?.Length ?? 4],
                     Stats = Stats == null ? new PlayStats() : Stats.Clone(),
                     LocationRecords = new LocationStats[LocationRecords?.Length ?? 0],

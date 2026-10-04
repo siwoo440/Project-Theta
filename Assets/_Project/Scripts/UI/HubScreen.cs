@@ -86,6 +86,12 @@ namespace ProjectTheta.UI
         private Text _difficultyHintText;
         private Text _diaryHint;
         private readonly List<UiButton> _diaryButtons = new List<UiButton>();
+        private UiButton _diaryStoryTab; // 이야기 탭 버튼
+        private UiButton _diaryLobbyTab; // 로비 대사 탭 버튼
+        private UiButton _diaryPrevious; // 이전 페이지 버튼
+        private UiButton _diaryNext; // 다음 페이지 버튼
+        private bool _diaryLobbyMode; // 로비 대사 탭 여부
+        private int _diaryPage; // 현재 일기장 페이지
 
         // 34일차: 저장 버튼 · 결과 문구
         private Text _saveMessage;
@@ -97,6 +103,8 @@ namespace ProjectTheta.UI
         private float _titleConfirm;
 
         private bool _resultApplied;
+        private bool _freshResult; // 새 귀환 결과 여부
+        private float _idleElapsed; // 무입력 누적 시간
 
         private StageResultSummary _lastResult =
             StageResultSummary.Empty;
@@ -116,6 +124,7 @@ namespace ProjectTheta.UI
         private readonly WindowToken _windowToken = new WindowToken();
         private HubPanel _openPanel;
         private DialogueOverlay _story;
+        private HubSuccubus _succubus; // 로비 캐릭터
 
         private void Start()
         {
@@ -124,15 +133,21 @@ namespace ProjectTheta.UI
 
             if (game != null)
             {
-                _resultApplied =
-                    game.ConsumePendingResult() ||
-                    game.HasLastResult;
+                game.ConsumePendingResult(); // 직접 진입 잔여 결과 반영
+                _freshResult = game.TryTakeLobbyReturnResult(out StageResultSummary freshResult); // 새 귀환 결과 한 번 수신
+
+                if (_freshResult) // 새 귀환 결과 확인
+                { // 새 결과 시작
+                    _lastResult = freshResult; // 귀환 대사 결과 저장
+                } // 새 결과 끝
+
+                _resultApplied = _freshResult || game.HasLastResult; // 결과 카드 표시 여부 저장
 
                 // 30일차: 결과는 지도로 갈 때도 반영되므로, 세션이 기억한 마지막 결과를 보여 준다.
                 _hasLastResult =
                     game.HasLastResult;
 
-                if (_hasLastResult)
+                if (_hasLastResult && !_freshResult)
                 {
                     _lastResult =
                         game.LastResult;
@@ -153,7 +168,7 @@ namespace ProjectTheta.UI
             StoryPlayback.PlayPending( // 허브 이야기 재생
                 _story, // 대사창
                 StoryEventType.HubReturn, // 허브 복귀 사건
-                Refresh); // 완료 뒤 갱신
+                HandleHubStoryFinished); // 완료 뒤 로비 대사 연결
         }
 
         private void Update()
@@ -178,6 +193,8 @@ namespace ProjectTheta.UI
                     _saveMessage.text = string.Empty;
                 }
             }
+
+            UpdateLobbyIdle(); // 로비 방치 시간 갱신
 
 #if ENABLE_INPUT_SYSTEM
             if (_openPanel == HubPanel.None ||
@@ -221,11 +238,13 @@ namespace ProjectTheta.UI
             _room.ObjectClicked += HandleRoomObject;
 
             // 36일차: 방 안의 서큐버스. 매번 다른 자리에 있고 누르면 말풍선으로 말한다.
-            gameObject.AddComponent<HubSuccubus>().Build(
+            _succubus = gameObject.AddComponent<HubSuccubus>(); // 로비 캐릭터 생성
+            _succubus.Build(
                 canvas.transform,
                 () => CurrentSave,
                 () => _openPanel != HubPanel.None ||
-                      (_story != null && _story.IsPlaying));
+                      (_story != null && _story.IsPlaying),
+                RecordLobbyDialogue); // 확인 기록 연결
 
             RectTransform motes =
                 UiFactory.CreateRect(
@@ -705,28 +724,46 @@ namespace ProjectTheta.UI
             HubWindow window = CreateWindow(parent, HubPanel.Diary, new Vector2(1040f, 660f));
             RectTransform body = window.Body;
 
-            _diaryHint = UiOverlay.Label(body, string.Empty, 30f, 82f, 980f, UiTheme.FontSmall, UiTheme.TextMuted);
+            _diaryStoryTab = UiOverlay.Button( // 이야기 탭 생성
+                body, // 창 본문
+                "DiaryStoryTab", // 개체 이름
+                "이야기", // 표시 문구
+                30f, // 가로 위치
+                74f, // 세로 위치
+                180f, // 너비
+                48f, // 높이
+                () => SetDiaryMode(false)); // 이야기 탭 전환
+            _diaryLobbyTab = UiOverlay.Button( // 로비 대사 탭 생성
+                body, // 창 본문
+                "DiaryLobbyTab", // 개체 이름
+                "로비 대사", // 표시 문구
+                224f, // 가로 위치
+                74f, // 세로 위치
+                180f, // 너비
+                48f, // 높이
+                () => SetDiaryMode(true)); // 로비 탭 전환
+            _diaryHint = UiOverlay.Label(body, string.Empty, 424f, 82f, 586f, UiTheme.FontSmall, UiTheme.TextMuted); // 일기장 안내 생성
 
             const int perColumn = 10;
             const float columnWidth = 480f;
-            const float rowHeight = 46f;
+            const float rowHeight = LobbyDialogueLogic.DiaryRowHeight; // 겹침 없는 행 높이
 
-            for (int i = 0; i < StoryCatalog.All.Length; i++)
+            for (int i = 0; i < 20; i++) // 페이지 버튼 생성
             {
-                StoryScene scene = StoryCatalog.All[i];
                 int column = i / perColumn;
                 int row = i % perColumn;
+                int captured = i; // 버튼 번호 보관
 
                 UiButton button =
                     UiOverlay.Button(
                         body,
-                        $"Story_{scene.Id}",
-                        scene.Title,
+                        $"DiaryEntry_{i}",
+                        string.Empty,
                         30f + column * (columnWidth + 20f),
-                        124f + row * (rowHeight + 6f),
+                        LobbyDialogueLogic.GetDiaryRowY(row),
                         columnWidth,
                         rowHeight,
-                        () => ReplayStory(scene));
+                        () => ReplayDiaryEntry(captured));
 
                 if (button.Label != null)
                 {
@@ -736,6 +773,25 @@ namespace ProjectTheta.UI
 
                 _diaryButtons.Add(button);
             }
+
+            _diaryPrevious = UiOverlay.Button( // 이전 페이지 생성
+                body, // 창 본문
+                "DiaryPrevious", // 개체 이름
+                "◀ 이전", // 표시 문구
+                342f, // 가로 위치
+                LobbyDialogueLogic.DiaryPageButtonY, // 세로 위치
+                150f, // 너비
+                44f, // 높이
+                () => ChangeDiaryPage(-1)); // 이전 페이지 이동
+            _diaryNext = UiOverlay.Button( // 다음 페이지 생성
+                body, // 창 본문
+                "DiaryNext", // 개체 이름
+                "다음 ▶", // 표시 문구
+                548f, // 가로 위치
+                LobbyDialogueLogic.DiaryPageButtonY, // 세로 위치
+                150f, // 너비
+                44f, // 높이
+                () => ChangeDiaryPage(1)); // 다음 페이지 이동
         }
 
         // 창 열고 닫기 --------------------------------------------------
@@ -825,6 +881,73 @@ namespace ProjectTheta.UI
                 false, // 허브 시간 유지
                 null); // 완료 알림 없음
         }
+
+        private void ReplayDiaryEntry( // 현재 일기장 항목 재생
+            int slot) // 페이지 내 번호
+        { // 재생 시작
+            int index = _diaryPage * 20 + slot; // 전체 항목 번호 계산
+
+            if (_diaryLobbyMode) // 로비 대사 탭 확인
+            { // 로비 대사 시작
+                if (index < 0 || index >= LobbyDialogueCatalog.All.Length) // 항목 범위 확인
+                { // 범위 밖 시작
+                    return; // 재생 종료
+                } // 범위 밖 끝
+
+                LobbyDialogueDefinition dialogue = LobbyDialogueCatalog.All[index]; // 선택 대사 조회
+
+                if (!LobbyDialogueLogic.IsSeen(CurrentSave, dialogue.Id)) // 확인 여부 검사
+                { // 미확인 시작
+                    return; // 재생 종료
+                } // 미확인 끝
+
+                StoryScene replay = new StoryScene( // 재생 장면 생성
+                    $"diary_{dialogue.Id}", // 임시 장면 ID
+                    "로비 대사", // 장면 제목
+                    StoryEventType.None, // 자동 사건 없음
+                    LocationId.TrainingCenter, // 기본 장소
+                    false, // 자동 재생 차단
+                    true, // 다시 보기 허용
+                    new StoryCondition[0], // 조건 없음
+                    new StoryChoice[0], // 선택지 없음
+                    new[] { new StoryLine(StoryCatalog.Riella, dialogue.Text) }); // 리엘라 대사 한 줄
+
+                GameAudio.Play(GameSfx.UiTick); // 선택 효과음 재생
+                StoryPlayback.PlayReplay( // 로비 대사 다시 보기
+                    _story, // 대사창
+                    new[] { replay }, // 임시 장면
+                    false, // 허브 시간 유지
+                    null); // 완료 알림 없음
+
+                return; // 로비 재생 종료
+            } // 로비 대사 끝
+
+            if (index >= 0 && index < StoryCatalog.All.Length) // 이야기 범위 확인
+            { // 이야기 시작
+                ReplayStory(StoryCatalog.All[index]); // 이야기 재생
+            } // 이야기 끝
+        } // 재생 끝
+
+        private void SetDiaryMode( // 일기장 탭 전환
+            bool lobbyMode) // 로비 대사 탭 여부
+        { // 전환 시작
+            _diaryLobbyMode = lobbyMode; // 탭 상태 저장
+            _diaryPage = 0; // 첫 페이지 이동
+            GameAudio.Play(GameSfx.UiTick); // 전환 효과음 재생
+            RefreshDiary(CurrentSave); // 일기장 표시 갱신
+        } // 전환 끝
+
+        private void ChangeDiaryPage( // 일기장 페이지 이동
+            int direction) // 이동 방향
+        { // 이동 시작
+            int itemCount = _diaryLobbyMode // 탭 항목 수 선택
+                ? LobbyDialogueCatalog.All.Length // 로비 대사 수
+                : StoryCatalog.All.Length; // 이야기 수
+            int pageCount = LobbyDialogueLogic.GetPageCount(itemCount, 20); // 페이지 수 계산
+            _diaryPage = Mathf.Clamp(_diaryPage + direction, 0, Mathf.Max(0, pageCount - 1)); // 페이지 범위 보정
+            GameAudio.Play(GameSfx.UiTick); // 이동 효과음 재생
+            RefreshDiary(CurrentSave); // 일기장 표시 갱신
+        } // 이동 끝
 
         // 표시 갱신 ------------------------------------------------------
 
@@ -1093,37 +1216,191 @@ namespace ProjectTheta.UI
         private void RefreshDiary(
             SaveData save)
         {
-            int seen = 0;
+            int itemCount = _diaryLobbyMode // 현재 항목 수 선택
+                ? LobbyDialogueCatalog.All.Length // 로비 대사 수
+                : StoryCatalog.All.Length; // 이야기 수
+            int pageCount = LobbyDialogueLogic.GetPageCount(itemCount, 20); // 전체 페이지 수
+            _diaryPage = Mathf.Clamp(_diaryPage, 0, Mathf.Max(0, pageCount - 1)); // 페이지 범위 보정
+            int seen = 0; // 확인 항목 수
+
+            if (_diaryLobbyMode) // 로비 탭 확인
+            { // 로비 집계 시작
+                for (int i = 0; i < LobbyDialogueCatalog.All.Length; i++) // 전체 로비 대사 순회
+                { // 순회 시작
+                    if (LobbyDialogueLogic.IsSeen(save, LobbyDialogueCatalog.All[i].Id)) // 확인 대사 검사
+                    { // 확인 시작
+                        seen++; // 확인 수 증가
+                    } // 확인 끝
+                } // 순회 끝
+            } // 로비 집계 끝
+            else // 이야기 탭
+            { // 이야기 집계 시작
+                for (int i = 0; i < StoryCatalog.All.Length; i++) // 전체 이야기 순회
+                { // 순회 시작
+                    if (StoryLogic.IsSeen(save, StoryCatalog.All[i].Id)) // 확인 이야기 검사
+                    { // 확인 시작
+                        seen++; // 확인 수 증가
+                    } // 확인 끝
+                } // 순회 끝
+            } // 이야기 집계 끝
 
             for (int i = 0; i < _diaryButtons.Count; i++)
             {
-                StoryScene scene = StoryCatalog.All[i];
-                bool unlocked = StoryLogic.IsSeen(save, scene.Id);
+                int index = _diaryPage * 20 + i; // 전체 항목 번호 계산
+                bool exists = index < itemCount; // 항목 존재 확인
+                _diaryButtons[i].Button.gameObject.SetActive(exists); // 빈 버튼 숨김
 
-                if (unlocked)
-                {
-                    seen++;
-                }
+                if (!exists) // 빈 항목 확인
+                { // 빈 항목 시작
+                    continue; // 다음 버튼 이동
+                } // 빈 항목 끝
 
-                _diaryButtons[i].SetText(unlocked ? $"「{scene.Title}」" : "？？？");
-                _diaryButtons[i].SetInteractable(unlocked);
+                bool unlocked = _diaryLobbyMode // 확인 여부 선택
+                    ? LobbyDialogueLogic.IsSeen(save, LobbyDialogueCatalog.All[index].Id) // 로비 확인 여부
+                    : StoryLogic.IsSeen(save, StoryCatalog.All[index].Id); // 이야기 확인 여부
+                string title = _diaryLobbyMode // 표시 제목 선택
+                    ? LobbyDialogueCatalog.All[index].Id // 로비 대사 ID
+                    : StoryCatalog.All[index].Title; // 이야기 제목
+                _diaryButtons[i].SetText(unlocked ? $"「{title}」" : "？？？"); // 버튼 문구 설정
+                _diaryButtons[i].SetInteractable(unlocked); // 확인 항목만 재생 허용
             }
 
-            _diaryHint.text = $"본 이야기 {seen} / {StoryCatalog.All.Length}  ·  누르면 다시 봅니다";
+            _diaryStoryTab.Background.color = !_diaryLobbyMode ? UiTheme.PrimaryButtonNormal : UiTheme.ButtonNormal; // 이야기 탭 색상
+            _diaryLobbyTab.Background.color = _diaryLobbyMode ? UiTheme.PrimaryButtonNormal : UiTheme.ButtonNormal; // 로비 탭 색상
+            _diaryPrevious.SetInteractable(_diaryPage > 0); // 이전 페이지 가능 여부
+            _diaryNext.SetInteractable(_diaryPage + 1 < pageCount); // 다음 페이지 가능 여부
+            _diaryHint.text = $"확인 {seen} / {itemCount}  ·  {_diaryPage + 1}/{Mathf.Max(1, pageCount)}쪽  ·  누르면 다시 보기"; // 안내 문구 설정
         }
+
+        private void HandleHubStoryFinished() // 허브 이야기 완료 처리
+        { // 처리 시작
+            Refresh(); // 화면 갱신
+            LobbyDialogueTrigger trigger = _freshResult // 새 결과 확인
+                ? LobbyDialogueTrigger.Return // 귀환 대사 조건
+                : LobbyDialogueTrigger.Enter; // 일반 입장 조건
+            StageResultSummary result = _freshResult // 새 결과 선택
+                ? _lastResult // 직전 결과 사용
+                : StageResultSummary.Empty; // 결과 없음 사용
+            _freshResult = false; // 새 결과 소진
+            PlayLobbyDialogue(trigger, result, null); // 우선 로비 대사 재생
+        } // 처리 끝
+
+        private bool PlayLobbyDialogue( // 조건별 로비 대사 재생
+            LobbyDialogueTrigger trigger, // 발생 조건
+            StageResultSummary result, // 직전 결과
+            System.Action onFinished) // 완료 알림
+        { // 재생 시작
+            if (_succubus == null || (_story != null && _story.IsPlaying)) // 재생 환경 확인
+            { // 환경 없음 시작
+                onFinished?.Invoke(); // 완료 알림 호출
+
+                return false; // 재생 실패 반환
+            } // 환경 없음 끝
+
+            LobbyDialogueDefinition dialogue = LobbyDialogueLogic.Select( // 조건 대사 선택
+                trigger, // 발생 조건
+                CurrentSave, // 현재 저장 자료
+                result, // 직전 결과
+                new System.Random(System.Environment.TickCount), // 난수 도구
+                UnityEngine.Random.value); // 희귀 확률 값
+
+            if (dialogue == null) // 선택 실패 확인
+            { // 선택 실패 시작
+                onFinished?.Invoke(); // 완료 알림 호출
+
+                return false; // 재생 실패 반환
+            } // 선택 실패 끝
+
+            RecordLobbyDialogue(dialogue); // 확인 기록 저장
+            _idleElapsed = 0f; // 방치 시간 초기화
+            _succubus.Speak(dialogue, onFinished); // 말풍선 재생
+
+            return true; // 재생 성공 반환
+        } // 재생 끝
+
+        private void RecordLobbyDialogue( // 로비 대사 확인 저장
+            LobbyDialogueDefinition dialogue) // 확인 대사
+        { // 저장 시작
+            GameSession session = GameSession.Instance; // 현재 세션 조회
+
+            if (session == null || session.Save == null) // 저장 환경 확인
+            { // 환경 없음 시작
+                return; // 저장 종료
+            } // 환경 없음 끝
+
+            LobbyDialogueLogic.RecordSeen(session.Save, dialogue); // 확인 기록 반영
+            session.WriteSave(); // 즉시 저장
+            RefreshDiary(session.Save); // 일기장 해금 갱신
+        } // 저장 끝
+
+        private void UpdateLobbyIdle() // 로비 방치 대사 갱신
+        { // 갱신 시작
+            if (HasHubInputThisFrame()) // 새 입력 확인
+            { // 입력 시작
+                _idleElapsed = 0f; // 방치 시간 초기화
+
+                return; // 갱신 종료
+            } // 입력 끝
+
+            if (_openPanel != HubPanel.None || // 창 열림 확인
+                (_story != null && _story.IsPlaying) || // 이야기 재생 확인
+                (_succubus != null && _succubus.IsSpeaking)) // 말풍선 재생 확인
+            { // 상호작용 중 시작
+                _idleElapsed = 0f; // 방치 시간 초기화
+
+                return; // 갱신 종료
+            } // 상호작용 중 끝
+
+            _idleElapsed += Time.unscaledDeltaTime; // 방치 시간 누적
+
+            if (_idleElapsed < LobbyDialogueLogic.IdleSeconds) // 방치 기준 확인
+            { // 기준 전 시작
+                return; // 갱신 종료
+            } // 기준 전 끝
+
+            StageResultSummary context = _hasLastResult // 마지막 결과 확인
+                ? _lastResult // 결과 조건 사용
+                : StageResultSummary.Empty; // 빈 조건 사용
+            PlayLobbyDialogue(LobbyDialogueTrigger.Idle, context, null); // 방치 대사 재생
+            _idleElapsed = 0f; // 방치 시간 초기화
+        } // 갱신 끝
+
+        private static bool HasHubInputThisFrame() // 현재 프레임 입력 확인
+        { // 확인 시작
+#if ENABLE_INPUT_SYSTEM
+            Keyboard keyboard = Keyboard.current; // 키보드 조회
+            Mouse mouse = Mouse.current; // 마우스 조회
+            bool keyboardInput = keyboard != null && keyboard.anyKey.wasPressedThisFrame; // 키 입력 확인
+            bool mouseInput = mouse != null && // 마우스 존재 확인
+                              (mouse.leftButton.wasPressedThisFrame || // 왼쪽 버튼 확인
+                               mouse.rightButton.wasPressedThisFrame || // 오른쪽 버튼 확인
+                               mouse.middleButton.wasPressedThisFrame || // 가운데 버튼 확인
+                               mouse.scroll.ReadValue().sqrMagnitude > 0f || // 휠 입력 확인
+                               mouse.delta.ReadValue().sqrMagnitude > 0f); // 이동 입력 확인
+
+            return keyboardInput || mouseInput; // 입력 여부 반환
+#else
+            return Input.anyKeyDown; // 기존 입력 여부 반환
+#endif
+        } // 확인 끝
 
         // 동작 ----------------------------------------------------------
 
         private void Sortie()
         {
             // 29일차: 판이 없다. 출격하면 도시 지도에서 아무 장소나 고른다.
-            if (GameSession.Instance == null)
+            if (GameSession.Instance == null || // 세션 확인
+                (_story != null && _story.IsPlaying) || // 이야기 재생 확인
+                (_succubus != null && _succubus.IsSpeaking)) // 말풍선 재생 확인
             {
                 return;
             }
 
-            GameSession.Instance.GoTo(
-                SceneDestination.Map);
+            GameSession session = GameSession.Instance; // 전환 세션 보관
+            PlayLobbyDialogue( // 출격 대사 재생
+                LobbyDialogueTrigger.Depart, // 출격 조건
+                StageResultSummary.Empty, // 결과 없음
+                () => session.GoTo(SceneDestination.Map)); // 완료 후 지도 전환
         }
 
         private void OpenSaveSlots()
@@ -1243,9 +1520,11 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            if (SaveDataLogic.TryPurchaseUpgrade(
+            bool purchased = SaveDataLogic.TryPurchaseUpgrade( // 구매 결과 저장
                     GameSession.Instance.Save,
-                    track))
+                    track); // 성장 계열 전달
+
+            if (purchased) // 구매 성공 확인
             {
                 GameAudio.Play(
                     GameSfx.Purchase);
@@ -1255,6 +1534,14 @@ namespace ProjectTheta.UI
             }
 
             Refresh();
+
+            if (purchased) // 구매 성공 확인
+            { // 구매 대사 시작
+                PlayLobbyDialogue( // 성장 대사 재생
+                    LobbyDialogueTrigger.Upgrade, // 성장 조건
+                    StageResultSummary.Empty, // 결과 없음
+                    null); // 완료 알림 없음
+            } // 구매 대사 끝
         }
 
         private static string BuildPips(

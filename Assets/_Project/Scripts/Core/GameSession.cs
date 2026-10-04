@@ -6,6 +6,41 @@ using ProjectTheta.Stage.Locations; // 지역 위험 규칙 참조
 
 namespace ProjectTheta.Core
 {
+    public sealed class LobbyResultInbox // 허브 귀환 결과 전달함
+    { // 클래스 시작
+        private StageResultSummary _result = StageResultSummary.Empty; // 보관 결과
+        private bool _hasResult; // 결과 존재 여부
+
+        public void Store( // 결과 보관
+            StageResultSummary result) // 소비 완료 결과
+        { // 보관 시작
+            _result = result; // 결과 저장
+            _hasResult = true; // 결과 존재 설정
+        } // 보관 끝
+
+        public bool TryTake( // 결과 한 번 꺼내기
+            out StageResultSummary result) // 반환 결과
+        { // 꺼내기 시작
+            if (!_hasResult) // 결과 없음 확인
+            { // 결과 없음 시작
+                result = StageResultSummary.Empty; // 빈 결과 반환
+
+                return false; // 꺼내기 실패 반환
+            } // 결과 없음 끝
+
+            result = _result; // 보관 결과 반환
+            Clear(); // 전달함 비우기
+
+            return true; // 꺼내기 성공 반환
+        } // 꺼내기 끝
+
+        public void Clear() // 결과 초기화
+        { // 초기화 시작
+            _result = StageResultSummary.Empty; // 빈 결과 저장
+            _hasResult = false; // 결과 없음 설정
+        } // 초기화 끝
+    } // 클래스 끝
+
     /// <summary>
     /// 씬을 넘어 살아남는 유일한 오브젝트다.
     ///
@@ -21,6 +56,7 @@ namespace ProjectTheta.Core
             StageResultSummary.Empty;
 
         private bool _hasPendingResult;
+        private readonly LobbyResultInbox _lobbyResultInbox = new LobbyResultInbox(); // 허브 귀환 결과 전달함
 
         public static GameSession Instance =>
             _instance;
@@ -321,6 +357,7 @@ namespace ProjectTheta.Core
             Run = null;
             _hasPendingResult = false;
             _pendingResult = StageResultSummary.Empty;
+            _lobbyResultInbox.Clear(); // 이전 귀환 결과 초기화
             LastResult = StageResultSummary.Empty;
             HasLastResult = false;
             _newAchievements.Clear();
@@ -393,6 +430,8 @@ namespace ProjectTheta.Core
             LastResult =
                 _pendingResult;
 
+            _lobbyResultInbox.Store(LastResult); // 허브 안내용 결과 보관
+
             HasLastResult =
                 true;
 
@@ -406,6 +445,12 @@ namespace ProjectTheta.Core
 
             return true;
         }
+
+        public bool TryTakeLobbyReturnResult( // 허브 안내 결과 꺼내기
+            out StageResultSummary result) // 반환 결과
+        { // 꺼내기 시작
+            return _lobbyResultInbox.TryTake(out result); // 한 번 전달 반환
+        } // 꺼내기 끝
 
         /// <summary>
         /// 공용 설정은 늘 저장하고, 칸을 골랐으면 칸도 저장한다 (34일차).

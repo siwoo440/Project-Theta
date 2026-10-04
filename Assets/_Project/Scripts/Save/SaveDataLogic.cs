@@ -158,6 +158,9 @@ namespace ProjectTheta.Save
             EndingProgressLogic.Normalize( // 엔딩 기록 보정
                 data); // 저장 자료 전달
 
+            UI.LobbyDialogueLogic.Normalize( // 로비 대사 기록 보정
+                data); // 저장 자료 전달
+
             AchievementLogic.Normalize(
                 data);
 
