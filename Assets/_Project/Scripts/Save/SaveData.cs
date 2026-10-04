@@ -101,6 +101,13 @@ namespace ProjectTheta.Save
         /// <summary>마지막으로 저장한 때(Ticks)다. 가장 최근 칸을 고를 때 쓴다.</summary>
         public long SavedTicks;
 
+        // --- 41일차: 세계 시간 · 지역 위험도 ---
+        /// <summary>현재 세계 시간대 번호다.</summary>
+        public int CurrentWorldTime;
+
+        /// <summary>장소 ID 순서의 지역 위험 배율이다.</summary>
+        public float[] RegionRiskMultipliers = new float[0];
+
         // --- 36일차 ---
         /// <summary>본 이야기 장면 ID다 (<see cref="Story.StoryLogic"/>).</summary>
         public string[] SeenStories = new string[0];
@@ -152,6 +159,10 @@ namespace ProjectTheta.Save
                     DangerEffectDisabled = DangerEffectDisabled,
                     SavedAt = SavedAt,
                     SavedTicks = SavedTicks,
+                    CurrentWorldTime = CurrentWorldTime,
+                    RegionRiskMultipliers = RegionRiskMultipliers == null
+                        ? Stage.Locations.RegionRiskLogic.CreateNeutralMultipliers()
+                        : (float[])RegionRiskMultipliers.Clone(),
                     SeenStories = SeenStories == null
                         ? new string[0]
                         : (string[])SeenStories.Clone(),

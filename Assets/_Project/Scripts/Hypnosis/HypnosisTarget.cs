@@ -138,7 +138,10 @@ namespace ProjectTheta.Hypnosis
             Stage.Locations.ClubBeat.HypnosisMultiplier *
             // 27일차: 라이벌의 VIP 전용 구역 안에서는 최면이 절반으로 느려진다.
             Boss.VipZoneAbility.GetHypnosisMultiplier(transform.position) *
-            PlayerUpgradeMultipliers.HypnosisSpeed;
+            PlayerUpgradeMultipliers.HypnosisSpeed *
+            // 41일차: 지역 위험이 높을수록 NPC 저항이 커진다.
+            Stage.Locations.RegionRiskLogic.GetHypnosisSpeedMultiplier(
+                Stage.Locations.RegionRiskState.CurrentMultiplier);
 
         private Stage.Locations.AthleteMark _athleteMark;
         private bool _athleteChecked;

@@ -1,6 +1,7 @@
 using System.Collections.Generic; // 목록 기능 참조
 using UnityEngine; // 유니티 기능 참조
 using ProjectTheta.Stage; // 스테이지 참조
+using ProjectTheta.Stage.Locations; // 지역 위험 참조
 
 namespace ProjectTheta.Disruptors // 방해 세력 공간
 { // 공간 시작
@@ -100,6 +101,8 @@ namespace ProjectTheta.Disruptors // 방해 세력 공간
                 BaseBuildPerSecond * // 일반 최면 속도
                 Mathf.Max(0f, _profile.SelfHypnosisMultiplier) * // 지도부장 저항 배율
                 Mathf.Max(0f, speedMultiplier) * // 집중력 배율
+                RegionRiskLogic.GetHypnosisSpeedMultiplier( // 지역 저항 배율
+                    RegionRiskState.CurrentMultiplier) * // 현재 위험 배율
                 deltaTime; // 프레임 시간
 
             if (_currentHypnosis < MaximumHypnosis) // 완료 여부 확인

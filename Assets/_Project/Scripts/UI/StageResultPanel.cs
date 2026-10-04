@@ -245,20 +245,22 @@ namespace ProjectTheta.UI
             // 30일차: 숙련도(★)마다 계약 정기 보상이 커진다.
             // 31일차: 도중에 포기했으면 0이다.
             // 36일차: 심야 모드면 ×1.5.
-            _contractEssence =
-                PauseMenuLogic.GetContractEssence(
-                    _stage.IsAbandoned,
-                    NightModeLogic.GetReward(
-                        MasteryLogic.GetContractEssence(
-                            ContractEssenceLogic.Compute(
-                                _tracker.RecoveredEssence,
-                                _stage.TargetEssence,
-                                cleared,
-                                rankLabel),
-                            GameSession.Instance.Run == null
-                                ? 0
-                                : GameSession.Instance.Run.Stars),
-                        NightModeState.Active));
+            _contractEssence = // 최종 계약 정기
+                RegionRiskLogic.ApplyContractReward( // 위험 보상 적용
+                    PauseMenuLogic.GetContractEssence( // 포기 보상 적용
+                        _stage.IsAbandoned, // 포기 여부
+                        NightModeLogic.GetReward( // 심야 보상 적용
+                            MasteryLogic.GetContractEssence( // 숙련 보상 적용
+                                ContractEssenceLogic.Compute( // 기본 보상 계산
+                                    _tracker.RecoveredEssence, // 회수 정기
+                                    _stage.TargetEssence, // 목표 정기
+                                    cleared, // 클리어 여부
+                                    rankLabel), // 결과 등급
+                                GameSession.Instance.Run == null // 도전 정보 확인
+                                    ? 0 // 기본 별 수
+                                    : GameSession.Instance.Run.Stars), // 현재 별 수
+                            NightModeState.Active)), // 심야 여부
+                    RegionRiskState.CurrentMultiplier); // 현재 위험 배율
 
             // 34일차: 실패하면 보상이 줄어든다. 줄어든 만큼을 빨갛게 보여 준다.
             _failed =
@@ -269,14 +271,16 @@ namespace ProjectTheta.UI
                 _failed
                     ? Mathf.Max(
                         0,
-                        NightModeLogic.GetReward(
-                            MasteryLogic.GetContractEssence(
-                                ContractEssenceLogic.GetFullRate(
-                                    _tracker.RecoveredEssence),
-                                GameSession.Instance.Run == null
-                                    ? 0
-                                    : GameSession.Instance.Run.Stars),
-                            NightModeState.Active) -
+                        RegionRiskLogic.ApplyContractReward( // 정상 위험 보상 계산
+                            NightModeLogic.GetReward( // 심야 보상 적용
+                                MasteryLogic.GetContractEssence( // 숙련 보상 적용
+                                    ContractEssenceLogic.GetFullRate( // 정상 비율 계산
+                                        _tracker.RecoveredEssence), // 회수 정기
+                                    GameSession.Instance.Run == null // 도전 정보 확인
+                                        ? 0 // 기본 별 수
+                                        : GameSession.Instance.Run.Stars), // 현재 별 수
+                                NightModeState.Active), // 심야 여부
+                            RegionRiskState.CurrentMultiplier) - // 현재 위험 배율
                         _contractEssence)
                     : 0;
 

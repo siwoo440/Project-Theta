@@ -53,6 +53,12 @@ namespace ProjectTheta.UI
         {
             LocationDefinition location = LocationContext.Current;
             LocationGuide guide = LocationGuideCatalog.Get(location.Id);
+            string regionSummary = // 지역 상태 문구
+                RegionRiskLogic.BuildMapSummary( // 시간과 위험 구성
+                    GameSession.Instance == null // 세션 확인
+                        ? null // 저장 없음
+                        : GameSession.Instance.Save, // 현재 저장
+                    location.Id); // 현재 장소
 
             Canvas canvas =
                 UiFactory.CreateCanvas(
@@ -74,8 +80,8 @@ namespace ProjectTheta.UI
             UiOverlay.Label(
                 w,
                 Run.NightModeState.Active
-                    ? $"난이도 {LocationGuideLogic.FormatDifficulty(guide.Difficulty)}   ·   {Run.NightModeLogic.GetShortSummary()}"
-                    : $"난이도 {LocationGuideLogic.FormatDifficulty(guide.Difficulty)}   ·   {LocationCatalog.GetTimeLabel(location.TimeOfDay)}   ·   {location.Summary}",
+                    ? $"난이도 {LocationGuideLogic.FormatDifficulty(guide.Difficulty)}   ·   {regionSummary}   ·   {Run.NightModeLogic.GetShortSummary()}"
+                    : $"난이도 {LocationGuideLogic.FormatDifficulty(guide.Difficulty)}   ·   {regionSummary}   ·   배경 {LocationCatalog.GetTimeLabel(location.TimeOfDay)}   ·   {location.Summary}",
                 40f,
                 80f,
                 WindowWidth - 80f,

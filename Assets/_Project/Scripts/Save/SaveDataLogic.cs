@@ -10,7 +10,7 @@ namespace ProjectTheta.Save
     /// </summary>
     public static class SaveDataLogic
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
 
         /// <summary>성장 계열 수다. 최면 / 관리 / 안정 / 기동.</summary>
         public const int UpgradeTrackCount = 4;
@@ -26,6 +26,10 @@ namespace ProjectTheta.Save
                     BestScore = 0,
                     BestRankLabel = "-",
                     ContractEssence = 0,
+                    CurrentWorldTime =
+                        (int)Stage.Locations.WorldTimeOfDay.Morning,
+                    RegionRiskMultipliers =
+                        Stage.Locations.RegionRiskLogic.CreateNeutralMultipliers(),
                     UpgradeLevels =
                         new int[UpgradeTrackCount]
                 };
@@ -103,6 +107,31 @@ namespace ProjectTheta.Save
                 Math.Max(
                     0,
                     data.ContractEssence);
+
+            if (data.RegionRiskMultipliers == null ||
+                data.RegionRiskMultipliers.Length !=
+                Stage.Locations.RegionRiskLogic.RegionCount)
+            {
+                data.RegionRiskMultipliers =
+                    Stage.Locations.RegionRiskLogic.CreateNeutralMultipliers();
+            }
+            else
+            {
+                for (int i = 0;
+                     i < data.RegionRiskMultipliers.Length;
+                     i++)
+                {
+                    data.RegionRiskMultipliers[i] =
+                        data.RegionRiskMultipliers[i] <= 0f
+                            ? Stage.Locations.RegionRiskLogic.NeutralMultiplier
+                            : Stage.Locations.RegionRiskLogic.ClampMultiplier(
+                                data.RegionRiskMultipliers[i]);
+                }
+            }
+
+            data.CurrentWorldTime =
+                Stage.Locations.RegionRiskLogic.NormalizeTimeValue(
+                    data.CurrentWorldTime);
 
             if (string.IsNullOrEmpty(
                     data.BestRankLabel))

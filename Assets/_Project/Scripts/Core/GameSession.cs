@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using ProjectTheta.Run;
 using ProjectTheta.Save;
+using ProjectTheta.Stage.Locations; // 지역 위험 규칙 참조
 
 namespace ProjectTheta.Core
 {
@@ -267,11 +268,18 @@ namespace ProjectTheta.Core
                 return false;
             }
 
-            BeginSlot(
-                slot,
-                SaveSlotLogic.CreateNewGame(
-                    SaveSlotLogic.ExtractSettings(
-                        _saveData)));
+            SaveData newSave = // 새 저장 자료
+                SaveSlotLogic.CreateNewGame( // 새 게임 자료 생성
+                    SaveSlotLogic.ExtractSettings( // 현재 설정 추출
+                        _saveData)); // 현재 저장 전달
+
+            newSave.RegionRiskMultipliers = // 최초 지역 위험 저장
+                RegionRiskLogic.RollMultipliers( // 최초 지역 위험 추첨
+                    System.Environment.TickCount); // 실행 시각 시드
+
+            BeginSlot( // 저장 칸 시작
+                slot, // 선택 칸
+                newSave); // 새 저장 자료
 
             return WriteSave();
         }
@@ -371,6 +379,11 @@ namespace ProjectTheta.Core
                 SaveDataLogic.ApplyStageResult(
                     _saveData,
                     _pendingResult);
+
+            RegionRiskLogic.ApplyStageTransition( // 세계 시간 전환
+                _saveData, // 갱신 저장 자료
+                _pendingResult, // 판 결과
+                System.Environment.TickCount); // 전환 시각 시드
 
             _newAchievements.AddRange(
                 AchievementLogic.Diff(

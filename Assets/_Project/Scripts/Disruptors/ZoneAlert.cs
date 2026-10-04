@@ -3,6 +3,7 @@ using UnityEngine;
 using ProjectTheta.Balance;
 using ProjectTheta.Core;
 using ProjectTheta.Stage;
+using ProjectTheta.Stage.Locations; // 지역 위험 규칙 참조
 
 namespace ProjectTheta.Disruptors
 {
@@ -100,9 +101,11 @@ namespace ProjectTheta.Disruptors
             SetValue(
                 ZoneAlertLogic.Add(
                     Value,
-                    Run.NightModeLogic.GetAlertAmount(
-                        amount,
-                        Run.NightModeState.Active)));
+                    RegionRiskLogic.ApplyAlertAmount( // 위험 경계량 적용
+                        Run.NightModeLogic.GetAlertAmount( // 심야 경계량 적용
+                            amount, // 원본 변화량
+                            Run.NightModeState.Active), // 심야 여부
+                        RegionRiskState.CurrentMultiplier))); // 현재 위험 배율
         }
 
         /// <summary>디버그 치트용. 경계도를 바로 정한다.</summary>

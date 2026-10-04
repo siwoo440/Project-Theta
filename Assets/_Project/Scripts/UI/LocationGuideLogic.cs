@@ -162,15 +162,25 @@ namespace ProjectTheta.UI
         public static string BuildCoreRows(
             LocationDefinition location,
             int stars,
-            bool night = false)
+            bool night = false,
+            SaveData save = null)
         {
             // 36일차: 심야 모드면 목표 · 시간이 바뀐 값을 보여 준다.
             int target =
-                Run.NightModeLogic.GetTarget(
-                    MasteryLogic.GetTargetEssence(
-                        location.TargetEssence,
-                        stars),
-                    night);
+                RegionRiskLogic.ApplyTargetEssence(
+                    Run.NightModeLogic.GetTarget(
+                        MasteryLogic.GetTargetEssence(
+                            location.TargetEssence,
+                            stars),
+                        night),
+                    RegionRiskLogic.GetMultiplier(
+                        save,
+                        location.Id));
+
+            float risk =
+                RegionRiskLogic.GetMultiplier(
+                    save,
+                    location.Id);
 
             string mastery =
                 stars > 0
@@ -179,8 +189,8 @@ namespace ProjectTheta.UI
 
             return
                 $"제한 시간  {PlayStatsLogic.FormatClock(Run.NightModeLogic.GetTimeLimit(location.TimeLimitSeconds, night))}     목표 정기  {target}\n" +
-                $"층  {location.FloorCount}개     경쟁자  {(LocationGuideCatalog.RivalsAppear(location) ? "금태양 · 인기남" : "없음")}\n" +
-                $"숙련  {mastery}";
+                $"층  {location.FloorCount}개     경쟁자  {(LocationGuideCatalog.RivalsAppear(location) ? (LocationGuideCatalog.PopularGuyAppears(location) ? "금태양 · 인기남" : "금태양") : "없음")}\n" +
+                $"숙련  {mastery}     위험 ×{risk:0.00}";
         }
 
         public static string BuildDetail(

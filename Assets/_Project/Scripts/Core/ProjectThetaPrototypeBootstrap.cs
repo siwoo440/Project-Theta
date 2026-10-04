@@ -121,18 +121,26 @@ namespace ProjectTheta.Core
 
             NightModeState.Active = night;
 
+            RegionRiskState.Configure( // 현재 지역 위험 연결
+                GameSession.Instance == null // 게임 세션 확인
+                    ? null // 저장 없음
+                    : GameSession.Instance.Save, // 현재 저장
+                location.Id); // 현재 장소
+
             // 30일차: 숙련도(★)마다 목표 정기가 조금씩 오른다.
             stage.ApplyObjective(
                 NightModeLogic.GetTimeLimit(
                     location.TimeLimitSeconds,
                     night),
-                NightModeLogic.GetTarget(
-                    Save.MasteryLogic.GetTargetEssence(
-                        location.TargetEssence,
-                        session == null
-                            ? 0
-                            : session.Stars),
-                    night));
+                RegionRiskLogic.ApplyTargetEssence( // 위험 목표 적용
+                    NightModeLogic.GetTarget( // 심야 목표 적용
+                        Save.MasteryLogic.GetTargetEssence( // 숙련 목표 적용
+                            location.TargetEssence, // 장소 기본 목표
+                            session == null // 세션 유무 확인
+                                ? 0 // 기본 별 수
+                                : session.Stars), // 현재 별 수
+                        night), // 심야 여부
+                    RegionRiskState.CurrentMultiplier)); // 현재 위험 배율
 
             FollowerManager followers =
                 player.GetComponent<
@@ -156,7 +164,8 @@ namespace ProjectTheta.Core
 
             // 카메라 배경색을 시간대로 덮어쓰므로 카메라를 만든 뒤에 둔다.
             TimeOfDayOverlay.Create(
-                location.TimeOfDay);
+                RegionRiskLogic.ToLocationTime( // 세계 시간 변환
+                    RegionRiskState.CurrentTime)); // 현재 세계 시간
 
             for (int floor = 0;
                  floor < floorCount;

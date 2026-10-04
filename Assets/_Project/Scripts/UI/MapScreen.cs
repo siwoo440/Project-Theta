@@ -654,7 +654,7 @@ namespace ProjectTheta.UI
                 UiFactory.CreateText(
                     fill.transform,
                     "Detail",
-                    $"난이도 {LocationGuideLogic.FormatDifficulty(LocationGuideCatalog.Get(location.Id).Difficulty)}  ·  {LocationCatalog.GetTimeLabel(location.TimeOfDay)}",
+                    $"난이도 {LocationGuideLogic.FormatDifficulty(LocationGuideCatalog.Get(location.Id).Difficulty)}  ·  {RegionRiskLogic.BuildMapSummary(CurrentSave, location.Id)}",
                     UiTheme.FontSmall,
                     UiTheme.TextMuted,
                     TextAnchor.MiddleLeft);
@@ -1116,17 +1116,23 @@ namespace ProjectTheta.UI
                     (int)location.Id);
 
             _infoTime.text =
-                $"{LocationCatalog.GetTimeLabel(location.TimeOfDay)}  ·  {LocationCatalog.GetObjectiveLabel(location.Objective)}";
+                $"{RegionRiskLogic.BuildMapSummary(CurrentSave, location.Id)}  ·  {LocationCatalog.GetObjectiveLabel(location.Objective)}";
 
             _infoTime.color =
                 LocationCatalog.GetTimeColor(
-                    location.TimeOfDay);
+                    RegionRiskLogic.ToLocationTime( // 세계 시간 색상 변환
+                        RegionRiskLogic.GetTime( // 현재 세계 시간 조회
+                            CurrentSave))); // 현재 저장
 
             _infoDifficulty.text = $"난이도 {LocationGuideLogic.FormatDifficulty(guide.Difficulty)}";
             _infoNumber.text = LocationGuideLogic.FormatNumber(_candidates.IndexOf(location.Id));
             _infoName.text = location.DisplayName;
             _infoSummary.text = location.Summary;
-            _infoRows.text = LocationGuideLogic.BuildCoreRows(location, stars, _nightMode);
+            _infoRows.text = LocationGuideLogic.BuildCoreRows( // 핵심 수치 표시
+                location, // 선택 장소
+                stars, // 숙련 별 수
+                _nightMode, // 심야 여부
+                CurrentSave); // 현재 저장
 
             _infoRecommend.text =
                 _recommended != null &&

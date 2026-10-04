@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ProjectTheta.Companion;
 using ProjectTheta.Stage;
+using ProjectTheta.Stage.Locations; // 지역 위험 규칙 참조
 
 namespace ProjectTheta.Disruptors
 {
@@ -101,7 +102,9 @@ namespace ProjectTheta.Disruptors
                     before == AbilityPhase.Ready &&
                     WantsToStart(),
                     TelegraphSeconds,
-                    CooldownSeconds,
+                    RegionRiskLogic.ApplyAbilityCooldown( // 위험 재사용 시간 적용
+                        CooldownSeconds, // 능력별 기본 시간
+                        RegionRiskState.CurrentMultiplier), // 현재 위험 배율
                     alert == null
                         ? AlertLevel.Calm
                         : alert.Level);
