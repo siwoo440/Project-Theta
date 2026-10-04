@@ -10,7 +10,7 @@ namespace ProjectTheta.Save
     /// </summary>
     public static class SaveDataLogic
     {
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
 
         /// <summary>성장 계열 수다. 최면 / 관리 / 안정 / 기동.</summary>
         public const int UpgradeTrackCount = 4;

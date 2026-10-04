@@ -53,8 +53,10 @@ namespace ProjectTheta.UI
         private Text _line;
         private Text _next;
         private Image _portrait;
+        private RectTransform _choiceRoot; // 선택지 영역
 
         private readonly List<StoryScene> _queue = new List<StoryScene>();
+        private readonly List<UiButton> _choiceButtons = new List<UiButton>(); // 선택지 버튼 목록
         private int _sceneIndex;
         private int _lineIndex;
         private float _elapsed;
@@ -62,7 +64,10 @@ namespace ProjectTheta.UI
         private bool _pauseHeld;
         private bool _reserved;
         private int _lastVisible;
+        private bool _waitingForChoice; // 선택 대기 여부
         private Action<StoryScene> _onSceneShown;
+        private Action<StoryScene> _onSceneCompleted; // 장면 완료 알림
+        private Action<StoryScene, StoryChoice> _onChoiceSelected; // 선택 결과 알림
         private Action _onFinished;
 
         public bool IsPlaying =>
@@ -167,6 +172,20 @@ namespace ProjectTheta.UI
             pulse.MaximumAlpha = 1f;
             pulse.Period = 0.9f;
 
+            _choiceRoot = // 선택지 영역 생성
+                new GameObject( // 선택지 오브젝트 생성
+                    "Choices", // 오브젝트 이름
+                    typeof(RectTransform)) // 위치 구성 요소
+                .GetComponent<RectTransform>(); // 위치 구성 요소 조회
+            _choiceRoot.SetParent(root, false); // 대사창 아래 배치
+            UiFactory.Place( // 선택지 영역 배치
+                _choiceRoot, // 선택지 위치
+                new Vector2(0.5f, 0f), // 아래 가운데 기준
+                new Vector2(0.5f, 0f), // 아래 가운데 축
+                new Vector2(0f, 350f), // 대사창 위 위치
+                new Vector2(1000f, 60f)); // 선택지 영역 크기
+            _choiceRoot.gameObject.SetActive(false); // 초기 숨김
+
             _sceneTitle = UiFactory.CreateText(root, "SceneTitle", string.Empty, UiTheme.FontSubheading, UiTheme.Gold, TextAnchor.MiddleLeft, FontStyle.Bold);
             UiFactory.Place(_sceneTitle.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 0f), new Vector2(-BoxWidth * 0.5f, 290f), new Vector2(900f, 32f));
 
@@ -187,6 +206,23 @@ namespace ProjectTheta.UI
             Action<StoryScene> onSceneShown,
             Action onFinished)
         {
+            Play( // 확장 재생 호출
+                scenes, // 장면 목록
+                pauseGame, // 일시정지 여부
+                onSceneShown, // 시작 알림
+                null, // 완료 알림 없음
+                null, // 선택 알림 없음
+                onFinished); // 전체 완료 알림
+        }
+
+        public void Play( // 진행 상태 지원 재생
+            IList<StoryScene> scenes, // 장면 목록
+            bool pauseGame, // 일시정지 여부
+            Action<StoryScene> onSceneShown, // 시작 알림
+            Action<StoryScene> onSceneCompleted, // 완료 알림
+            Action<StoryScene, StoryChoice> onChoiceSelected, // 선택 알림
+            Action onFinished) // 전체 완료 알림
+        {
             _queue.Clear();
 
             if (scenes != null)
@@ -202,6 +238,8 @@ namespace ProjectTheta.UI
             }
 
             _onSceneShown = onSceneShown;
+            _onSceneCompleted = onSceneCompleted; // 완료 알림 저장
+            _onChoiceSelected = onChoiceSelected; // 선택 알림 저장
             _onFinished = onFinished;
 
             if (_queue.Count == 0 ||
@@ -233,6 +271,8 @@ namespace ProjectTheta.UI
             int index)
         {
             _sceneIndex = index;
+            _waitingForChoice = false; // 선택 대기 초기화
+            HideChoices(); // 이전 선택지 숨김
 
             StoryScene scene = _queue[index];
 
@@ -248,6 +288,8 @@ namespace ProjectTheta.UI
             _lineIndex = index;
             _elapsed = 0f;
             _lastVisible = 0;
+            _waitingForChoice = false; // 선택 대기 해제
+            HideChoices(); // 선택지 숨김
 
             StoryLine line = _queue[_sceneIndex].Lines[index];
             bool narration = string.IsNullOrEmpty(line.Speaker);
@@ -300,6 +342,11 @@ namespace ProjectTheta.UI
                 return;
             }
 
+            if (_waitingForChoice) // 선택 대기 확인
+            { // 입력 차단 시작
+                return; // 일반 진행 차단
+            } // 입력 차단 끝
+
             StoryLine line = CurrentLine;
 
             // 글자가 나오는 중이면 먼저 다 보여 준다.
@@ -320,15 +367,98 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            if (_sceneIndex + 1 < _queue.Count)
-            {
-                ShowScene(_sceneIndex + 1);
+            StoryScene scene = _queue[_sceneIndex]; // 현재 장면 조회
 
-                return;
-            }
+            if (scene.Choices.Length > 0) // 선택지 존재 확인
+            { // 선택 시작
+                ShowChoices(scene); // 선택지 표시
 
-            Finish();
+                return; // 선택 대기
+            } // 선택 끝
+
+            CompleteCurrentScene(); // 현재 장면 완료
         }
+
+        private void ShowChoices(StoryScene scene) // 선택지 표시
+        { // 표시 시작
+            HideChoices(); // 이전 선택지 정리
+            _waitingForChoice = true; // 선택 대기 설정
+            _next.enabled = false; // 다음 표시 숨김
+            _choiceRoot.gameObject.SetActive(true); // 선택지 영역 표시
+
+            float width = Mathf.Min(300f, 960f / Mathf.Max(1, scene.Choices.Length)); // 버튼 너비 계산
+
+            for (int i = 0; i < scene.Choices.Length; i++) // 선택지 순회
+            { // 순회 시작
+                int choiceIndex = i; // 콜백 번호 복사
+                StoryChoice choice = scene.Choices[i]; // 선택지 조회
+                UiButton button = UiFactory.CreateButton( // 선택 버튼 생성
+                    _choiceRoot, // 선택지 영역
+                    $"Choice{i}", // 버튼 이름
+                    choice.Text, // 표시 문구
+                    UiTheme.FontSmall, // 글자 크기
+                    true); // 강조 버튼
+                float totalWidth = width * scene.Choices.Length; // 전체 버튼 너비
+                float x = -totalWidth * 0.5f + width * 0.5f + width * i; // 버튼 가로 위치
+                UiFactory.Place( // 버튼 배치
+                    button.Background.rectTransform, // 버튼 위치
+                    new Vector2(0.5f, 0.5f), // 가운데 기준
+                    new Vector2(0.5f, 0.5f), // 가운데 축
+                    new Vector2(x, 0f), // 가로 위치
+                    new Vector2(width - 12f, 52f)); // 버튼 크기
+                button.Button.onClick.AddListener(() => SelectChoice(choiceIndex)); // 선택 처리 연결
+                _choiceButtons.Add(button); // 버튼 목록 추가
+            } // 순회 끝
+        } // 표시 끝
+
+        private void SelectChoice(int index) // 선택지 처리
+        { // 처리 시작
+            StoryScene scene = _queue[_sceneIndex]; // 현재 장면 조회
+
+            if (!_waitingForChoice || index < 0 || index >= scene.Choices.Length) // 선택 유효성 확인
+            { // 거부 시작
+                return; // 선택 거부
+            } // 거부 끝
+
+            _onChoiceSelected?.Invoke(scene, scene.Choices[index]); // 선택 결과 알림
+            CompleteCurrentScene(); // 현재 장면 완료
+        } // 처리 끝
+
+        private void CompleteCurrentScene() // 현재 장면 완료
+        { // 완료 시작
+            StoryScene scene = _queue[_sceneIndex]; // 현재 장면 조회
+            _onSceneCompleted?.Invoke(scene); // 완료 알림
+            HideChoices(); // 선택지 숨김
+
+            if (_sceneIndex + 1 < _queue.Count) // 다음 장면 확인
+            { // 다음 장면 시작
+                ShowScene(_sceneIndex + 1); // 다음 장면 표시
+
+                return; // 완료 처리 종료
+            } // 다음 장면 끝
+
+            Finish(); // 전체 재생 종료
+        } // 완료 끝
+
+        private void HideChoices() // 선택지 숨김
+        { // 숨김 시작
+            _waitingForChoice = false; // 선택 대기 해제
+
+            foreach (UiButton button in _choiceButtons) // 버튼 순회
+            { // 순회 시작
+                if (button.Background != null) // 버튼 존재 확인
+                { // 제거 시작
+                    Destroy(button.Background.gameObject); // 버튼 제거
+                } // 제거 끝
+            } // 순회 끝
+
+            _choiceButtons.Clear(); // 버튼 목록 비우기
+
+            if (_choiceRoot != null) // 영역 존재 확인
+            { // 숨김 시작
+                _choiceRoot.gameObject.SetActive(false); // 선택지 영역 숨김
+            } // 숨김 끝
+        } // 숨김 끝
 
         /// <summary>남은 장면을 모두 본 것으로 남기고 닫는다.</summary>
         private void SkipAll()
@@ -338,10 +468,39 @@ namespace ProjectTheta.UI
                 return;
             }
 
-            for (int i = _sceneIndex + 1; i < _queue.Count; i++)
+            int choiceSceneIndex = StoryPlaybackLogic.GetSkipStopIndex( // 다음 선택 장면 조회
+                _queue, // 남은 장면 목록
+                _sceneIndex); // 현재 장면 번호
+            int completeThrough = choiceSceneIndex >= 0 // 선택 장면 존재 확인
+                ? choiceSceneIndex - 1 // 선택 장면 직전까지 완료
+                : _queue.Count - 1; // 모든 장면 완료
+
+            for (int i = _sceneIndex; i <= completeThrough; i++)
             {
-                _onSceneShown?.Invoke(_queue[i]);
+                if (i > _sceneIndex) // 아직 시작하지 않은 장면 확인
+                { // 시작 기록 시작
+                    _onSceneShown?.Invoke(_queue[i]); // 장면 시작 알림
+                } // 시작 기록 끝
+
+                _onSceneCompleted?.Invoke(_queue[i]); // 장면 완료 알림
             }
+
+            if (choiceSceneIndex >= 0) // 선택 장면 존재 확인
+            { // 선택 이동 시작
+                if (choiceSceneIndex != _sceneIndex) // 다른 장면 확인
+                { // 장면 시작
+                    ShowScene(choiceSceneIndex); // 선택 장면 표시
+                } // 장면 시작 끝
+
+                StoryScene choiceScene = _queue[choiceSceneIndex]; // 선택 장면 조회
+                int lastLine = choiceScene.Lines.Length - 1; // 마지막 대사 번호
+                ShowLine(lastLine); // 마지막 대사 표시
+                _elapsed = StoryLogic.GetLineSeconds(choiceScene.Lines[lastLine].Text.Length); // 전체 대사 시간 적용
+                RefreshLine(); // 전체 대사 표시
+                ShowChoices(choiceScene); // 선택지 표시
+
+                return; // 선택 대기
+            } // 선택 이동 끝
 
             Finish();
         }
@@ -356,9 +515,12 @@ namespace ProjectTheta.UI
             UiEscapeStack.Remove(this);
             ReleasePause();
             ReleaseReserve();
+            HideChoices(); // 선택지 정리
 
             _queue.Clear();
             _onSceneShown = null;
+            _onSceneCompleted = null; // 완료 알림 해제
+            _onChoiceSelected = null; // 선택 알림 해제
 
             Action callback = _onFinished;
             _onFinished = null;

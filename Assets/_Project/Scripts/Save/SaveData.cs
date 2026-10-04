@@ -2,6 +2,21 @@
 
 namespace ProjectTheta.Save
 {
+    [Serializable] // 저장 직렬화 표시
+    public struct StoryChoiceRecord // 이야기 선택 저장 자료
+    { // 자료 시작
+        public string StoryId; // 장면 ID
+        public string ChoiceId; // 선택 ID
+
+        public StoryChoiceRecord( // 선택 자료 생성
+            string storyId, // 장면 ID
+            string choiceId) // 선택 ID
+        { // 생성 시작
+            StoryId = storyId ?? string.Empty; // 장면 ID 저장
+            ChoiceId = choiceId ?? string.Empty; // 선택 ID 저장
+        } // 생성 끝
+    } // 자료 끝
+
     /// <summary>
     /// 장소 한 번의 결과를 스테이지에서 허브 · 지도로 넘기는 묶음이다.
     /// 29일차부터 누적 통계(<see cref="PlayStats"/>)에 쓸 숫자도 함께 담는다.
@@ -112,6 +127,11 @@ namespace ProjectTheta.Save
         /// <summary>본 이야기 장면 ID다 (<see cref="Story.StoryLogic"/>).</summary>
         public string[] SeenStories = new string[0];
 
+        // --- 42일차: 이야기 진행 상태 ---
+        public string[] CompletedStories = new string[0]; // 완료 장면 ID
+        public StoryChoiceRecord[] StoryChoices = new StoryChoiceRecord[0]; // 장면별 선택 결과
+        public string ActiveStoryId = string.Empty; // 진행 중 장면 ID
+
         // --- 29일차 ---
         /// <summary>지금까지의 누적 통계다. 지도의 [통계] 창이 보여 준다.</summary>
         public PlayStats Stats = new PlayStats();
@@ -166,6 +186,13 @@ namespace ProjectTheta.Save
                     SeenStories = SeenStories == null
                         ? new string[0]
                         : (string[])SeenStories.Clone(),
+                    CompletedStories = CompletedStories == null // 완료 장면 확인
+                        ? new string[0] // 빈 완료 목록
+                        : (string[])CompletedStories.Clone(), // 완료 장면 복제
+                    StoryChoices = StoryChoices == null // 선택 목록 확인
+                        ? new StoryChoiceRecord[0] // 빈 선택 목록
+                        : (StoryChoiceRecord[])StoryChoices.Clone(), // 선택 목록 복제
+                    ActiveStoryId = ActiveStoryId ?? string.Empty, // 진행 장면 복제
                     UpgradeLevels = new int[UpgradeLevels?.Length ?? 4],
                     Stats = Stats == null ? new PlayStats() : Stats.Clone(),
                     LocationRecords = new LocationStats[LocationRecords?.Length ?? 0],

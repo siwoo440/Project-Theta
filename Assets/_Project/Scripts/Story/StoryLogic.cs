@@ -21,20 +21,17 @@ namespace ProjectTheta.Story
         public static void Normalize(
             SaveData save)
         {
-            if (save != null &&
-                save.SeenStories == null)
-            {
-                save.SeenStories = new string[0];
-            }
+            StoryProgressLogic.Normalize( // 이야기 진행 보정
+                save); // 저장 자료
         }
 
         public static bool IsSeen(
             SaveData save,
             string id)
         {
-            return save != null &&
-                   save.SeenStories != null &&
-                   Array.IndexOf(save.SeenStories, id) >= 0;
+            return StoryProgressLogic.IsSeen( // 본 장면 판정
+                save, // 저장 자료
+                id); // 장면 ID
         }
 
         /// <summary>본 장면으로 남긴다. 처음 남겼으면 true다.</summary>
@@ -42,21 +39,16 @@ namespace ProjectTheta.Story
             SaveData save,
             string id)
         {
-            if (save == null ||
-                string.IsNullOrEmpty(id) ||
-                IsSeen(save, id))
-            {
-                return false;
-            }
+            bool changed = // 신규 완료 여부
+                !StoryProgressLogic.IsCompleted( // 기존 완료 확인
+                    save, // 저장 자료
+                    id); // 장면 ID
 
-            Normalize(save);
-
-            string[] grown = new string[save.SeenStories.Length + 1];
-            Array.Copy(save.SeenStories, grown, save.SeenStories.Length);
-            grown[grown.Length - 1] = id;
-            save.SeenStories = grown;
-
-            return true;
+            return StoryProgressLogic.Complete( // 기존 호출은 완료 처리
+                       save, // 저장 자료
+                       id, // 장면 ID
+                       false) && // 자동 재생 처리
+                   changed; // 신규 여부 반환
         }
 
         /// <summary>그 장소에 들어갈 때 보여 줄 장면이다. 이미 봤으면 null이다.</summary>
@@ -64,17 +56,17 @@ namespace ProjectTheta.Story
             SaveData save,
             LocationId location)
         {
-            foreach (StoryScene scene in StoryCatalog.All)
-            {
-                if (scene.Trigger == StoryTrigger.LocationEnter &&
-                    scene.Location == location &&
-                    !IsSeen(save, scene.Id))
-                {
-                    return scene;
-                }
-            }
+            List<StoryScene> pending = // 입장 대기열
+                StoryQueueLogic.GetAvailable( // 사건별 장면 조회
+                    save, // 저장 자료
+                    StoryCatalog.All, // 전체 장면
+                    new StoryContext( // 입장 사건 생성
+                        StoryEventType.LocationEnter, // 장소 입장 사건
+                        location)); // 입장 장소
 
-            return null;
+            return pending.Count > 0 // 장면 존재 확인
+                ? pending[0] // 첫 장면 반환
+                : null; // 장면 없음
         }
 
         /// <summary>조건을 채웠는지다. 장소 입장 장면은 여기서 다루지 않는다(항상 false).</summary>
@@ -82,65 +74,32 @@ namespace ProjectTheta.Story
             SaveData save,
             StoryScene scene)
         {
-            if (save == null ||
-                scene == null)
-            {
-                return false;
-            }
-
-            switch (scene.Trigger)
-            {
-                case StoryTrigger.LocationClear:
-                    return PlayStatsLogic.Get(save, (int)scene.Location).Clears > 0;
-
-                case StoryTrigger.LocationsCleared:
-                    return AchievementLogic.GetValue(save, AchievementStat.LocationsCleared) >= scene.Threshold;
-
-                case StoryTrigger.Endings:
-                    return save.Stats != null &&
-                           save.Stats.Endings >= scene.Threshold;
-
-                case StoryTrigger.Dominion:
-                    return DominionLogic.GetPercent(save) >= scene.Threshold;
-
-                default:
-                    return false;
-            }
+            return scene != null && // 장면 확인
+                   scene.EventType != StoryEventType.LocationEnter && // 입장 장면 제외
+                   StoryConditionLogic.AreMet( // 전체 조건 판정
+                       save, // 저장 자료
+                       scene.Conditions); // 장면 조건
         }
 
         /// <summary>지도 · 허브에 도착했을 때 보여 줄 장면들이다.</summary>
         public static List<StoryScene> GetPending(
             SaveData save)
         {
-            List<StoryScene> pending = new List<StoryScene>();
-
-            foreach (StoryScene scene in StoryCatalog.All)
-            {
-                if (!IsSeen(save, scene.Id) &&
-                    IsConditionMet(save, scene))
-                {
-                    pending.Add(scene);
-                }
-            }
-
-            return pending;
+            return StoryQueueLogic.GetAvailable( // 안전 구역 장면 조회
+                save, // 저장 자료
+                StoryCatalog.All, // 전체 장면
+                new StoryContext( // 안전 구역 사건 생성
+                    StoryEventType.SafeArea, // 안전 구역 사건
+                    LocationId.TrainingCenter)); // 기본 장소
         }
 
         /// <summary>본 장면들이다(표 순서). 다시 보기 목록이다.</summary>
         public static List<StoryScene> GetSeen(
             SaveData save)
         {
-            List<StoryScene> seen = new List<StoryScene>();
-
-            foreach (StoryScene scene in StoryCatalog.All)
-            {
-                if (IsSeen(save, scene.Id))
-                {
-                    seen.Add(scene);
-                }
-            }
-
-            return seen;
+            return StoryQueueLogic.GetReplayable( // 다시 보기 장면 조회
+                save, // 저장 자료
+                StoryCatalog.All); // 전체 장면
         }
 
         /// <summary>그 장소의 입장 · 클리어 장면 중 본 것이다.</summary>
@@ -152,7 +111,8 @@ namespace ProjectTheta.Story
 
             foreach (StoryScene scene in StoryCatalog.All)
             {
-                if (scene.HasLocation &&
+                if (scene.CanReplay && // 다시 보기 허용 확인
+                    scene.HasLocation &&
                     scene.Location == location &&
                     IsSeen(save, scene.Id))
                 {
@@ -170,7 +130,8 @@ namespace ProjectTheta.Story
 
             foreach (StoryScene scene in StoryCatalog.All)
             {
-                if (scene.HasLocation &&
+                if (scene.CanReplay && // 다시 보기 허용 확인
+                    scene.HasLocation &&
                     scene.Location == location)
                 {
                     count++;

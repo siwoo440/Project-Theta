@@ -20,6 +20,17 @@ namespace ProjectTheta.UI
             DialogueOverlay overlay,
             Action onFinished)
         {
+            return PlayPending( // 안전 구역 재생 호출
+                overlay, // 대사창
+                StoryEventType.SafeArea, // 안전 구역 사건
+                onFinished); // 완료 알림
+        }
+
+        public static bool PlayPending( // 사건별 대기 장면 재생
+            DialogueOverlay overlay, // 대사창
+            StoryEventType eventType, // 발생 사건
+            Action onFinished) // 완료 알림
+        {
             GameSession session = GameSession.Instance;
 
             if (session == null ||
@@ -31,7 +42,28 @@ namespace ProjectTheta.UI
                 return false;
             }
 
-            List<StoryScene> pending = StoryLogic.GetPending(session.Save);
+            List<StoryScene> pending = new List<StoryScene>(); // 전체 대기 목록
+
+            AddResultScenes( // 직전 결과 장면 우선 추가
+                session, // 게임 세션
+                pending); // 대기 목록
+
+            List<StoryScene> eventScenes = StoryQueueLogic.GetAvailable( // 현재 화면 장면 조회
+                session.Save, // 현재 저장
+                StoryCatalog.All, // 전체 장면
+                new StoryContext( // 현재 사건 생성
+                    eventType, // 발생 사건
+                    session.HasLastResult && session.LastResult.HasLocation // 직전 장소 확인
+                        ? (Stage.Locations.LocationId)session.LastResult.LocationId // 직전 장소 변환
+                        : Stage.Locations.LocationId.TrainingCenter)); // 기본 장소
+
+            foreach (StoryScene scene in eventScenes) // 화면 장면 순회
+            { // 순회 시작
+                if (!pending.Contains(scene)) // 중복 확인
+                { // 추가 시작
+                    pending.Add(scene); // 화면 장면 추가
+                } // 추가 끝
+            } // 순회 끝
 
             if (pending.Count == 0)
             {
@@ -52,6 +84,35 @@ namespace ProjectTheta.UI
             bool pauseGame,
             Action onFinished)
         {
+            PlayInternal( // 자동 재생 호출
+                overlay, // 대사창
+                scenes, // 장면 목록
+                pauseGame, // 일시정지 여부
+                false, // 진행 저장 허용
+                onFinished); // 완료 알림
+        }
+
+        public static void PlayReplay( // 일기장 다시 보기
+            DialogueOverlay overlay, // 대사창
+            IList<StoryScene> scenes, // 장면 목록
+            bool pauseGame, // 일시정지 여부
+            Action onFinished) // 완료 알림
+        { // 재생 시작
+            PlayInternal( // 다시 보기 호출
+                overlay, // 대사창
+                scenes, // 장면 목록
+                pauseGame, // 일시정지 여부
+                true, // 저장 변경 차단
+                onFinished); // 완료 알림
+        } // 재생 끝
+
+        private static void PlayInternal( // 공용 이야기 재생
+            DialogueOverlay overlay, // 대사창
+            IList<StoryScene> scenes, // 장면 목록
+            bool pauseGame, // 일시정지 여부
+            bool replay, // 다시 보기 여부
+            Action onFinished) // 완료 알림
+        {
             bool changed = false;
 
             overlay.Play(
@@ -62,11 +123,37 @@ namespace ProjectTheta.UI
                     GameSession session = GameSession.Instance;
 
                     if (session != null &&
-                        StoryLogic.MarkSeen(session.Save, scene.Id))
+                        StoryProgressLogic.Begin( // 장면 시작 저장
+                            session.Save, // 현재 저장
+                            scene.Id, // 장면 ID
+                            replay)) // 다시 보기 여부
                     {
-                        changed = true;
+                        changed = !replay; // 저장 변경 기록
+
+                        if (!replay) // 자동 재생 확인
+                        { // 즉시 저장 시작
+                            session.WriteSave(); // 진행 장면 저장
+                        } // 즉시 저장 끝
                     }
                 },
+                scene => // 장면 완료 처리
+                { // 완료 시작
+                    GameSession session = GameSession.Instance; // 게임 세션 조회
+
+                    if (session != null && StoryProgressLogic.Complete(session.Save, scene.Id, replay)) // 완료 저장
+                    { // 변경 기록 시작
+                        changed = changed || !replay; // 저장 변경 기록
+                    } // 변경 기록 끝
+                }, // 완료 끝
+                (scene, choice) => // 선택 결과 처리
+                { // 선택 시작
+                    GameSession session = GameSession.Instance; // 게임 세션 조회
+
+                    if (session != null && StoryProgressLogic.SetChoice(session.Save, scene.Id, choice.Id, replay)) // 선택 저장
+                    { // 변경 기록 시작
+                        changed = changed || !replay; // 저장 변경 기록
+                    } // 변경 기록 끝
+                }, // 선택 끝
                 () =>
                 {
                     if (changed)
@@ -77,5 +164,49 @@ namespace ProjectTheta.UI
                     onFinished?.Invoke();
                 });
         }
+
+        private static void AddResultScenes( // 직전 결과 사건 추가
+            GameSession session, // 게임 세션
+            List<StoryScene> pending) // 대기 목록
+        { // 추가 시작
+            if (session == null || !session.HasLastResult || !session.LastResult.HasLocation) // 결과 존재 확인
+            { // 중단 시작
+                return; // 추가 중단
+            } // 중단 끝
+
+            Stage.Locations.LocationId location = // 직전 장소
+                (Stage.Locations.LocationId)session.LastResult.LocationId; // 장소 번호 변환
+            List<StoryContext> contexts = new List<StoryContext>(); // 결과 사건 목록
+
+            if (session.LastResult.Cleared) // 클리어 여부 확인
+            { // 클리어 사건 시작
+                contexts.Add(new StoryContext(StoryEventType.LocationClear, location)); // 장소 클리어 추가
+            } // 클리어 사건 끝
+
+            if (session.LastResult.BossDefeated) // 보스 승리 확인
+            { // 승리 사건 시작
+                contexts.Add(new StoryContext(StoryEventType.BossVictory, location)); // 보스 승리 추가
+            } // 승리 사건 끝
+            else if (location == Stage.Locations.LocationId.RooftopClub && !session.LastResult.Cleared) // 보스 패배 확인
+            { // 패배 사건 시작
+                contexts.Add(new StoryContext(StoryEventType.BossDefeat, location)); // 보스 패배 추가
+            } // 패배 사건 끝
+
+            foreach (StoryContext context in contexts) // 결과 사건 순회
+            { // 순회 시작
+                List<StoryScene> resultScenes = StoryQueueLogic.GetAvailable( // 결과 장면 조회
+                    session.Save, // 현재 저장
+                    StoryCatalog.All, // 전체 장면
+                    context); // 결과 사건
+
+                foreach (StoryScene scene in resultScenes) // 결과 장면 순회
+                { // 장면 순회 시작
+                    if (!pending.Contains(scene)) // 중복 확인
+                    { // 추가 시작
+                        pending.Add(scene); // 결과 장면 추가
+                    } // 추가 끝
+                } // 장면 순회 끝
+            } // 순회 끝
+        } // 추가 끝
     }
 }

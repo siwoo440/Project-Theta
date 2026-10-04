@@ -9,6 +9,7 @@ using ProjectTheta.Presentation;
 using ProjectTheta.Run;
 using ProjectTheta.Save;
 using ProjectTheta.Stage.Locations;
+using ProjectTheta.Story; // 이야기 사건 참조
 using ProjectTheta.UI.Framework;
 
 namespace ProjectTheta.UI
@@ -141,7 +142,10 @@ namespace ProjectTheta.UI
 
             // 36일차: 첫 클리어 · 라이벌 도발 · 후일담
             _story = DialogueOverlay.Create(_canvas.transform, StoryPlayback.SortOrder);
-            StoryPlayback.PlayPending(_story, Refresh);
+            StoryPlayback.PlayPending( // 지도 이야기 재생
+                _story, // 대사창
+                StoryEventType.MapEnter, // 지도 진입 사건
+                Refresh); // 완료 뒤 갱신
         }
 
         private void Update()

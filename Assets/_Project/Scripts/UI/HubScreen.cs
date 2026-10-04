@@ -150,7 +150,10 @@ namespace ProjectTheta.UI
             }
 
             // 36일차: 첫 클리어 · 라이벌 도발 · 후일담
-            StoryPlayback.PlayPending(_story, Refresh);
+            StoryPlayback.PlayPending( // 허브 이야기 재생
+                _story, // 대사창
+                StoryEventType.HubReturn, // 허브 복귀 사건
+                Refresh); // 완료 뒤 갱신
         }
 
         private void Update()
@@ -816,7 +819,11 @@ namespace ProjectTheta.UI
             }
 
             GameAudio.Play(GameSfx.UiTick);
-            StoryPlayback.Play(_story, new[] { scene }, false, null);
+            StoryPlayback.PlayReplay( // 일기장 다시 보기
+                _story, // 대사창
+                new[] { scene }, // 선택 장면
+                false, // 허브 시간 유지
+                null); // 완료 알림 없음
         }
 
         // 표시 갱신 ------------------------------------------------------
