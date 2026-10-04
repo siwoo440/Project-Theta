@@ -259,7 +259,8 @@ namespace ProjectTheta.Save
 
             for (int i = 0; i < summaries.Count; i++)
             {
-                if (!summaries[i].Exists ||
+                if (!IsValid(summaries[i].Slot) || // 잘못된 칸 번호 제외
+                    !summaries[i].Exists ||
                     summaries[i].SavedTicks <= latestTicks)
                 {
                     continue;
