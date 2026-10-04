@@ -53,10 +53,14 @@ namespace ProjectTheta.UI
         private Text _line;
         private Text _next;
         private Image _portrait;
+        private Sprite _portraitFallbackSprite; // 임시 초상 그림
+        private Color _portraitFallbackColor; // 임시 초상 색상
         private RectTransform _choiceRoot; // 선택지 영역
 
         private readonly List<StoryScene> _queue = new List<StoryScene>();
         private readonly List<UiButton> _choiceButtons = new List<UiButton>(); // 선택지 버튼 목록
+        private readonly Dictionary<string, Sprite> _portraitCache = new Dictionary<string, Sprite>(); // 초상 캐시
+        private readonly HashSet<string> _missingPortraitPaths = new HashSet<string>(); // 누락 초상 경로 캐시
         private int _sceneIndex;
         private int _lineIndex;
         private float _elapsed;
@@ -140,6 +144,8 @@ namespace ProjectTheta.UI
             // 인물 그림 자리(지금은 옅은 빛)
             _portrait = UiDecor.CreateGlow(root, "Portrait", UiTheme.Accent, new Vector2(420f, 520f));
             _portrait.raycastTarget = false;
+            _portraitFallbackSprite = _portrait.sprite; // 임시 그림 보관
+            _portraitFallbackColor = _portrait.color; // 임시 색상 보관
             UiFactory.Place(_portrait.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-520f, 220f), new Vector2(420f, 520f));
 
             RectTransform box =
@@ -296,6 +302,7 @@ namespace ProjectTheta.UI
 
             _speakerTag.gameObject.SetActive(!narration);
             _speaker.text = line.Speaker;
+            RefreshPortrait(line); // 화자 초상 갱신
 
             if (ColorUtility.TryParseHtmlString(StoryLogic.GetSpeakerColor(line.Speaker), out Color color))
             {
@@ -304,6 +311,85 @@ namespace ProjectTheta.UI
 
             RefreshLine();
         }
+
+        private void RefreshPortrait( // 대화 초상 갱신
+            StoryLine line) // 현재 대사
+        { // 갱신 시작
+            if (_portrait == null) // 초상 영역 확인
+            { // 영역 없음 시작
+                return; // 갱신 종료
+            } // 영역 없음 끝
+
+            if (!CharacterArtCatalog.TryGetCharacterBySpeaker(line.Speaker, out CharacterArtId id)) // 주요 화자 확인
+            { // 주요 화자 아님 시작
+                _portrait.gameObject.SetActive(false); // 초상 숨김
+
+                return; // 갱신 종료
+            } // 주요 화자 아님 끝
+
+            _portrait.gameObject.SetActive(true); // 초상 표시
+            Sprite art = LoadPortraitSprite( // 초상 이미지 조회
+                CharacterArtCatalog.GetPortraitPaths(id, line.Expression)); // 표정별 후보 경로
+
+            if (art != null) // 정식 초상 확인
+            { // 정식 초상 시작
+                _portrait.sprite = art; // 정식 그림 적용
+                _portrait.color = Color.white; // 원본 색상 적용
+                _portrait.preserveAspect = true; // 원본 비율 유지
+
+                return; // 갱신 종료
+            } // 정식 초상 끝
+
+            _portrait.sprite = _portraitFallbackSprite; // 임시 그림 복원
+            _portrait.color = _portraitFallbackColor; // 임시 색상 복원
+            _portrait.preserveAspect = false; // 임시 그림 채우기
+        } // 갱신 끝
+
+        private Sprite LoadPortraitSprite( // 첫 유효 초상 조회
+            string[] paths) // 후보 경로 목록
+        { // 조회 시작
+            if (paths == null) // 후보 목록 확인
+            { // 목록 없음 시작
+                return null; // 초상 없음 반환
+            } // 목록 없음 끝
+
+            for (int i = 0; i < paths.Length; i++) // 후보 경로 순회
+            { // 순회 시작
+                string path = paths[i]; // 현재 경로 조회
+
+                if (_portraitCache.TryGetValue(path, out Sprite cached)) // 캐시 확인
+                { // 캐시 존재 시작
+                    return cached; // 캐시 초상 반환
+                } // 캐시 존재 끝
+
+                if (_missingPortraitPaths.Contains(path)) // 누락 경로 캐시 확인
+                { // 누락 경로 시작
+                    continue; // 다음 후보 이동
+                } // 누락 경로 끝
+
+                Texture2D texture = Resources.Load<Texture2D>(path); // 초상 텍스처 조회
+
+                if (texture == null) // 텍스처 없음 확인
+                { // 없음 시작
+                    _missingPortraitPaths.Add(path); // 누락 경로 저장
+
+                    continue; // 다음 후보 이동
+                } // 없음 끝
+
+                Sprite sprite = Sprite.Create( // 초상 스프라이트 생성
+                    texture, // 원본 텍스처
+                    new Rect(0f, 0f, texture.width, texture.height), // 전체 영역
+                    new Vector2(0.5f, 0f), // 아래 중앙 기준점
+                    100f); // 픽셀 단위
+
+                sprite.name = path.Replace('/', '_') + "_Dialogue"; // 스프라이트 이름 설정
+                _portraitCache[path] = sprite; // 초상 캐시 저장
+
+                return sprite; // 초상 반환
+            } // 순회 끝
+
+            return null; // 초상 없음 반환
+        } // 조회 끝
 
         private StoryLine CurrentLine =>
             _queue[_sceneIndex].Lines[_lineIndex];
@@ -579,6 +665,17 @@ namespace ProjectTheta.UI
             UiEscapeStack.Remove(this);
             ReleasePause();
             ReleaseReserve();
+
+            foreach (Sprite sprite in _portraitCache.Values) // 생성 초상 순회
+            { // 순회 시작
+                if (sprite != null) // 초상 존재 확인
+                { // 존재 시작
+                    Destroy(sprite); // 런타임 초상 정리
+                } // 존재 끝
+            } // 순회 끝
+
+            _portraitCache.Clear(); // 초상 캐시 비우기
+            _missingPortraitPaths.Clear(); // 누락 경로 캐시 비우기
         }
     }
 }

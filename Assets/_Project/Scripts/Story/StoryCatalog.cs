@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ProjectTheta.Presentation; // 캐릭터 표정 자료 참조
 using ProjectTheta.Stage.Locations;
 
 namespace ProjectTheta.Story
@@ -44,9 +45,12 @@ namespace ProjectTheta.Story
         public const string BossOpeningId = "story_14_rooftop_night"; // 루프탑 결전 개막 ID
         public const string BossVictoryId = "story_14_lumia_last_dialogue"; // 르미아 마지막 대화 ID
 
-        private static StoryLine L(string speaker, string text)
+        private static StoryLine L( // 대사 자료 생성
+            string speaker, // 화자 이름
+            string text, // 대사 내용
+            CharacterArtExpression expression = CharacterArtExpression.Default) // 초상 표정
         {
-            return new StoryLine(speaker, text);
+            return new StoryLine(speaker, text, expression); // 표정 포함 대사 반환
         }
 
         private static StoryLine N(string text)
@@ -220,7 +224,7 @@ namespace ProjectTheta.Story
                 null, // 선택지 없음
                 N("방으로 돌아온 뒤에도 리엘라는 르미아가 주인공에게 보인 관심을 계속 신경 쓴다."), // 관계 장면 도입
                 L(Protagonist, "르미아가 나한테 관심을 보인 게 그렇게 거슬려?"), // 질투 지적
-                L(Riella, "질투 아니거든. 내 계약자를 다른 서큐버스에게 빼앗기고 싶지 않을 뿐이야."), // 감정 노출
+                L(Riella, "질투 아니거든. 내 계약자를 다른 서큐버스에게 빼앗기고 싶지 않을 뿐이야.", CharacterArtExpression.Jealous), // 감정 노출
                 L(Protagonist, "그 말이 질투와 얼마나 다른지는 모르겠네."), // 관계 반응
                 N("두 사람은 아직 관계를 정의하지 않지만 서로를 계약 이상의 개인으로 의식하기 시작한다.")), // 관계 변화
 
@@ -424,9 +428,9 @@ namespace ProjectTheta.Story
                 false, // 지정 장소 일치
                 new[] { StoryCondition.StoryCompleted(BattleEveId) }, // 결전 전야 선행
                 N("루프탑의 군중과 정기가 붉은 금빛 계약망을 따라 르미아에게 모인다."), // 보스전 개막
-                L(Lumia, "도시의 밤을 두고 마지막으로 경쟁해 볼까?"), // 르미아 도전
-                L(Riella, "군중을 되찾고 보호막을 무너뜨린 뒤 본체의 연결을 끊어."), // 전투 단계 안내
-                L(Protagonist, "이번에는 사람도, 계약도 네 방식대로 묶게 두지 않아.")), // 주인공 선언
+                L(Lumia, "도시의 밤을 두고 마지막으로 경쟁해 볼까?", CharacterArtExpression.Provoking), // 르미아 도전
+                L(Riella, "군중을 되찾고 보호막을 무너뜨린 뒤 본체의 연결을 끊어.", CharacterArtExpression.Work), // 전투 단계 안내
+                L(Protagonist, "이번에는 사람도, 계약도 네 방식대로 묶게 두지 않아.", CharacterArtExpression.Angry)), // 주인공 선언
 
             Day44Scene( // 르미아 마지막 대화 생성
                 BossVictoryId, // 장면 ID
@@ -436,9 +440,9 @@ namespace ProjectTheta.Story
                 false, // 지정 장소 일치
                 new[] { StoryCondition.StoryCompleted(BossOpeningId) }, // 보스 개막 선행
                 N("붉은 금빛 계약망이 끊어지고 루프탑의 정기 흐름이 제자리로 돌아간다."), // 승리 결과
-                L(Lumia, "졌네. 적어도 네 선택이 리엘라의 명령만은 아니라는 건 알겠어."), // 패배 인정
-                L(Protagonist, "도시의 계약 흐름에서 물러나. 다음 선택은 그 뒤에 들어 줄게."), // 퇴각 요구
-                L(Lumia, "약속할게. 오늘 밤은 너희가 이겼어.")), // 르미아 퇴각
+                L(Lumia, "졌네. 적어도 네 선택이 리엘라의 명령만은 아니라는 건 알겠어.", CharacterArtExpression.Defeated), // 패배 인정
+                L(Protagonist, "도시의 계약 흐름에서 물러나. 다음 선택은 그 뒤에 들어 줄게.", CharacterArtExpression.Focused), // 퇴각 요구
+                L(Lumia, "약속할게. 오늘 밤은 너희가 이겼어.", CharacterArtExpression.Sincere)), // 르미아 퇴각
 
             // 고등학교 ---------------------------------------------------
             new StoryScene("enter_training", "야간 수업", StoryTrigger.LocationEnter, LocationId.TrainingCenter, 0,

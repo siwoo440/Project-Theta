@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using ProjectTheta.Presentation; // 주요 캐릭터 리소스 규칙 참조
 using ProjectTheta.UI.Framework;
 
 namespace ProjectTheta.UI
@@ -24,8 +25,6 @@ namespace ProjectTheta.UI
     public sealed class LoadingScreen : MonoBehaviour
     {
         private const int SortOrder = 30000;
-        private const string PlayerRoot = "Characters/Player";
-        private const string SuccubusRoot = "Characters/Succubus";
         private const int RunFrameCount = 4;
 
         private static LoadingScreen _current;
@@ -361,7 +360,8 @@ namespace ProjectTheta.UI
         {
             for (int i = 0; i < RunFrameCount; i++)
             {
-                _runSprites[i] = LoadSprite($"{PlayerRoot}/Move_{i}");
+                _runSprites[i] = LoadFirstSprite( // 주인공 이동 이미지 조회
+                    CharacterArtCatalog.GetMovementPaths(CharacterArtId.Protagonist, i)); // 정식·기존 후보 경로
             }
 
             _runnerImage =
@@ -398,7 +398,8 @@ namespace ProjectTheta.UI
 
             UiFactory.Place(_companion, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(100f, 100f));
 
-            Sprite art = LoadSprite($"{SuccubusRoot}/Idle");
+            Sprite art = LoadFirstSprite( // 리엘라 대기 이미지 조회
+                CharacterArtCatalog.GetIdlePaths(CharacterArtId.Riella)); // 정식·기존 후보 경로
 
             if (art != null)
             {
@@ -523,5 +524,26 @@ namespace ProjectTheta.UI
 
             return sprite;
         }
+
+        private Sprite LoadFirstSprite( // 첫 유효 로딩 이미지 조회
+            string[] paths) // 후보 경로 목록
+        { // 조회 시작
+            if (paths == null) // 후보 목록 확인
+            { // 목록 없음 시작
+                return null; // 이미지 없음 반환
+            } // 목록 없음 끝
+
+            for (int i = 0; i < paths.Length; i++) // 후보 경로 순회
+            { // 순회 시작
+                Sprite sprite = LoadSprite(paths[i]); // 현재 이미지 조회
+
+                if (sprite != null) // 이미지 존재 확인
+                { // 존재 시작
+                    return sprite; // 첫 이미지 반환
+                } // 존재 끝
+            } // 순회 끝
+
+            return null; // 이미지 없음 반환
+        } // 조회 끝
     }
 }

@@ -16,7 +16,7 @@ namespace ProjectTheta.UI
     /// 누르면 머리 오른쪽 위 말풍선에 대사가 한 글자씩 나오고, 잠시 뒤 사라진다.
     /// 오른쪽 끝 자리에서는 말풍선이 머리 왼쪽 위로 뒤집힌다.
     ///
-    /// 그림: Resources/Characters/Succubus/Room_Stand · Room_Sit → Idle → 임시 실루엣 순서로 찾는다.
+    /// 그림: Resources/Characters/Riella/Room_Stand · Room_Sit → Idle → 기존 Succubus → 임시 실루엣 순서로 찾는다.
     /// </summary>
     public sealed class HubSuccubus : MonoBehaviour
     {
@@ -96,9 +96,8 @@ namespace ProjectTheta.UI
 
         private void BuildArt()
         {
-            Sprite art =
-                LoadSprite(HubSuccubusLogic.GetArtPath(_spot.Pose)) ??
-                LoadSprite(HubSuccubusLogic.FallbackArtPath);
+            Sprite art = LoadFirstSprite( // 리엘라 허브 이미지 조회
+                CharacterArtCatalog.GetHubPaths(_spot.Pose == HubSuccubusPose.Sit)); // 자세별 후보 경로
 
             if (art != null)
             {
@@ -308,28 +307,38 @@ namespace ProjectTheta.UI
             }
         }
 
-        private Sprite LoadSprite(
-            string path)
-        {
-            Texture2D texture = Resources.Load<Texture2D>(path);
+        private Sprite LoadFirstSprite( // 첫 유효 허브 이미지 조회
+            string[] paths) // 후보 경로 목록
+        { // 조회 시작
+            if (paths == null) // 후보 목록 확인
+            { // 목록 없음 시작
+                return null; // 이미지 없음 반환
+            } // 목록 없음 끝
 
-            if (texture == null)
-            {
-                return null;
-            }
+            for (int i = 0; i < paths.Length; i++) // 후보 경로 순회
+            { // 순회 시작
+                string path = paths[i]; // 현재 경로 조회
+                Texture2D texture = Resources.Load<Texture2D>(path); // 텍스처 조회
 
-            Sprite sprite =
-                Sprite.Create(
-                    texture,
-                    new Rect(0f, 0f, texture.width, texture.height),
-                    new Vector2(0.5f, 0f),
-                    100f);
+                if (texture == null) // 텍스처 없음 확인
+                { // 없음 시작
+                    continue; // 다음 후보 이동
+                } // 없음 끝
 
-            sprite.name = path.Replace('/', '_') + "_Hub";
-            _created.Add(sprite);
+                Sprite sprite = Sprite.Create( // 허브 스프라이트 생성
+                    texture, // 원본 텍스처
+                    new Rect(0f, 0f, texture.width, texture.height), // 전체 영역
+                    new Vector2(0.5f, 0f), // 발 기준점
+                    100f); // 픽셀 단위
 
-            return sprite;
-        }
+                sprite.name = path.Replace('/', '_') + "_Hub"; // 스프라이트 이름 설정
+                _created.Add(sprite); // 정리 목록 추가
+
+                return sprite; // 첫 이미지 반환
+            } // 순회 끝
+
+            return null; // 이미지 없음 반환
+        } // 조회 끝
 
         private void OnDestroy()
         {

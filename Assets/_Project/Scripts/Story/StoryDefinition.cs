@@ -1,3 +1,4 @@
+using ProjectTheta.Presentation; // 캐릭터 표정 자료 참조
 using ProjectTheta.Stage.Locations; // 장소 자료 참조
 
 namespace ProjectTheta.Story // 이야기 공간
@@ -122,13 +123,16 @@ namespace ProjectTheta.Story // 이야기 공간
     { // 자료 시작
         public readonly string Speaker; // 말하는 사람
         public readonly string Text; // 대사 내용
+        public readonly CharacterArtExpression Expression; // 초상 표정
 
         public StoryLine( // 대사 생성
             string speaker, // 말하는 사람
-            string text) // 대사 내용
+            string text, // 대사 내용
+            CharacterArtExpression expression = CharacterArtExpression.Default) // 초상 표정
         { // 생성 시작
             Speaker = speaker ?? string.Empty; // 화자 저장
             Text = text ?? string.Empty; // 내용 저장
+            Expression = expression; // 표정 저장
         } // 생성 끝
     } // 자료 끝
 

@@ -1110,7 +1110,7 @@ namespace ProjectTheta.Core
                     RuntimeCharacterSpriteAnimator>();
 
             animator.Configure(
-                "Characters/Player",
+                CharacterArtId.Protagonist, // 주인공 정식 경로와 기존 폴백
                 9f,
                 390f);
 

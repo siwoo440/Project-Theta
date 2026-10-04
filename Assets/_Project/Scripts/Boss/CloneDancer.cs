@@ -57,7 +57,7 @@ namespace ProjectTheta.Boss
             RuntimeCharacterSpriteAnimator animator =
                 go.AddComponent<RuntimeCharacterSpriteAnimator>();
 
-            animator.Configure(profile.SpriteRoot, 7f, 390f);
+            animator.Configure(CharacterArtId.Lumia, 7f, 390f); // 르미아 분신 정식 경로와 기존 폴백
             animator.SetBaseTint(profile.Tint);
 
             go.AddComponent<DepthSortByY>();
