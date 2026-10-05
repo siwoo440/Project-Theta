@@ -311,11 +311,11 @@ git add Devlogs/Day48 docs/superpowers/plans/2026-10-05-day48-art-integration.md
 git commit -m "48일차 : NPC·지역·스토리 CG 아트 1차 적용"
 ```
 
-- [ ] **Step 6: Google 기획서 갱신**
+- [x] **Step 6: Google 기획서 갱신**
 
 최신 리비전과 `개발 방향` 탭의 48일차 행을 다시 읽고 상태 셀만 `예정 → 완료`로 변경한다. Step 5의 최종 기록 커밋 링크를 같은 셀에 적용하고 재조회한다.
 
-- [ ] **Step 7: `origin/main` 푸시와 해시 확인**
+- [x] **Step 7: `origin/main` 푸시와 해시 확인**
 
 Run: `git push origin main`
 
