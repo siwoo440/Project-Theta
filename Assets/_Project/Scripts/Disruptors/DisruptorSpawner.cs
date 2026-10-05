@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ProjectTheta.Companion;
 using ProjectTheta.Core;
+using ProjectTheta.Presentation; // 월드 아트 경로 참조
 using ProjectTheta.Stage;
 using ProjectTheta.Stage.Locations;
 
@@ -421,9 +422,18 @@ namespace ProjectTheta.Disruptors
                     go.AddComponent<RuntimeCharacterSpriteAnimator>();
 
                 animator.Configure(
-                    profile.SpriteRoot,
-                    7f,
-                    390f);
+                    WorldArtCatalog.GetDisruptorIdlePaths( // 방해 적 대기 후보 조회
+                        profile.Kind, // 방해 적 종류 전달
+                        profile.SpriteRoot), // 기존 루트 전달
+                    new[] // 방해 적 이동 후보 목록
+                    { // 목록 시작
+                        WorldArtCatalog.GetDisruptorMovementPaths(profile.Kind, profile.SpriteRoot, 0), // 첫 이동 후보
+                        WorldArtCatalog.GetDisruptorMovementPaths(profile.Kind, profile.SpriteRoot, 1), // 둘째 이동 후보
+                        WorldArtCatalog.GetDisruptorMovementPaths(profile.Kind, profile.SpriteRoot, 2), // 셋째 이동 후보
+                        WorldArtCatalog.GetDisruptorMovementPaths(profile.Kind, profile.SpriteRoot, 3) // 넷째 이동 후보
+                    }, // 목록 끝
+                    7f, // 초당 프레임 지정
+                    390f); // 픽셀 단위 지정
 
                 animator.SetBaseTint(
                     profile.Tint);

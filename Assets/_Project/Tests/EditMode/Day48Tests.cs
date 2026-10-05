@@ -1,4 +1,5 @@
 using NUnit.Framework; // 테스트 도구 참조
+using ProjectTheta.Core; // 런타임 애니메이터 참조
 using ProjectTheta.Disruptors; // 방해 적 종류 참조
 using ProjectTheta.Presentation; // 월드 아트 도구 참조
 using ProjectTheta.Stage.Locations; // 지역 식별자 참조
@@ -75,6 +76,35 @@ namespace ProjectTheta.Tests.EditMode // 편집 모드 테스트 공간
                     DisruptorKind.Dj, // DJ 선택
                     null, // 기존 루트 없음
                     -1)); // 음수 프레임 지정
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void CivilianMovementPaths_PreserveEachCanonicalAndLegacyFrame() // 시민 프레임 폴백 검증
+        { // 테스트 시작
+            CollectionAssert.AreEqual( // 이동 경로 순서 확인
+                new[] // 예상 경로 목록
+                { // 목록 시작
+                    "Characters/NPC/Civilian/Walk_3", // 정식 걷기 경로
+                    "Characters/NPC/Civilian/Move_3", // 정식 이동 호환 경로
+                    "Characters/NPC_Female/Walk_3", // 기존 걷기 경로
+                    "Characters/NPC_Female/Move_3" // 기존 이동 경로
+                }, // 목록 끝
+                WorldArtCatalog.GetCivilianMovementPaths(3)); // 네 번째 프레임 경로 조회
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void RuntimeAnimator_ExposesCandidateArrayConfigureOverload() // 후보 배열 설정 인터페이스 검증
+        { // 테스트 시작
+            Assert.IsNotNull( // 오버로드 존재 확인
+                typeof(RuntimeCharacterSpriteAnimator).GetMethod( // 공개 메서드 조회
+                    "Configure", // 설정 메서드 이름
+                    new[] // 매개변수 형식 목록
+                    { // 목록 시작
+                        typeof(string[]), // 대기 후보 배열 형식
+                        typeof(string[][]), // 이동 후보 배열 형식
+                        typeof(float), // 초당 프레임 형식
+                        typeof(float) // 픽셀 단위 형식
+                    })); // 조회 결과 전달
         } // 테스트 끝
 
         [Test] // 테스트 표시

@@ -1292,9 +1292,16 @@ namespace ProjectTheta.Core
                         RuntimeCharacterSpriteAnimator>();
 
                 animator.Configure(
-                    "Characters/NPC_Female",
-                    7f,
-                    390f);
+                    WorldArtCatalog.GetCivilianIdlePaths(), // 시민 대기 후보 전달
+                    new[] // 시민 이동 후보 목록
+                    { // 목록 시작
+                        WorldArtCatalog.GetCivilianMovementPaths(0), // 첫 이동 후보
+                        WorldArtCatalog.GetCivilianMovementPaths(1), // 둘째 이동 후보
+                        WorldArtCatalog.GetCivilianMovementPaths(2), // 셋째 이동 후보
+                        WorldArtCatalog.GetCivilianMovementPaths(3) // 넷째 이동 후보
+                    }, // 목록 끝
+                    7f, // 초당 프레임 지정
+                    390f); // 픽셀 단위 지정
 
                 Rigidbody2D body =
                     npc.AddComponent<Rigidbody2D>();
