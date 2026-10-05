@@ -1,4 +1,5 @@
 using System;
+using ProjectTheta.Presentation; // 월드 아트 경로 참조
 
 namespace ProjectTheta.UI
 {
@@ -74,6 +75,12 @@ namespace ProjectTheta.UI
         {
             return page >= PageCount;
         }
+
+        public static string[] GetArtPaths( // 프롤로그 CG 경로 조회
+            int page) // 0 기반 페이지 번호
+        { // 조회 시작
+            return WorldArtCatalog.GetIntroCgPaths(page); // 보정된 CG 후보 반환
+        } // 조회 끝
 
         /// <summary>"2 / 5"다.</summary>
         public static string GetCounter(

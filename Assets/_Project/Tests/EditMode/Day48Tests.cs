@@ -4,6 +4,7 @@ using ProjectTheta.Disruptors; // 방해 적 종류 참조
 using ProjectTheta.Map; // 맵 아트 도구 참조
 using ProjectTheta.Presentation; // 월드 아트 도구 참조
 using ProjectTheta.Stage.Locations; // 지역 식별자 참조
+using ProjectTheta.UI; // 프롤로그 로직 참조
 using UnityEngine; // Unity 그래픽 참조
 
 namespace ProjectTheta.Tests.EditMode // 편집 모드 테스트 공간
@@ -137,6 +138,36 @@ namespace ProjectTheta.Tests.EditMode // 편집 모드 테스트 공간
                 typeof(MapArtLibrary).GetMethod( // 공개 메서드 조회
                     "TryGetFirst", // 후보 조회 메서드 이름
                     new[] { typeof(string[]) })); // 후보 배열 매개변수 형식
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void IntroArtPaths_MapFivePagesAndClampOutOfRangeValues() // 프롤로그 CG 주소 검증
+        { // 테스트 시작
+            string[] actual = new string[5]; // 실제 페이지 경로 배열 생성
+
+            for (int i = 0; i < actual.Length; i++) // 전체 페이지 순회
+            { // 순회 시작
+                string[] paths = IntroLogic.GetArtPaths(i); // 현재 페이지 경로 조회
+                Assert.AreEqual(1, paths.Length); // 페이지별 후보 수 확인
+                actual[i] = paths[0]; // 실제 경로 저장
+            } // 순회 끝
+
+            CollectionAssert.AreEqual( // 전체 페이지 대응 확인
+                new[] // 예상 경로 목록
+                { // 목록 시작
+                    "Story/Intro/Page_01", // 첫 CG 경로
+                    "Story/Intro/Page_02", // 둘째 CG 경로
+                    "Story/Intro/Page_03", // 셋째 CG 경로
+                    "Story/Intro/Page_04", // 넷째 CG 경로
+                    "Story/Intro/Page_05" // 다섯째 CG 경로
+                }, // 목록 끝
+                actual); // 실제 경로 목록
+            CollectionAssert.AreEqual( // 음수 페이지 보정 확인
+                new[] { "Story/Intro/Page_01" }, // 첫 CG 예상
+                IntroLogic.GetArtPaths(-10)); // 음수 페이지 조회
+            CollectionAssert.AreEqual( // 초과 페이지 보정 확인
+                new[] { "Story/Intro/Page_05" }, // 마지막 CG 예상
+                IntroLogic.GetArtPaths(10)); // 초과 페이지 조회
         } // 테스트 끝
 
         [Test] // 테스트 표시
