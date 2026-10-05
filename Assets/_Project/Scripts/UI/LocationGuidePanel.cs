@@ -88,7 +88,7 @@ namespace ProjectTheta.UI
                     "LocationPreview", // 배너 이름
                     new Color(1f, 1f, 1f, 0.32f)); // 배너 혼합 색상
                 preview.sprite = previewSprite; // 지역 이미지 적용
-                preview.preserveAspect = false; // 상단 영역 채우기
+                preview.preserveAspect = WorldArtCatalog.PreserveImageAspect; // 원본 비율 유지
                 preview.raycastTarget = false; // 입력 통과 설정
                 UiFactory.Place( // 상단 배너 배치
                     preview.rectTransform, // 배너 영역

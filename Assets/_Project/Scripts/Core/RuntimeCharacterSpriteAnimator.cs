@@ -6,6 +6,7 @@ namespace ProjectTheta.Core
     [RequireComponent(typeof(SpriteRenderer))]
     public sealed class RuntimeCharacterSpriteAnimator : MonoBehaviour
     {
+        private const float ReferenceTextureHeight = 768f; // 기존 캐릭터 기준 높이
         [SerializeField] private float _framesPerSecond = 8f;
         [SerializeField] private float _pixelsPerUnit = 390f;
         [SerializeField] private float _movementThreshold = 0.00001f;
@@ -71,10 +72,11 @@ namespace ProjectTheta.Core
         { // 설정 시작
             _framesPerSecond = Mathf.Max(1f, framesPerSecond); // 프레임 속도 보정
             _pixelsPerUnit = Mathf.Max(1f, pixelsPerUnit); // 픽셀 단위 보정
-            _idleSprite = RuntimeArtLoader.LoadFirst( // 대기 스프라이트 조회
+            _idleSprite = RuntimeArtLoader.LoadFirstNormalized( // 정규화 대기 스프라이트 조회
                 idlePaths, // 대기 후보 전달
                 new Vector2(0.5f, 0.0625f), // 발 기준 피벗
                 _pixelsPerUnit, // 픽셀 단위 전달
+                ReferenceTextureHeight, // 기준 텍스처 높이 전달
                 out string loadedIdlePath); // 불러온 경로 수신
             LoadedIdlePath = loadedIdlePath; // 대기 경로 저장
             int movementCount = movementPaths == null ? 0 : movementPaths.Length; // 이동 프레임 수 계산
@@ -82,10 +84,11 @@ namespace ProjectTheta.Core
 
             for (int i = 0; i < movementCount; i++) // 이동 프레임 순회
             { // 순회 시작
-                _moveSprites[i] = RuntimeArtLoader.LoadFirst( // 이동 스프라이트 조회
+                _moveSprites[i] = RuntimeArtLoader.LoadFirstNormalized( // 정규화 이동 스프라이트 조회
                     movementPaths[i], // 현재 프레임 후보 전달
                     new Vector2(0.5f, 0.0625f), // 발 기준 피벗
                     _pixelsPerUnit, // 픽셀 단위 전달
+                    ReferenceTextureHeight, // 기준 텍스처 높이 전달
                     out _); // 개별 경로 미보관
             } // 순회 끝
 

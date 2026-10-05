@@ -638,7 +638,7 @@ namespace ProjectTheta.UI
             Sprite previewSprite = MapArtLibrary.TryGetFirst( // 지역 미리보기 조회
                 WorldArtCatalog.GetLocationPreviewPaths(location.Id)); // 지역 후보 경로 전달
             preview.sprite = previewSprite; // 조회 이미지 적용
-            preview.preserveAspect = false; // 노드 영역 채우기
+            preview.preserveAspect = WorldArtCatalog.PreserveImageAspect; // 원본 비율 유지
             preview.raycastTarget = false; // 입력 통과 설정
             preview.gameObject.SetActive(previewSprite != null); // 이미지 존재 시 표시
 
@@ -821,7 +821,7 @@ namespace ProjectTheta.UI
                 new Vector2(0.5f, 1f), // 상단 중앙 피벗
                 new Vector2(0f, -20f), // 상단 여백
                 new Vector2(inner, 190f)); // 이미지 크기
-            _infoPreview.preserveAspect = false; // 패널 상단 채우기
+            _infoPreview.preserveAspect = WorldArtCatalog.PreserveImageAspect; // 원본 비율 유지
             _infoPreview.raycastTarget = false; // 입력 통과 설정
             _infoPreview.gameObject.SetActive(false); // 초기 숨김
 

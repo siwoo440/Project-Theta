@@ -313,7 +313,7 @@ namespace ProjectTheta.UI
                 { // 이미지 적용 시작
                     backdrop.sprite = locationPreview; // 로딩 배경 이미지 적용
                     backdrop.color = new Color(0.46f, 0.42f, 0.56f, 1f); // 어두운 보라색 혼합
-                    backdrop.preserveAspect = false; // 화면 전체 채우기
+                    backdrop.preserveAspect = WorldArtCatalog.PreserveImageAspect; // 원본 비율 유지
                     Image shade = UiFactory.CreateImage( // 가독성 음영 생성
                         canvas.transform, // 캔버스 부모
                         "LocationShade", // 음영 이름

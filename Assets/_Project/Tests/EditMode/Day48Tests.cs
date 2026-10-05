@@ -171,6 +171,41 @@ namespace ProjectTheta.Tests.EditMode // 편집 모드 테스트 공간
         } // 테스트 끝
 
         [Test] // 테스트 표시
+        public void RuntimeArtLoader_NormalizesCharacterWorldHeight() // 캐릭터 월드 높이 정규화 검증
+        { // 테스트 시작
+            Assert.AreEqual( // 두 배 원본 보정 확인
+                780f, // 예상 픽셀 단위
+                RuntimeArtLoader.CalculateNormalizedPixelsPerUnit(1536f, 768f, 390f)); // 정규화 값 계산
+            Assert.AreEqual( // 기준 원본 유지 확인
+                390f, // 예상 기준 픽셀 단위
+                RuntimeArtLoader.CalculateNormalizedPixelsPerUnit(768f, 768f, 390f)); // 기준 값 계산
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void WorldArtImages_PreserveSourceAspectRatio() // 월드 이미지 비율 유지 검증
+        { // 테스트 시작
+            Assert.IsTrue(WorldArtCatalog.PreserveImageAspect); // 비율 유지 정책 확인
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        [Category("UnityIntegration")] // Unity 통합 분류
+        public void RuntimeArtLoader_NormalizedCharacterHonorsPivotAndHeight() // 캐릭터 로더 계약 검증
+        { // 테스트 시작
+            Sprite sprite = RuntimeArtLoader.LoadFirstNormalized( // 정규화 스프라이트 조회
+                new[] { "Characters/NPC/Civilian/Idle" }, // 생성 시민 대기 경로
+                new Vector2(0.5f, 0.0625f), // 발 기준 피벗
+                390f, // 기준 픽셀 단위
+                768f, // 기준 텍스처 높이
+                out string loadedPath); // 실제 경로 수신
+
+            Assert.IsNotNull(sprite); // 스프라이트 존재 확인
+            Assert.AreEqual("Characters/NPC/Civilian/Idle", loadedPath); // 실제 경로 확인
+            Assert.AreEqual(sprite.rect.width * 0.5f, sprite.pivot.x, 0.01f); // 가로 피벗 확인
+            Assert.AreEqual(sprite.rect.height * 0.0625f, sprite.pivot.y, 0.01f); // 세로 피벗 확인
+            Assert.AreEqual(768f / 390f, sprite.rect.height / sprite.pixelsPerUnit, 0.001f); // 월드 높이 확인
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
         [Category("UnityIntegration")] // Unity 통합 분류
         public void RuntimeArtLoader_ReusesCachedSpriteForSameArguments() // 로더 캐시 재사용 검증
         { // 테스트 시작

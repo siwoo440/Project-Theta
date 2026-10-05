@@ -6,6 +6,7 @@ namespace ProjectTheta.Presentation // 화면 표현 공간
 { // 공간 시작
     public static class WorldArtCatalog // 월드 아트 경로 규칙
     { // 클래스 시작
+        public const bool PreserveImageAspect = true; // 월드 이미지 비율 유지 정책
         private const string CivilianRoot = "Characters/NPC/Civilian"; // 시민 정식 루트
         private const string CivilianLegacyRoot = "Characters/NPC_Female"; // 시민 기존 루트
         private const string DisruptorRoot = "Characters/Disruptors"; // 방해 적 정식 루트
