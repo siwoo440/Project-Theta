@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 #endif
 using ProjectTheta.Core;
+using ProjectTheta.Map; // 지역 아트 라이브러리 참조
 using ProjectTheta.Presentation;
 using ProjectTheta.Run;
 using ProjectTheta.Save;
@@ -58,6 +59,7 @@ namespace ProjectTheta.UI
             public LocationDefinition Location;
             public UiButton Button;
             public Image Edge;
+            public Image Preview; // 지역 미리보기 이미지
             public Image Glow;
             public Text Name;
             public Text Detail;
@@ -79,6 +81,7 @@ namespace ProjectTheta.UI
         private Text _infoName;
         private Text _infoSummary;
         private Text _infoRows;
+        private Image _infoPreview; // 선택 지역 미리보기
         private Text _runStatus;
         private UiButton _departButton;
 
@@ -626,6 +629,19 @@ namespace ProjectTheta.UI
                 fill.rectTransform,
                 3f);
 
+            Image preview = // 노드 미리보기 생성
+                UiFactory.CreateImage( // 이미지 생성
+                    fill.transform, // 노드 내부 부모
+                    "Preview", // 이미지 이름
+                    new Color(1f, 1f, 1f, 0.28f)); // 배경 혼합 색상
+            UiFactory.Stretch(preview.rectTransform); // 노드 전체 배치
+            Sprite previewSprite = MapArtLibrary.TryGetFirst( // 지역 미리보기 조회
+                WorldArtCatalog.GetLocationPreviewPaths(location.Id)); // 지역 후보 경로 전달
+            preview.sprite = previewSprite; // 조회 이미지 적용
+            preview.preserveAspect = WorldArtCatalog.PreserveImageAspect; // 원본 비율 유지
+            preview.raycastTarget = false; // 입력 통과 설정
+            preview.gameObject.SetActive(previewSprite != null); // 이미지 존재 시 표시
+
             Image timeBand =
                 UiFactory.CreateImage(
                     fill.transform,
@@ -731,6 +747,7 @@ namespace ProjectTheta.UI
                     Location = location,
                     Button = button,
                     Edge = button.Background,
+                    Preview = preview, // 미리보기 저장
                     Glow = glow,
                     Name = name,
                     Detail = detail,
@@ -792,6 +809,21 @@ namespace ProjectTheta.UI
                     new Color(UiTheme.Gold.r, UiTheme.Gold.g, UiTheme.Gold.b, 0.8f));
 
             UiFactory.Place(accent.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(5f, MapHeight));
+
+            _infoPreview = // 선택 지역 미리보기 생성
+                UiFactory.CreateImage( // 이미지 생성
+                    panel, // 정보 패널 부모
+                    "LocationPreview", // 이미지 이름
+                    new Color(1f, 1f, 1f, 0.24f)); // 글자 배경 혼합 색상
+            UiFactory.Place( // 상단 이미지 배치
+                _infoPreview.rectTransform, // 이미지 영역
+                new Vector2(0.5f, 1f), // 상단 중앙 기준
+                new Vector2(0.5f, 1f), // 상단 중앙 피벗
+                new Vector2(0f, -20f), // 상단 여백
+                new Vector2(inner, 190f)); // 이미지 크기
+            _infoPreview.preserveAspect = WorldArtCatalog.PreserveImageAspect; // 원본 비율 유지
+            _infoPreview.raycastTarget = false; // 입력 통과 설정
+            _infoPreview.gameObject.SetActive(false); // 초기 숨김
 
             _infoTime =
                 CreateInfoText(panel, PanelPadding, 30f, inner, 26f, UiTheme.FontBody, UiTheme.Gold, true);
@@ -1152,6 +1184,10 @@ namespace ProjectTheta.UI
             _infoNumber.text = LocationGuideLogic.FormatNumber(_candidates.IndexOf(location.Id));
             _infoName.text = location.DisplayName;
             _infoSummary.text = location.Summary;
+            Sprite infoPreviewSprite = MapArtLibrary.TryGetFirst( // 선택 지역 미리보기 조회
+                WorldArtCatalog.GetLocationPreviewPaths(location.Id)); // 지역 후보 경로 전달
+            _infoPreview.sprite = infoPreviewSprite; // 선택 지역 이미지 적용
+            _infoPreview.gameObject.SetActive(infoPreviewSprite != null); // 이미지 존재 시 표시
             _infoRows.text = LocationGuideLogic.BuildCoreRows( // 핵심 수치 표시
                 location, // 선택 장소
                 stars, // 숙련 별 수

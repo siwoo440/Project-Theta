@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectTheta.Presentation; // 공용 아트 로더 참조
 using ProjectTheta.Stage.Locations;
 
 namespace ProjectTheta.Map
@@ -67,6 +68,16 @@ namespace ProjectTheta.Map
 
             return sprite;
         }
+
+        public static Sprite TryGetFirst( // 첫 유효 후보 조회
+            string[] resourcePaths) // 후보 리소스 경로
+        { // 조회 시작
+            return RuntimeArtLoader.LoadFirst( // 공용 로더 결과 반환
+                resourcePaths, // 후보 경로 전달
+                new Vector2(0.5f, 0.5f), // 중앙 피벗 지정
+                100f, // UI 기준 픽셀 단위
+                out _); // 실제 경로 미보관
+        } // 조회 끝
 
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]

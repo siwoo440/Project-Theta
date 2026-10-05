@@ -22,6 +22,8 @@ namespace ProjectTheta.UI
     {
         private GameObject _root;
         private Image _art;
+        private Sprite _fallbackArtSprite; // 기존 글로우 스프라이트
+        private Color _fallbackArtColor; // 기존 글로우 색상
         private Text _title;
         private Text _body;
         private Text _counter;
@@ -89,6 +91,8 @@ namespace ProjectTheta.UI
             _art = UiDecor.CreateGlow(root, "Art", UiTheme.Accent, new Vector2(900f, 420f));
             _art.raycastTarget = false;
             UiFactory.Place(_art.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 90f), new Vector2(900f, 420f));
+            _fallbackArtSprite = _art.sprite; // 기존 글로우 스프라이트 저장
+            _fallbackArtColor = _art.color; // 기존 글로우 색상 저장
 
             _title =
                 UiFactory.CreateText(root, "Title", string.Empty, UiTheme.FontTitle, UiTheme.TextPrimary, TextAnchor.MiddleCenter, FontStyle.Bold);
@@ -152,6 +156,25 @@ namespace ProjectTheta.UI
             _body.text = content.Body;
             _counter.text = IntroLogic.GetCounter(page);
             _advance.SetText(IntroLogic.GetAdvanceLabel(page));
+
+            Sprite pageArt = RuntimeArtLoader.LoadFirst( // 현재 페이지 CG 조회
+                IntroLogic.GetArtPaths(page), // 현재 페이지 후보 경로
+                new Vector2(0.5f, 0.5f), // 중앙 피벗 지정
+                100f, // UI 기준 픽셀 단위
+                out _); // 실제 경로 미보관
+
+            if (pageArt != null) // CG 존재 확인
+            { // CG 적용 시작
+                _art.sprite = pageArt; // 페이지 CG 적용
+                _art.color = Color.white; // 원본 색상 표시
+                _art.preserveAspect = true; // 원본 비율 유지
+            } // CG 적용 끝
+            else // CG 누락 확인
+            { // 글로우 복원 시작
+                _art.sprite = _fallbackArtSprite; // 기존 글로우 스프라이트 복원
+                _art.color = _fallbackArtColor; // 기존 글로우 색상 복원
+                _art.preserveAspect = false; // 글로우 영역 채우기
+            } // 글로우 복원 끝
 
             ApplyFade();
         }

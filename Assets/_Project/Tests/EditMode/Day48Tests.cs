@@ -1,0 +1,232 @@
+using NUnit.Framework; // 테스트 도구 참조
+using ProjectTheta.Core; // 런타임 애니메이터 참조
+using ProjectTheta.Disruptors; // 방해 적 종류 참조
+using ProjectTheta.Map; // 맵 아트 도구 참조
+using ProjectTheta.Presentation; // 월드 아트 도구 참조
+using ProjectTheta.Stage.Locations; // 지역 식별자 참조
+using ProjectTheta.UI; // 프롤로그 로직 참조
+using UnityEngine; // Unity 그래픽 참조
+
+namespace ProjectTheta.Tests.EditMode // 편집 모드 테스트 공간
+{ // 공간 시작
+    public sealed class Day48Tests // 48일차 회귀 테스트
+    { // 클래스 시작
+        [Test] // 테스트 표시
+        public void WorldArtCatalog_ReturnsCanonicalPathsBeforeFallbacks() // 정식 경로 우선순위 검증
+        { // 테스트 시작
+            CollectionAssert.AreEqual( // 시민 대기 경로 확인
+                new[] // 예상 경로 목록
+                { // 목록 시작
+                    "Characters/NPC/Civilian/Idle", // 정식 시민 대기 경로
+                    "Characters/NPC_Female/Idle" // 기존 시민 대기 경로
+                }, // 목록 끝
+                WorldArtCatalog.GetCivilianIdlePaths()); // 시민 대기 경로 조회
+            CollectionAssert.AreEqual( // 방해 적 이동 경로 확인
+                new[] // 예상 경로 목록
+                { // 목록 시작
+                    "Characters/Disruptors/Lifeguard/Walk_2", // 정식 걷기 경로
+                    "Characters/Disruptors/Lifeguard/Move_2", // 정식 이동 호환 경로
+                    "Characters/Geumtaeyang/Walk_2", // 기존 걷기 경로
+                    "Characters/Geumtaeyang/Move_2" // 기존 이동 경로
+                }, // 목록 끝
+                WorldArtCatalog.GetDisruptorMovementPaths( // 방해 적 이동 경로 조회
+                    DisruptorKind.Lifeguard, // 인명 구조원 선택
+                    "Characters/Geumtaeyang", // 기존 루트 지정
+                    2)); // 세 번째 프레임 지정
+            CollectionAssert.AreEqual( // 지역 미리보기 경로 확인
+                new[] // 예상 경로 목록
+                { // 목록 시작
+                    "Maps/Beach/Preview", // 정식 미리보기 경로
+                    "Maps/Beach/Background" // 배경 폴백 경로
+                }, // 목록 끝
+                WorldArtCatalog.GetLocationPreviewPaths(LocationId.Beach)); // 해변 경로 조회
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void WorldArtCatalog_ClampsFramesAndIntroPages() // 입력 범위 보정 검증
+        { // 테스트 시작
+            CollectionAssert.AreEqual( // 음수 프레임 보정 확인
+                new[] // 예상 경로 목록
+                { // 목록 시작
+                    "Characters/NPC/Civilian/Walk_0", // 정식 보정 경로
+                    "Characters/NPC/Civilian/Move_0", // 정식 호환 경로
+                    "Characters/NPC_Female/Walk_0", // 기존 걷기 경로
+                    "Characters/NPC_Female/Move_0" // 기존 이동 경로
+                }, // 목록 끝
+                WorldArtCatalog.GetCivilianMovementPaths(-5)); // 음수 프레임 조회
+            CollectionAssert.AreEqual( // 첫 장 보정 확인
+                new[] { "Story/Intro/Page_01" }, // 첫 장 예상 경로
+                WorldArtCatalog.GetIntroCgPaths(-1)); // 음수 페이지 조회
+            CollectionAssert.AreEqual( // 마지막 장 보정 확인
+                new[] { "Story/Intro/Page_05" }, // 마지막 장 예상 경로
+                WorldArtCatalog.GetIntroCgPaths(99)); // 초과 페이지 조회
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void WorldArtCatalog_RemovesEmptyLegacyRoots() // 빈 기존 경로 제거 검증
+        { // 테스트 시작
+            CollectionAssert.AreEqual( // 대기 경로 수 확인
+                new[] { "Characters/Disruptors/Dj/Idle" }, // 정식 대기 경로만 기대
+                WorldArtCatalog.GetDisruptorIdlePaths(DisruptorKind.Dj, string.Empty)); // 빈 기존 루트 조회
+            CollectionAssert.AreEqual( // 이동 경로 수 확인
+                new[] // 예상 정식 경로 목록
+                { // 목록 시작
+                    "Characters/Disruptors/Dj/Walk_0", // 정식 걷기 경로
+                    "Characters/Disruptors/Dj/Move_0" // 정식 이동 호환 경로
+                }, // 목록 끝
+                WorldArtCatalog.GetDisruptorMovementPaths( // 빈 기존 이동 경로 조회
+                    DisruptorKind.Dj, // DJ 선택
+                    null, // 기존 루트 없음
+                    -1)); // 음수 프레임 지정
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void CivilianMovementPaths_PreserveEachCanonicalAndLegacyFrame() // 시민 프레임 폴백 검증
+        { // 테스트 시작
+            CollectionAssert.AreEqual( // 이동 경로 순서 확인
+                new[] // 예상 경로 목록
+                { // 목록 시작
+                    "Characters/NPC/Civilian/Walk_3", // 정식 걷기 경로
+                    "Characters/NPC/Civilian/Move_3", // 정식 이동 호환 경로
+                    "Characters/NPC_Female/Walk_3", // 기존 걷기 경로
+                    "Characters/NPC_Female/Move_3" // 기존 이동 경로
+                }, // 목록 끝
+                WorldArtCatalog.GetCivilianMovementPaths(3)); // 네 번째 프레임 경로 조회
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void RuntimeAnimator_ExposesCandidateArrayConfigureOverload() // 후보 배열 설정 인터페이스 검증
+        { // 테스트 시작
+            Assert.IsNotNull( // 오버로드 존재 확인
+                typeof(RuntimeCharacterSpriteAnimator).GetMethod( // 공개 메서드 조회
+                    "Configure", // 설정 메서드 이름
+                    new[] // 매개변수 형식 목록
+                    { // 목록 시작
+                        typeof(string[]), // 대기 후보 배열 형식
+                        typeof(string[][]), // 이동 후보 배열 형식
+                        typeof(float), // 초당 프레임 형식
+                        typeof(float) // 픽셀 단위 형식
+                    })); // 조회 결과 전달
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void EveryLocation_UsesSharedBackgroundAndPreviewFallbackPaths() // 전체 지역 아트 주소 검증
+        { // 테스트 시작
+            Assert.AreEqual(8, LocationCatalog.All.Count); // 전체 지역 수 확인
+
+            for (int i = 0; i < LocationCatalog.All.Count; i++) // 전체 지역 순회
+            { // 순회 시작
+                LocationId id = LocationCatalog.All[i].Id; // 현재 지역 ID 조회
+                string backgroundPath = $"Maps/{id}/Background"; // 예상 배경 경로 생성
+                CollectionAssert.AreEqual( // 미리보기 후보 확인
+                    new[] // 예상 경로 목록
+                    { // 목록 시작
+                        $"Maps/{id}/Preview", // 전용 미리보기 경로
+                        backgroundPath // 배경 폴백 경로
+                    }, // 목록 끝
+                    WorldArtCatalog.GetLocationPreviewPaths(id)); // 실제 미리보기 경로 조회
+                Assert.AreEqual( // 맵 배경 경로 확인
+                    backgroundPath, // 예상 배경 경로
+                    MapArtLibrary.GetPath(id, MapArtLayer.Background)); // 실제 맵 배경 경로 조회
+            } // 순회 끝
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void MapArtLibrary_ExposesCandidateArrayLookup() // 맵 후보 배열 조회 인터페이스 검증
+        { // 테스트 시작
+            Assert.IsNotNull( // 조회 메서드 존재 확인
+                typeof(MapArtLibrary).GetMethod( // 공개 메서드 조회
+                    "TryGetFirst", // 후보 조회 메서드 이름
+                    new[] { typeof(string[]) })); // 후보 배열 매개변수 형식
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void IntroArtPaths_MapFivePagesAndClampOutOfRangeValues() // 프롤로그 CG 주소 검증
+        { // 테스트 시작
+            string[] actual = new string[5]; // 실제 페이지 경로 배열 생성
+
+            for (int i = 0; i < actual.Length; i++) // 전체 페이지 순회
+            { // 순회 시작
+                string[] paths = IntroLogic.GetArtPaths(i); // 현재 페이지 경로 조회
+                Assert.AreEqual(1, paths.Length); // 페이지별 후보 수 확인
+                actual[i] = paths[0]; // 실제 경로 저장
+            } // 순회 끝
+
+            CollectionAssert.AreEqual( // 전체 페이지 대응 확인
+                new[] // 예상 경로 목록
+                { // 목록 시작
+                    "Story/Intro/Page_01", // 첫 CG 경로
+                    "Story/Intro/Page_02", // 둘째 CG 경로
+                    "Story/Intro/Page_03", // 셋째 CG 경로
+                    "Story/Intro/Page_04", // 넷째 CG 경로
+                    "Story/Intro/Page_05" // 다섯째 CG 경로
+                }, // 목록 끝
+                actual); // 실제 경로 목록
+            CollectionAssert.AreEqual( // 음수 페이지 보정 확인
+                new[] { "Story/Intro/Page_01" }, // 첫 CG 예상
+                IntroLogic.GetArtPaths(-10)); // 음수 페이지 조회
+            CollectionAssert.AreEqual( // 초과 페이지 보정 확인
+                new[] { "Story/Intro/Page_05" }, // 마지막 CG 예상
+                IntroLogic.GetArtPaths(10)); // 초과 페이지 조회
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void RuntimeArtLoader_NormalizesCharacterWorldHeight() // 캐릭터 월드 높이 정규화 검증
+        { // 테스트 시작
+            Assert.AreEqual( // 두 배 원본 보정 확인
+                780f, // 예상 픽셀 단위
+                RuntimeArtLoader.CalculateNormalizedPixelsPerUnit(1536f, 768f, 390f)); // 정규화 값 계산
+            Assert.AreEqual( // 기준 원본 유지 확인
+                390f, // 예상 기준 픽셀 단위
+                RuntimeArtLoader.CalculateNormalizedPixelsPerUnit(768f, 768f, 390f)); // 기준 값 계산
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void WorldArtImages_PreserveSourceAspectRatio() // 월드 이미지 비율 유지 검증
+        { // 테스트 시작
+            Assert.IsTrue(WorldArtCatalog.PreserveImageAspect); // 비율 유지 정책 확인
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        [Category("UnityIntegration")] // Unity 통합 분류
+        public void RuntimeArtLoader_NormalizedCharacterHonorsPivotAndHeight() // 캐릭터 로더 계약 검증
+        { // 테스트 시작
+            Sprite sprite = RuntimeArtLoader.LoadFirstNormalized( // 정규화 스프라이트 조회
+                new[] { "Characters/NPC/Civilian/Idle" }, // 생성 시민 대기 경로
+                new Vector2(0.5f, 0.0625f), // 발 기준 피벗
+                390f, // 기준 픽셀 단위
+                768f, // 기준 텍스처 높이
+                out string loadedPath); // 실제 경로 수신
+
+            Assert.IsNotNull(sprite); // 스프라이트 존재 확인
+            Assert.AreEqual("Characters/NPC/Civilian/Idle", loadedPath); // 실제 경로 확인
+            Assert.AreEqual(sprite.rect.width * 0.5f, sprite.pivot.x, 0.01f); // 가로 피벗 확인
+            Assert.AreEqual(sprite.rect.height * 0.0625f, sprite.pivot.y, 0.01f); // 세로 피벗 확인
+            Assert.AreEqual(768f / 390f, sprite.rect.height / sprite.pixelsPerUnit, 0.001f); // 월드 높이 확인
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        [Category("UnityIntegration")] // Unity 통합 분류
+        public void RuntimeArtLoader_ReusesCachedSpriteForSameArguments() // 로더 캐시 재사용 검증
+        { // 테스트 시작
+            string[] paths = // 테스트 경로 목록
+            { // 목록 시작
+                "Characters/NPC/Civilian/Idle" // 생성 시민 대기 경로
+            }; // 목록 끝
+            Sprite first = RuntimeArtLoader.LoadFirst( // 첫 스프라이트 로드
+                paths, // 후보 경로 전달
+                new Vector2(0.5f, 0.5f), // 중앙 피벗 지정
+                100f, // 픽셀 단위 지정
+                out string firstPath); // 첫 실제 경로 수신
+            Sprite second = RuntimeArtLoader.LoadFirst( // 두 번째 스프라이트 로드
+                paths, // 같은 후보 경로 전달
+                new Vector2(0.5f, 0.5f), // 같은 피벗 지정
+                100f, // 같은 픽셀 단위 지정
+                out string secondPath); // 두 번째 실제 경로 수신
+
+            Assert.IsNotNull(first); // 첫 로드 성공 확인
+            Assert.AreSame(first, second); // 같은 인스턴스 확인
+            Assert.AreEqual(firstPath, secondPath); // 같은 실제 경로 확인
+        } // 테스트 끝
+    } // 클래스 끝
+} // 공간 끝

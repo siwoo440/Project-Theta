@@ -2,6 +2,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using ProjectTheta.Core; // 게임 세션 참조
+using ProjectTheta.Map; // 지역 아트 라이브러리 참조
 using ProjectTheta.Presentation; // 주요 캐릭터 리소스 규칙 참조
 using ProjectTheta.UI.Framework;
 
@@ -299,6 +301,27 @@ namespace ProjectTheta.UI
 
             backdrop.raycastTarget = true;
             UiFactory.Stretch(backdrop.rectTransform);
+
+            GameSession game = GameSession.Instance; // 현재 게임 세션 조회
+
+            if (game != null && game.Run != null) // 현재 도전 지역 확인
+            { // 지역 배경 적용 시작
+                Sprite locationPreview = MapArtLibrary.TryGetFirst( // 지역 미리보기 조회
+                    WorldArtCatalog.GetLocationPreviewPaths(game.Run.Location)); // 현재 지역 후보 전달
+
+                if (locationPreview != null) // 미리보기 존재 확인
+                { // 이미지 적용 시작
+                    backdrop.sprite = locationPreview; // 로딩 배경 이미지 적용
+                    backdrop.color = new Color(0.46f, 0.42f, 0.56f, 1f); // 어두운 보라색 혼합
+                    backdrop.preserveAspect = WorldArtCatalog.PreserveImageAspect; // 원본 비율 유지
+                    Image shade = UiFactory.CreateImage( // 가독성 음영 생성
+                        canvas.transform, // 캔버스 부모
+                        "LocationShade", // 음영 이름
+                        new Color(0.04f, 0.02f, 0.10f, 0.50f)); // 보라색 음영
+                    shade.raycastTarget = false; // 입력 통과 설정
+                    UiFactory.Stretch(shade.rectTransform); // 화면 전체 배치
+                } // 이미지 적용 끝
+            } // 지역 배경 적용 끝
 
             RectTransform stage =
                 UiFactory.CreateRect(

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using ProjectTheta.Presentation; // 주요 캐릭터 리소스 규칙 참조
 using UnityEngine;
 
@@ -7,11 +6,11 @@ namespace ProjectTheta.Core
     [RequireComponent(typeof(SpriteRenderer))]
     public sealed class RuntimeCharacterSpriteAnimator : MonoBehaviour
     {
+        private const float ReferenceTextureHeight = 768f; // 기존 캐릭터 기준 높이
         [SerializeField] private float _framesPerSecond = 8f;
         [SerializeField] private float _pixelsPerUnit = 390f;
         [SerializeField] private float _movementThreshold = 0.00001f;
 
-        private readonly List<Sprite> _createdSprites = new List<Sprite>();
         private SpriteRenderer _renderer;
         private Sprite _idleSprite;
         private Sprite[] _moveSprites;
@@ -34,24 +33,17 @@ namespace ProjectTheta.Core
             float framesPerSecond = 8f,
             float pixelsPerUnit = 390f)
         {
-            _framesPerSecond = Mathf.Max(1f, framesPerSecond);
-            _pixelsPerUnit = Mathf.Max(1f, pixelsPerUnit);
-
-            _idleSprite = LoadFirstSprite( // 대기 스프라이트 조회
-                new[] { resourceRoot + "/Idle" }, // 기존 단일 경로
-                out string loadedIdlePath); // 불러온 경로
-            LoadedIdlePath = loadedIdlePath; // 대기 경로 저장
-
-            _moveSprites = new Sprite[4];
-            for (int i = 0; i < _moveSprites.Length; i++)
-            {
-                _moveSprites[i] =
-                    LoadFirstSprite( // 이동 스프라이트 조회
-                        new[] { resourceRoot + $"/Move_{i}" }, // 기존 단일 경로
-                        out _); // 개별 경로 미보관
-            }
-
-            CompleteConfiguration(); // 공통 설정 완료
+            Configure( // 후보 배열 설정 위임
+                new[] { resourceRoot + "/Idle" }, // 기존 대기 후보
+                new[] // 기존 이동 후보 목록
+                { // 목록 시작
+                    new[] { resourceRoot + "/Move_0" }, // 첫 이동 후보
+                    new[] { resourceRoot + "/Move_1" }, // 둘째 이동 후보
+                    new[] { resourceRoot + "/Move_2" }, // 셋째 이동 후보
+                    new[] { resourceRoot + "/Move_3" } // 넷째 이동 후보
+                }, // 목록 끝
+                framesPerSecond, // 초당 프레임 전달
+                pixelsPerUnit); // 픽셀 단위 전달
         }
 
         public void Configure( // 주요 캐릭터 설정
@@ -59,19 +51,44 @@ namespace ProjectTheta.Core
             float framesPerSecond = 8f, // 초당 프레임
             float pixelsPerUnit = 390f) // 픽셀 단위
         { // 설정 시작
+            Configure( // 후보 배열 설정 위임
+                CharacterArtCatalog.GetIdlePaths(characterId), // 대기 후보 경로
+                new[] // 이동 후보 목록
+                { // 목록 시작
+                    CharacterArtCatalog.GetMovementPaths(characterId, 0), // 첫 이동 후보
+                    CharacterArtCatalog.GetMovementPaths(characterId, 1), // 둘째 이동 후보
+                    CharacterArtCatalog.GetMovementPaths(characterId, 2), // 셋째 이동 후보
+                    CharacterArtCatalog.GetMovementPaths(characterId, 3) // 넷째 이동 후보
+                }, // 목록 끝
+                framesPerSecond, // 초당 프레임 전달
+                pixelsPerUnit); // 픽셀 단위 전달
+        } // 설정 끝
+
+        public void Configure( // 후보 배열 기반 설정
+            string[] idlePaths, // 대기 후보 경로
+            string[][] movementPaths, // 이동 프레임별 후보 경로
+            float framesPerSecond = 8f, // 초당 프레임
+            float pixelsPerUnit = 390f) // 픽셀 단위
+        { // 설정 시작
             _framesPerSecond = Mathf.Max(1f, framesPerSecond); // 프레임 속도 보정
             _pixelsPerUnit = Mathf.Max(1f, pixelsPerUnit); // 픽셀 단위 보정
-
-            _idleSprite = LoadFirstSprite( // 대기 스프라이트 조회
-                CharacterArtCatalog.GetIdlePaths(characterId), // 대기 후보 경로
-                out string loadedIdlePath); // 불러온 경로
+            _idleSprite = RuntimeArtLoader.LoadFirstNormalized( // 정규화 대기 스프라이트 조회
+                idlePaths, // 대기 후보 전달
+                new Vector2(0.5f, 0.0625f), // 발 기준 피벗
+                _pixelsPerUnit, // 픽셀 단위 전달
+                ReferenceTextureHeight, // 기준 텍스처 높이 전달
+                out string loadedIdlePath); // 불러온 경로 수신
             LoadedIdlePath = loadedIdlePath; // 대기 경로 저장
+            int movementCount = movementPaths == null ? 0 : movementPaths.Length; // 이동 프레임 수 계산
+            _moveSprites = new Sprite[movementCount]; // 이동 프레임 배열 생성
 
-            _moveSprites = new Sprite[4]; // 이동 프레임 배열 생성
-            for (int i = 0; i < _moveSprites.Length; i++) // 이동 프레임 순회
+            for (int i = 0; i < movementCount; i++) // 이동 프레임 순회
             { // 순회 시작
-                _moveSprites[i] = LoadFirstSprite( // 이동 스프라이트 조회
-                    CharacterArtCatalog.GetMovementPaths(characterId, i), // 이동 후보 경로
+                _moveSprites[i] = RuntimeArtLoader.LoadFirstNormalized( // 정규화 이동 스프라이트 조회
+                    movementPaths[i], // 현재 프레임 후보 전달
+                    new Vector2(0.5f, 0.0625f), // 발 기준 피벗
+                    _pixelsPerUnit, // 픽셀 단위 전달
+                    ReferenceTextureHeight, // 기준 텍스처 높이 전달
                     out _); // 개별 경로 미보관
             } // 순회 끝
 
@@ -182,48 +199,6 @@ namespace ProjectTheta.Core
             return false;
         }
 
-        private Sprite LoadFirstSprite( // 첫 유효 스프라이트 조회
-            string[] resourcePaths, // 후보 경로 목록
-            out string loadedPath) // 불러온 경로
-        { // 조회 시작
-            loadedPath = string.Empty; // 경로 초기화
-
-            if (resourcePaths == null) // 후보 목록 확인
-            { // 목록 없음 시작
-                return null; // 스프라이트 없음 반환
-            } // 목록 없음 끝
-
-            for (int i = 0; i < resourcePaths.Length; i++) // 후보 경로 순회
-            { // 순회 시작
-                string resourcePath = resourcePaths[i]; // 현재 경로 조회
-                Texture2D texture = Resources.Load<Texture2D>(resourcePath); // 텍스처 조회
-
-                if (texture == null) // 텍스처 없음 확인
-                { // 없음 시작
-                    continue; // 다음 후보 이동
-                } // 없음 끝
-
-                Sprite sprite = Sprite.Create( // 런타임 스프라이트 생성
-                    texture, // 원본 텍스처
-                    new Rect( // 전체 영역 생성
-                        0f, // 왼쪽 좌표
-                        0f, // 아래 좌표
-                        texture.width, // 텍스처 너비
-                        texture.height), // 텍스처 높이
-                    new Vector2(0.5f, 0.0625f), // 발 기준점
-                    _pixelsPerUnit); // 픽셀 단위
-
-                sprite.name = resourcePath.Replace('/', '_') + "_RuntimeSprite"; // 스프라이트 이름 설정
-
-                _createdSprites.Add(sprite); // 정리 목록 추가
-                loadedPath = resourcePath; // 불러온 경로 저장
-
-                return sprite; // 첫 스프라이트 반환
-            } // 순회 끝
-
-            return null; // 스프라이트 없음 반환
-        } // 조회 끝
-
         private void ApplyTint()
         {
             if (_renderer == null)
@@ -236,17 +211,5 @@ namespace ProjectTheta.Core
                 : _baseTint;
         }
 
-        private void OnDestroy()
-        {
-            for (int i = 0; i < _createdSprites.Count; i++)
-            {
-                if (_createdSprites[i] != null)
-                {
-                    Destroy(_createdSprites[i]);
-                }
-            }
-
-            _createdSprites.Clear();
-        }
     }
 }
