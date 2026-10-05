@@ -49,33 +49,33 @@
 - Consumes: 승인된 설계서의 스타일·구성·금지 요소
 - Produces: Task 3~5가 `Resources.Load`로 읽는 18개 PNG
 
-- [ ] **Step 1: 일반 NPC 기준 이미지 생성**
+- [x] **Step 1: 일반 NPC 기준 이미지 생성**
 
 내장 이미지 생성 도구로 `Idle`을 투명 배경 PNG로 생성한다. 프롬프트는 성인 여성 일반 시민, 현대 도시 판타지 2D 게임 스프라이트, 전신, 발 아래 중앙, 중성 일상복, 글자·그림자·소품·워터마크 제외를 고정한다.
 
-- [ ] **Step 2: 일반 NPC 걷기 프레임 4개 생성**
+- [x] **Step 2: 일반 NPC 걷기 프레임 4개 생성**
 
 `Idle`을 외형 참고 이미지로 사용하고 왼발 접지·중간 교차·오른발 접지·중간 교차의 네 자세만 각각 변경한다. 외형·의상·색·카메라·크기·투명 배경은 고정한다.
 
-- [ ] **Step 3: 지역 배경 8개 생성**
+- [x] **Step 3: 지역 배경 8개 생성**
 
 각 `LocationId`별 한 장을 생성한다. 공통 프롬프트는 가로형 횡스크롤 배경, 낮은 대비, 중앙·하단 안전 영역, 보라·금색 현대 판타지 색 조화, 인물·글자·로고·워터마크 제외다.
 
-- [ ] **Step 4: 프롤로그 CG 5개 생성**
+- [x] **Step 4: 프롤로그 CG 5개 생성**
 
 `IntroLogic.Pages`의 제목과 본문을 각각 장면 근거로 사용한다. 환경·실루엣 중심, 얼굴 확정 묘사 없음, 가로형 2D 서사 삽화, 글자·UI·로고·워터마크 제외를 고정한다.
 
-- [ ] **Step 5: 생성물 육안 검증과 프로젝트 복사**
+- [x] **Step 5: 생성물 육안 검증과 프로젝트 복사**
 
 각 결과를 `view_image`로 확인하고 주제·일관성·투명도·금지 요소를 검사한다. 불합격 이미지는 한 항목만 수정해 다시 생성한 뒤 승인된 결과만 설계서 경로로 복사한다.
 
-- [ ] **Step 6: 파일 수와 PNG 형식 확인**
+- [x] **Step 6: 파일 수와 PNG 형식 확인**
 
 Run: `Get-ChildItem Assets/_Project/Resources/Characters/NPC/Civilian,Assets/_Project/Resources/Maps,Assets/_Project/Resources/Story/Intro -Recurse -Filter *.png`
 
 Expected: 신규 대상 파일 18개가 정확한 정식 경로에 존재
 
-- [ ] **Step 7: 이미지 묶음 커밋**
+- [x] **Step 7: 이미지 묶음 커밋**
 
 ```bash
 git add Assets/_Project/Resources/Characters/NPC Assets/_Project/Resources/Maps Assets/_Project/Resources/Story
@@ -97,7 +97,7 @@ git commit -m "48일차 : NPC·지역·프롤로그 아트 생성"
 - Consumes: `DisruptorKind`, `LocationId`, 기존 루트 문자열, 프롤로그 0 기반 페이지 번호
 - Produces: `GetCivilianIdlePaths()`, `GetCivilianMovementPaths(int)`, `GetDisruptorIdlePaths(DisruptorKind,string)`, `GetDisruptorMovementPaths(DisruptorKind,string,int)`, `GetLocationPreviewPaths(LocationId)`, `GetIntroCgPaths(int)`, `RuntimeArtLoader.LoadFirst(string[],Vector2,float,out string)`
 
-- [ ] **Step 1: 카탈로그 계약 테스트 작성**
+- [x] **Step 1: 카탈로그 계약 테스트 작성**
 
 `Day48Tests`에 다음 단정문을 추가한다.
 
@@ -111,27 +111,27 @@ CollectionAssert.AreEqual(new[] { "Story/Intro/Page_05" }, WorldArtCatalog.GetIn
 
 빈 기존 루트에서 빈 문자열이 제거되는지, `RuntimeArtLoader.LoadFirst`를 같은 인자로 두 번 호출하면 같은 스프라이트 인스턴스를 반환하는지도 검증한다. 로더 검증은 `[Category("UnityIntegration")]`으로 분리한다.
 
-- [ ] **Step 2: RED 확인**
+- [x] **Step 2: RED 확인**
 
 Run: `dotnet build ProjectTheta.Tests.EditMode.csproj --no-restore`
 
 Expected: `WorldArtCatalog`과 `RuntimeArtLoader` 미정의 컴파일 실패
 
-- [ ] **Step 3: `WorldArtCatalog` 최소 구현**
+- [x] **Step 3: `WorldArtCatalog` 최소 구현**
 
 모든 공개 함수는 새 배열을 반환하며 프레임은 0 이상으로, 프롤로그 페이지는 0~4로 보정한다. 빈 기존 루트는 정식 경로만 반환한다.
 
-- [ ] **Step 4: `RuntimeArtLoader` 구현**
+- [x] **Step 4: `RuntimeArtLoader` 구현**
 
 `LoadFirst`는 후보별 `Resources.Load<Sprite>` 후 `Resources.Load<Texture2D>`를 시도한다. 캐시 키는 경로·pivot·pixelsPerUnit을 포함하고, 누락 경로는 별도 집합에 저장한다. `SubsystemRegistration`에서 생성 스프라이트와 캐시를 정리한다.
 
-- [ ] **Step 5: GREEN 확인**
+- [x] **Step 5: GREEN 확인**
 
 Run: `dotnet build ProjectTheta.Tests.EditMode.csproj --no-restore`
 
 Expected: 경고 0개, 오류 0개
 
-- [ ] **Step 6: 카탈로그 커밋**
+- [x] **Step 6: 카탈로그 커밋**
 
 ```bash
 git add Assets/_Project/Scripts/Presentation/WorldArtCatalog.cs Assets/_Project/Scripts/Presentation/WorldArtCatalog.cs.meta Assets/_Project/Scripts/Presentation/RuntimeArtLoader.cs Assets/_Project/Scripts/Presentation/RuntimeArtLoader.cs.meta Assets/_Project/Tests/EditMode/Day48Tests.cs Assets/_Project/Tests/EditMode/Day48Tests.cs.meta docs/superpowers/plans/2026-10-05-day48-art-integration.md
@@ -151,31 +151,31 @@ git commit -m "48일차 : 월드 아트 카탈로그 및 로더 구현"
 - Consumes: Task 2의 NPC·방해 적 후보 경로 함수
 - Produces: `RuntimeCharacterSpriteAnimator.Configure(string[],string[][],float,float)`와 실제 스포너 연결
 
-- [ ] **Step 1: 부분 프레임 폴백과 애니메이터 인터페이스 테스트 추가**
+- [x] **Step 1: 부분 프레임 폴백과 애니메이터 인터페이스 테스트 추가**
 
 `GetCivilianMovementPaths(3)`의 정식 `Walk_3` 다음에 기존 `Move_3`가 존재하는지 검증한다. 리플렉션으로 `RuntimeCharacterSpriteAnimator.Configure(string[],string[][],float,float)` 오버로드가 존재하는지도 검증한다.
 
-- [ ] **Step 2: RED 확인**
+- [x] **Step 2: RED 확인**
 
 Run: Day48 순수 테스트 실행
 
 Expected: 새 애니메이터 후보 배열 오버로드 부재로 테스트 실패
 
-- [ ] **Step 3: 애니메이터 후보 배열 오버로드 구현**
+- [x] **Step 3: 애니메이터 후보 배열 오버로드 구현**
 
 `Configure(string[] idlePaths, string[][] movementPaths, float framesPerSecond = 8f, float pixelsPerUnit = 390f)`를 추가하고 각 프레임을 독립적으로 첫 유효 경로에서 불러온다. 기존 문자열·`CharacterArtId` 오버로드는 유지한다.
 
-- [ ] **Step 4: 일반 NPC·방해 적 스포너 연결**
+- [x] **Step 4: 일반 NPC·방해 적 스포너 연결**
 
 일반 NPC는 `Civilian` 정식 경로와 `NPC_Female` 폴백을 사용한다. 방해 적은 `DisruptorKind` 정식 경로와 현재 `SpriteRoot` 폴백을 사용한다.
 
-- [ ] **Step 5: GREEN과 전체 빌드 확인**
+- [x] **Step 5: GREEN과 전체 빌드 확인**
 
 Run: `dotnet build Project-Theta.slnx --no-restore`
 
 Expected: 경고 0개, 오류 0개
 
-- [ ] **Step 6: NPC 연결 커밋**
+- [x] **Step 6: NPC 연결 커밋**
 
 ```bash
 git add Assets/_Project/Scripts/Core Assets/_Project/Scripts/Disruptors Assets/_Project/Tests/EditMode/Day48Tests.cs
@@ -196,35 +196,35 @@ git commit -m "48일차 : NPC 및 방해 적 아트 교체 경로 연결"
 - Consumes: Task 1의 지역 배경과 Task 2의 `GetLocationPreviewPaths`
 - Produces: `MapArtLibrary.TryGetFirst(string[])`, 지도 노드 썸네일, 장소 안내 배너, 로딩 배경
 
-- [ ] **Step 1: 8개 지역 주소 완전성과 조회 인터페이스 테스트 추가**
+- [x] **Step 1: 8개 지역 주소 완전성과 조회 인터페이스 테스트 추가**
 
 `LocationCatalog.All`의 모든 ID가 `Maps/<LocationId>/Background`과 `Preview → Background` 후보를 갖는지 검증한다. 리플렉션으로 `MapArtLibrary.TryGetFirst(string[])`가 존재하는지도 검증한다.
 
-- [ ] **Step 2: RED 확인**
+- [x] **Step 2: RED 확인**
 
 Run: Day48 순수 테스트 실행
 
 Expected: `MapArtLibrary.TryGetFirst` 부재로 테스트 실패
 
-- [ ] **Step 3: 지도와 장소 안내에 지역 미리보기 적용**
+- [x] **Step 3: 지도와 장소 안내에 지역 미리보기 적용**
 
 지도 노드와 장소 규칙 카드 상단에 첫 유효 미리보기 이미지를 배치한다. 이미지가 없으면 기존 색상·텍스트 구성을 유지한다.
 
-- [ ] **Step 4: 로딩 화면에 현재 도전 지역 적용**
+- [x] **Step 4: 로딩 화면에 현재 도전 지역 적용**
 
 `GameSession.Instance.Run`이 존재할 때 해당 지역 미리보기를 로딩 배경으로 사용하고, 없으면 현재 보라색 배경을 유지한다.
 
-- [ ] **Step 5: 맵 배경과 UI 공유 확인**
+- [x] **Step 5: 맵 배경과 UI 공유 확인**
 
 기존 `MapArtLibrary.TryGet(location, Background)`가 같은 `Maps/<LocationId>/Background`를 읽는지 테스트와 코드 검토로 확인한다.
 
-- [ ] **Step 6: 빌드와 회귀 테스트 확인**
+- [x] **Step 6: 빌드와 회귀 테스트 확인**
 
 Run: `dotnet build Project-Theta.slnx --no-restore`
 
 Expected: 경고 0개, 오류 0개
 
-- [ ] **Step 7: 지역 UI 연결 커밋**
+- [x] **Step 7: 지역 UI 연결 커밋**
 
 ```bash
 git add Assets/_Project/Scripts/Map Assets/_Project/Scripts/UI Assets/_Project/Tests/EditMode/Day48Tests.cs
@@ -243,27 +243,27 @@ git commit -m "48일차 : 지역 배경 및 UI 미리보기 적용"
 - Consumes: Task 1의 `Page_01~05`와 Task 2의 `GetIntroCgPaths`
 - Produces: 페이지 전환마다 CG를 교체하고 누락 시 기존 글로우를 복원하는 프롤로그
 
-- [ ] **Step 1: 5개 페이지 소비 인터페이스 테스트 추가**
+- [x] **Step 1: 5개 페이지 소비 인터페이스 테스트 추가**
 
 `IntroLogic.GetArtPaths(int)`가 0~4 모든 페이지를 중복 없이 `Page_01~05`에 대응시키고 범위 밖 번호를 양 끝으로 보정하는지 검증한다.
 
-- [ ] **Step 2: RED 확인**
+- [x] **Step 2: RED 확인**
 
 Run: Day48 순수 테스트 실행
 
 Expected: `IntroLogic.GetArtPaths` 미정의 컴파일 실패
 
-- [ ] **Step 3: 프롤로그 CG 표시 구현**
+- [x] **Step 3: 프롤로그 CG 표시 구현**
 
 `IntroLogic.GetArtPaths(int)`를 추가하고 `ShowPage`에서 `RuntimeArtLoader.LoadFirst`를 호출한다. 성공하면 흰색·`preserveAspect`로 표시하고, 실패하면 생성 당시 보관한 글로우 스프라이트·색상으로 복원한다.
 
-- [ ] **Step 4: GREEN과 전체 빌드 확인**
+- [x] **Step 4: GREEN과 전체 빌드 확인**
 
 Run: `dotnet build Project-Theta.slnx --no-restore`
 
 Expected: 경고 0개, 오류 0개
 
-- [ ] **Step 5: 프롤로그 커밋**
+- [x] **Step 5: 프롤로그 커밋**
 
 ```bash
 git add Assets/_Project/Scripts/UI/IntroSequence.cs Assets/_Project/Tests/EditMode/Day48Tests.cs
@@ -282,15 +282,15 @@ git commit -m "48일차 : 프롤로그 CG 5장 적용"
 - Consumes: Task 1~5의 파일·테스트·커밋
 - Produces: 검증 기록, 리뷰 반영, 완료 상태와 커밋 링크, `origin/main` 동기화
 
-- [ ] **Step 1: 개발 기록 작성**
+- [x] **Step 1: 개발 기록 작성**
 
 18개 이미지 목록, 경로 규칙, 폴백, 적용 화면, 미제작 범위, 이미지 생성 프롬프트 요약을 기록한다.
 
-- [ ] **Step 2: 독립 코드 검토 요청**
+- [x] **Step 2: 독립 코드 검토 요청**
 
 검토자는 설계 범위·캐시 소유권·부분 프레임 폴백·UI 비율·이미지 파일 추적·줄별 한글 주석을 점검한다. 중요 지적은 수정 후 재검증한다.
 
-- [ ] **Step 3: 최종 검증**
+- [x] **Step 3: 최종 검증**
 
 Run: `dotnet build Project-Theta.slnx --no-restore`
 
@@ -300,11 +300,11 @@ Run: `git diff --check`
 
 Expected: 빌드 경고 0개·오류 0개, Day48 테스트 전부 통과, diff 오류 없음
 
-- [ ] **Step 4: Unity EditMode 통합 테스트 시도**
+- [x] **Step 4: Unity EditMode 통합 테스트 시도**
 
 프로젝트가 다른 Unity 편집기에서 열려 있지 않을 때 Day48 테스트를 배치 실행한다. 점유 중이면 사용자 프로세스를 종료하지 않고 로그와 제한을 개발 기록에 남긴다.
 
-- [ ] **Step 5: 최종 기록 커밋**
+- [x] **Step 5: 최종 기록 커밋**
 
 ```bash
 git add Devlogs/Day48 docs/superpowers/plans/2026-10-05-day48-art-integration.md
