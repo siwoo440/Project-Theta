@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 #endif
 using ProjectTheta.Core;
+using ProjectTheta.Map; // 지역 아트 라이브러리 참조
 using ProjectTheta.Presentation;
 using ProjectTheta.Stage;
 using ProjectTheta.Stage.Locations;
@@ -76,6 +77,26 @@ namespace ProjectTheta.UI
                     Hide);
 
             RectTransform w = _parts.Window;
+
+            Sprite previewSprite = MapArtLibrary.TryGetFirst( // 지역 미리보기 조회
+                WorldArtCatalog.GetLocationPreviewPaths(location.Id)); // 현재 지역 후보 전달
+
+            if (previewSprite != null) // 미리보기 존재 확인
+            { // 배너 생성 시작
+                Image preview = UiFactory.CreateImage( // 배너 이미지 생성
+                    w, // 안내 창 부모
+                    "LocationPreview", // 배너 이름
+                    new Color(1f, 1f, 1f, 0.32f)); // 배너 혼합 색상
+                preview.sprite = previewSprite; // 지역 이미지 적용
+                preview.preserveAspect = false; // 상단 영역 채우기
+                preview.raycastTarget = false; // 입력 통과 설정
+                UiFactory.Place( // 상단 배너 배치
+                    preview.rectTransform, // 배너 영역
+                    new Vector2(0.5f, 1f), // 상단 중앙 기준
+                    new Vector2(0.5f, 1f), // 상단 중앙 피벗
+                    new Vector2(0f, -62f), // 제목 아래 위치
+                    new Vector2(WindowWidth - 80f, 96f)); // 배너 크기
+            } // 배너 생성 끝
 
             UiOverlay.Label(
                 w,

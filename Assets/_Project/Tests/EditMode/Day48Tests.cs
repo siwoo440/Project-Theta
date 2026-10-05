@@ -1,6 +1,7 @@
 using NUnit.Framework; // 테스트 도구 참조
 using ProjectTheta.Core; // 런타임 애니메이터 참조
 using ProjectTheta.Disruptors; // 방해 적 종류 참조
+using ProjectTheta.Map; // 맵 아트 도구 참조
 using ProjectTheta.Presentation; // 월드 아트 도구 참조
 using ProjectTheta.Stage.Locations; // 지역 식별자 참조
 using UnityEngine; // Unity 그래픽 참조
@@ -105,6 +106,37 @@ namespace ProjectTheta.Tests.EditMode // 편집 모드 테스트 공간
                         typeof(float), // 초당 프레임 형식
                         typeof(float) // 픽셀 단위 형식
                     })); // 조회 결과 전달
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void EveryLocation_UsesSharedBackgroundAndPreviewFallbackPaths() // 전체 지역 아트 주소 검증
+        { // 테스트 시작
+            Assert.AreEqual(8, LocationCatalog.All.Count); // 전체 지역 수 확인
+
+            for (int i = 0; i < LocationCatalog.All.Count; i++) // 전체 지역 순회
+            { // 순회 시작
+                LocationId id = LocationCatalog.All[i].Id; // 현재 지역 ID 조회
+                string backgroundPath = $"Maps/{id}/Background"; // 예상 배경 경로 생성
+                CollectionAssert.AreEqual( // 미리보기 후보 확인
+                    new[] // 예상 경로 목록
+                    { // 목록 시작
+                        $"Maps/{id}/Preview", // 전용 미리보기 경로
+                        backgroundPath // 배경 폴백 경로
+                    }, // 목록 끝
+                    WorldArtCatalog.GetLocationPreviewPaths(id)); // 실제 미리보기 경로 조회
+                Assert.AreEqual( // 맵 배경 경로 확인
+                    backgroundPath, // 예상 배경 경로
+                    MapArtLibrary.GetPath(id, MapArtLayer.Background)); // 실제 맵 배경 경로 조회
+            } // 순회 끝
+        } // 테스트 끝
+
+        [Test] // 테스트 표시
+        public void MapArtLibrary_ExposesCandidateArrayLookup() // 맵 후보 배열 조회 인터페이스 검증
+        { // 테스트 시작
+            Assert.IsNotNull( // 조회 메서드 존재 확인
+                typeof(MapArtLibrary).GetMethod( // 공개 메서드 조회
+                    "TryGetFirst", // 후보 조회 메서드 이름
+                    new[] { typeof(string[]) })); // 후보 배열 매개변수 형식
         } // 테스트 끝
 
         [Test] // 테스트 표시
